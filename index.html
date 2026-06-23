@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Remesas">
+<title>Gestión de Remesas</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #eff6ff;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); min-height: 100vh; }
+  
+  /* AUTH */
+  #auth-screen { position: fixed; inset: 0; background: #1a1a2e; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 2rem; }
+  .auth-logo { font-size: 3rem; margin-bottom: 0.5rem; }
+  .auth-title { color: white; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .auth-subtitle { color: rgba(255,255,255,0.5); font-size: 0.875rem; margin-bottom: 2rem; }
+  .auth-box { background: white; border-radius: var(--radius); padding: 1.5rem; width: 100%; max-width: 340px; }
+  .auth-box h2 { font-size: 1rem; font-weight: 600; color: var(--gray-700); margin-bottom: 1rem; }
+  .auth-box input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 1rem; margin-bottom: 0.75rem; outline: none; transition: border-color 0.2s; }
+  .auth-box input:focus { border-color: var(--primary); }
+  .auth-box button { width: 100%; padding: 0.75rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .auth-box button:active { background: var(--primary-dark); }
+  .auth-error { color: var(--danger); font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
+  .auth-setup-link { color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 1rem; text-decoration: underline; cursor: pointer; }
+
+  /* APP SHELL */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  .topbar { background: #1a1a2e; color: white; padding: 0.875rem 1rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-title { font-size: 1.1rem; font-weight: 700; }
+  .topbar-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .topbar-btn { background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.8rem; cursor: pointer; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); display: inline-block; }
+  .sync-dot.synced { background: #4ade80; }
+  
+  .content { flex: 1; padding: 1rem; max-width: 680px; margin: 0 auto; width: 100%; padding-bottom: 5rem; }
+  
+  /* TABS */
+  .tabs { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--gray-200); display: flex; z-index: 100; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.6rem 0.25rem; gap: 0.2rem; border: none; background: none; color: var(--gray-400); font-size: 0.65rem; cursor: pointer; transition: color 0.2s; }
+  .tab.active { color: var(--primary); }
+  .tab-icon { font-size: 1.3rem; }
+  
+  /* SECTIONS */
+  .section { display: none; }
+  .section.active { display: block; }
+  
+  /* CARDS */
+  .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem; margin-bottom: 0.75rem; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .card-title { font-size: 0.875rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.05em; }
+  
+  /* FORMS */
+  .form-group { margin-bottom: 0.75rem; }
+  .form-label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--gray-600); margin-bottom: 0.25rem; }
+  .form-input { width: 100%; padding: 0.65rem 0.875rem; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 0.95rem; outline: none; transition: border-color 0.2s; background: white; color: var(--gray-900); }
+  .form-input:focus { border-color: var(--primary); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  
+  /* BUTTONS */
+  .btn { padding: 0.65rem 1.25rem; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--primary); color: white; width: 100%; padding: 0.875rem; font-size: 1rem; }
+  .btn-primary:active { background: var(--primary-dark); transform: scale(0.99); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--gray-300); color: var(--gray-700); }
+  .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; }
+  
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+  .badge-pending { background: var(--warning-light); color: var(--warning); }
+  .badge-done { background: var(--success-light); color: var(--success); }
+  .badge-info { background: var(--primary-light); color: var(--primary); }
+  
+  /* ITEMS LIST */
+  .item { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.875rem 1rem; margin-bottom: 0.5rem; border-left: 4px solid var(--gray-200); }
+  .item.pending { border-left-color: var(--warning); }
+  .item.done { border-left-color: var(--success); opacity: 0.8; }
+  .item-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.4rem; }
+  .item-name { font-weight: 600; font-size: 0.95rem; }
+  .item-detail { font-size: 0.8rem; color: var(--gray-500); line-height: 1.5; }
+  .item-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+  
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+  .stat-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem; text-align: center; }
+  .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 0.25rem; }
+  
+  /* MESSENGER SUMMARY */
+  .summary-box { background: var(--primary-light); border: 1.5px solid #bfdbfe; border-radius: var(--radius); padding: 1rem; margin-bottom: 0.75rem; white-space: pre-wrap; font-size: 0.85rem; line-height: 1.7; color: var(--gray-800); font-family: monospace; max-height: 200px; overflow-y: auto; }
+  
+  /* SECTION HEADER */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .section-title { font-size: 1.15rem; font-weight: 700; color: var(--gray-800); }
+  
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 2rem 1rem; color: var(--gray-400); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .empty-text { font-size: 0.9rem; }
+  
+  /* OFFLINE BANNER */
+  .offline-banner { background: var(--warning); color: white; text-align: center; padding: 0.4rem; font-size: 0.8rem; font-weight: 600; }
+  
+  /* MODAL */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: white; border-radius: 20px 20px 0 0; padding: 1.5rem; width: 100%; max-height: 85vh; overflow-y: auto; }
+  .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
+  .modal-close { float: right; font-size: 1.5rem; cursor: pointer; color: var(--gray-400); line-height: 1; }
+  
+  /* MESSENGER CARD */
+  .messenger-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem; margin-bottom: 0.75rem; }
+  .messenger-name { font-weight: 700; font-size: 1rem; }
+  .messenger-balance { font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0; }
+  .messenger-balance.owe { color: var(--danger); }
+  .messenger-balance.paid { color: var(--success); }
+  .messenger-detail { font-size: 0.8rem; color: var(--gray-500); }
+  
+  .tabs-mini { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .tab-mini { padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--gray-200); background: white; color: var(--gray-600); }
+  .tab-mini.active { background: var(--primary); color: white; border-color: var(--primary); }
+  
+  .gs-setup { background: var(--warning-light); border: 1.5px solid #fde68a; border-radius: var(--radius); padding: 0.875rem; margin-bottom: 1rem; font-size: 0.85rem; }
+  .gs-setup strong { color: var(--warning); }
+  
+  select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; }
+</style>
+</head>
+<body>
+
+<!-- OFFLINE -->
+<div class="offline-banner" id="offline-banner" style="display:none">📡 Sin conexión — los datos se guardarán localmente</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-logo">📦</div>
+  <div class="auth-title">Gestión de Remesas</div>
+  <div class="auth-subtitle">Tu negocio en un solo lugar</div>
+  <div class="auth-box" id="auth-login-box">
+    <h2>Iniciar sesión</h2>
+    <input type="text" id="auth-user" placeholder="Usuario" autocomplete="username">
+    <input type="password" id="auth-pass" placeholder="Contraseña" autocomplete="current-password">
+    <button onclick="doLogin()">Entrar</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+  <div class="auth-box" id="auth-setup-box" style="display:none; margin-top:1rem;">
+    <h2>Crear cuenta</h2>
+    <input type="text" id="setup-user" placeholder="Nombre de usuario">
+    <input type="password" id="setup-pass" placeholder="Contraseña">
+    <input type="password" id="setup-pass2" placeholder="Repetir contraseña">
+    <button onclick="doSetup()">Crear cuenta</button>
+    <div class="auth-error" id="setup-error"></div>
+  </div>
+  <div class="auth-setup-link" id="setup-toggle" onclick="toggleSetup()">Crear cuenta nueva</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">📦 Remesas</div>
+    <div class="topbar-actions">
+      <span class="sync-dot" id="sync-dot" title="Estado de sincronización"></span>
+      <button class="topbar-btn" onclick="syncToSheets()" id="sync-btn">Sincronizar</button>
+      <button class="topbar-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- REMESAS -->
+    <div class="section active" id="sec-remesas">
+      <div class="section-header">
+        <div class="section-title">Remesas</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-remesa')">+ Nueva</button>
+      </div>
+      <div class="tabs-mini">
+        <button class="tab-mini active" onclick="filterRemesas('todas',this)">Todas</button>
+        <button class="tab-mini" onclick="filterRemesas('pendiente',this)">Pendientes</button>
+        <button class="tab-mini" onclick="filterRemesas('entregada',this)">Entregadas</button>
+      </div>
+      <div id="stats-remesas" class="stats-grid"></div>
+      <div id="list-remesas"></div>
+    </div>
+
+    <!-- ENTREGAS -->
+    <div class="section" id="sec-entregas">
+      <div class="section-header">
+        <div class="section-title">Horario de Entregas</div>
+      </div>
+      <div class="tabs-mini">
+        <button class="tab-mini active" onclick="filterEntregas('pendiente',this)">Pendientes</button>
+        <button class="tab-mini" onclick="filterEntregas('realizada',this)">Realizadas</button>
+        <button class="tab-mini" onclick="filterEntregas('todas',this)">Todas</button>
+      </div>
+      <div id="list-entregas"></div>
+    </div>
+
+    <!-- MENSAJEROS -->
+    <div class="section" id="sec-mensajeros">
+      <div class="section-header">
+        <div class="section-title">Mensajeros</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-mensajero')">+ Nuevo</button>
+      </div>
+      <div id="list-mensajeros"></div>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="section" id="sec-resumen">
+      <div class="section-header">
+        <div class="section-title">Resumen para Mensajeros</div>
+      </div>
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">Seleccionar mensajero</label>
+          <select class="form-input" id="resumen-mensajero" onchange="generarResumen()">
+            <option value="">— Todos —</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="generarResumen()">📋 Generar Resumen</button>
+      </div>
+      <div id="resumen-output" style="display:none">
+        <div class="summary-box" id="resumen-texto"></div>
+        <button class="btn btn-success" onclick="copiarResumen()" style="width:100%;margin-top:0.5rem">📱 Copiar para WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- CONFIGURACIÓN -->
+    <div class="section" id="sec-config">
+      <div class="section-title" style="margin-bottom:1rem">Configuración</div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Google Sheets</div></div>
+        <div class="gs-setup">
+          <strong>⚠️ Instrucciones:</strong><br>
+          1. Abre Google Sheets y crea una hoja nueva<br>
+          2. Ve a <em>Extensiones → Apps Script</em><br>
+          3. Pega el script que aparece abajo<br>
+          4. Publica → <em>Implementar como aplicación web</em><br>
+          5. Copia la URL y pégala aquí
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL del Script de Google</label>
+          <input type="url" class="form-input" id="gs-url" placeholder="https://script.google.com/..." value="">
+        </div>
+        <button class="btn btn-primary" onclick="saveGsUrl()">Guardar URL</button>
+        <div style="margin-top:1rem">
+          <button class="btn btn-outline btn-sm" onclick="showScript()" style="width:100%">📄 Ver script para Apps Script</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:0.75rem">
+        <div class="card-header"><div class="card-title">Cuenta</div></div>
+        <button class="btn btn-danger btn-sm" onclick="cambiarPassword()">Cambiar contraseña</button>
+        <button class="btn btn-outline btn-sm" onclick="exportarDatos()" style="margin-top:0.5rem;width:100%">📤 Exportar copia de seguridad</button>
+        <button class="btn btn-outline btn-sm" onclick="importarDatos()" style="margin-top:0.5rem;width:100%">📥 Importar copia de seguridad</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showSection('remesas',this)">
+      <span class="tab-icon">📦</span><span>Remesas</span>
+    </button>
+    <button class="tab" onclick="showSection('entregas',this)">
+      <span class="tab-icon">🛵</span><span>Entregas</span>
+    </button>
+    <button class="tab" onclick="showSection('mensajeros',this)">
+      <span class="tab-icon">👤</span><span>Mensajeros</span>
+    </button>
+    <button class="tab" onclick="showSection('resumen',this)">
+      <span class="tab-icon">📋</span><span>Resumen</span>
+    </button>
+    <button class="tab" onclick="showSection('config',this)">
+      <span class="tab-icon">⚙️</span><span>Config</span>
+    </button>
+  </div>
+</div>
+
+<!-- MODAL REMESA -->
+<div class="modal-backdrop" id="modal-remesa">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-remesa')">×</span>
+    <div class="modal-title" id="remesa-modal-title">Nueva Remesa</div>
+    <input type="hidden" id="remesa-edit-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nombre del cliente *</label>
+        <input type="text" class="form-input" id="r-cliente" placeholder="Nombre completo">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono</label>
+        <input type="tel" class="form-input" id="r-telefono" placeholder="+34...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Dirección de entrega *</label>
+      <input type="text" class="form-input" id="r-direccion" placeholder="Calle, número, piso...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Importe (€) *</label>
+        <input type="number" class="form-input" id="r-importe" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Moneda origen</label>
+        <select class="form-input" id="r-moneda">
+          <option>EUR</option><option>USD</option><option>DOP</option><option>MXN</option><option>COP</option><option>VES</option><option>GTQ</option><option>HNL</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Fecha de entrega</label>
+        <input type="date" class="form-input" id="r-fecha">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hora acordada</label>
+        <input type="time" class="form-input" id="r-hora">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mensajero asignado</label>
+      <select class="form-input" id="r-mensajero">
+        <option value="">— Sin asignar —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo de operación</label>
+      <select class="form-input" id="r-tipo">
+        <option value="EeUu→Cuba">EeUu → Cuba (envío a Cuba)</option>
+        <option value="Cuba→EeUu">Cuba → EeUu (envío a EEUU)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Municipio (Cuba)</label>
+        <select class="form-input" id="r-municipio">
+          <option value="">— Seleccionar —</option>
+          <option value="La Lisa">La Lisa (costo: 3-4$)</option>
+          <option value="La Coronela">La Coronela (costo: 0-1$)</option>
+          <option value="Playa">Playa (costo: 5-6$)</option>
+          <option value="Marianao">Marianao (costo: 5-6$)</option>
+          <option value="Plaza">Plaza (costo: 7-8$)</option>
+          <option value="Boyeros">Boyeros (costo: 7-8$)</option>
+          <option value="Cerro">Cerro (costo: 7-8$)</option>
+          <option value="Centro Habana">Centro Habana (costo: 7-8$)</option>
+          <option value="Habana Vieja">Habana Vieja (costo: 7-8$)</option>
+          <option value="10 de Octubre">10 de Octubre (costo: 8-9$)</option>
+          <option value="Arroyo Naranjo">Arroyo Naranjo (costo: 8-9$)</option>
+          <option value="Regla">Regla (costo: 10-11$)</option>
+          <option value="Guanabacoa">Guanabacoa (costo: 12-13$)</option>
+          <option value="Cotorro">Cotorro (costo: 12-13$)</option>
+          <option value="Habana del Este">Habana del Este (costo: 12-13$)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Costo mensajero ($)</label>
+        <input type="number" class="form-input" id="r-costo-mens" placeholder="0" step="0.5">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas adicionales</label>
+      <input type="text" class="form-input" id="r-notas" placeholder="Instrucciones especiales...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Estado</label>
+      <select class="form-input" id="r-estado">
+        <option value="pendiente">Pendiente</option>
+        <option value="en_camino">En camino</option>
+        <option value="entregada">Entregada</option>
+        <option value="devuelta">Devuelta</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="saveRemesa()">Guardar Remesa</button>
+  </div>
+</div>
+
+<!-- MODAL MENSAJERO -->
+<div class="modal-backdrop" id="modal-mensajero">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-mensajero')">×</span>
+    <div class="modal-title" id="mensajero-modal-title">Nuevo Mensajero</div>
+    <input type="hidden" id="mensajero-edit-id">
+    <div class="form-group">
+      <label class="form-label">Nombre *</label>
+      <input type="text" class="form-input" id="m-nombre" placeholder="Nombre del mensajero">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Teléfono</label>
+      <input type="tel" class="form-input" id="m-tel" placeholder="+34...">
+    </div>
+    <button class="btn btn-primary" onclick="saveMensajero()">Guardar</button>
+  </div>
+</div>
+
+<!-- MODAL PAGO MENSAJERO -->
+<div class="modal-backdrop" id="modal-pago">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-pago')">×</span>
+    <div class="modal-title">Registrar Pago</div>
+    <input type="hidden" id="pago-mensajero-id">
+    <div class="form-group">
+      <label class="form-label">Mensajero</label>
+      <input type="text" class="form-input" id="pago-mensajero-nombre" readonly>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-input" id="pago-tipo">
+        <option value="pago">Pago entregado al mensajero</option>
+        <option value="cobro">Cobro recibido del mensajero</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Importe (€) *</label>
+      <input type="number" class="form-input" id="pago-importe" placeholder="0.00" step="0.01">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Concepto</label>
+      <input type="text" class="form-input" id="pago-concepto" placeholder="Ej: Pago semana del 23/06">
+    </div>
+    <button class="btn btn-primary" onclick="savePago()">Registrar</button>
+  </div>
+</div>
+
+<!-- MODAL SCRIPT -->
+<div class="modal-backdrop" id="modal-script">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-script')">×</span>
+    <div class="modal-title">Script para Google Apps Script</div>
+    <p style="font-size:0.8rem;color:var(--gray-600);margin-bottom:0.75rem">Copia este código y pégalo en Google Apps Script:</p>
+    <textarea class="form-input" id="script-code" rows="12" readonly style="font-family:monospace;font-size:0.75rem;line-height:1.4"></textarea>
+    <button class="btn btn-primary" onclick="copiarScript()" style="margin-top:0.75rem">Copiar script</button>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+const DB_KEY = 'remesas_db';
+const AUTH_KEY = 'remesas_auth';
+const GS_KEY = 'remesas_gs_url';
+
+let db = { remesas: [], mensajeros: [], pagos: [] };
+let currentFilter = { remesas: 'todas', entregas: 'pendiente' };
+
+function saveDB() {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  updateSyncDot(false);
+}
+function loadDB() {
+  const raw = localStorage.getItem(DB_KEY);
+  if (raw) db = JSON.parse(raw);
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtDate(d) { if (!d) return ''; const [y,m,dd] = d.split('-'); return `${dd}/${m}/${y}`; }
+function fmtMoney(n) { return parseFloat(n||0).toFixed(2) + ' €'; }
+
+// AUTH
+function getAuth() { return JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }
+function saveAuth(u,p) { localStorage.setItem(AUTH_KEY, JSON.stringify({user:u,pass:btoa(p)})); }
+function checkAuth(u,p) { const a=getAuth(); return a && a.user===u && a.pass===btoa(p); }
+function isLoggedIn() { return sessionStorage.getItem('logged')===getAuth()?.user; }
+
+function doLogin() {
+  const u=document.getElementById('auth-user').value.trim();
+  const p=document.getElementById('auth-pass').value;
+  if (!getAuth()) { document.getElementById('auth-error').textContent='Primero crea una cuenta.'; return; }
+  if (checkAuth(u,p)) {
+    sessionStorage.setItem('logged', u);
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    initApp();
+  } else {
+    document.getElementById('auth-error').textContent='Usuario o contraseña incorrectos.';
+  }
+}
+function doLogout() {
+  sessionStorage.removeItem('logged');
+  location.reload();
+}
+function doSetup() {
+  const u=document.getElementById('setup-user').value.trim();
+  const p=document.getElementById('setup-pass').value;
+  const p2=document.getElementById('setup-pass2').value;
+  const err=document.getElementById('setup-error');
+  if (!u||!p) { err.textContent='Completa todos los campos.'; return; }
+  if (p!==p2) { err.textContent='Las contraseñas no coinciden.'; return; }
+  if (p.length<4) { err.textContent='Mínimo 4 caracteres.'; return; }
+  saveAuth(u,p);
+  err.style.color='green'; err.textContent='¡Cuenta creada! Inicia sesión.';
+  setTimeout(()=>{ document.getElementById('auth-setup-box').style.display='none'; document.getElementById('auth-login-box').style.display='block'; document.getElementById('setup-toggle').textContent='Crear cuenta nueva'; },1200);
+}
+function toggleSetup() {
+  const lb=document.getElementById('auth-login-box'), sb=document.getElementById('auth-setup-box');
+  const tog=document.getElementById('setup-toggle');
+  if (sb.style.display==='none') { sb.style.display='block'; lb.style.display='none'; tog.textContent='Ya tengo cuenta'; }
+  else { sb.style.display='none'; lb.style.display='block'; tog.textContent='Crear cuenta nueva'; }
+}
+function cambiarPassword() {
+  const np=prompt('Nueva contraseña (mín. 4 caracteres):');
+  if (!np||np.length<4) { alert('Contraseña muy corta.'); return; }
+  const auth=getAuth();
+  saveAuth(auth.user,np);
+  alert('Contraseña actualizada.');
+}
+
+// APP INIT
+function initApp() {
+  loadDB();
+  renderRemesas();
+  renderEntregas();
+  renderMensajeros();
+  populateMensajeroSelects();
+  document.getElementById('gs-url').value = localStorage.getItem(GS_KEY)||'';
+  updateSyncDot(true);
+  window.addEventListener('online', () => { document.getElementById('offline-banner').style.display='none'; updateSyncDot(true); });
+  window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display='block'; updateSyncDot(false); });
+  if (!navigator.onLine) document.getElementById('offline-banner').style.display='block';
+}
+
+// NAVIGATION
+function showSection(name, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='resumen') populateResumenSelect();
+}
+
+// MODALS
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+
+// REMESAS
+function saveRemesa() {
+  const id = document.getElementById('remesa-edit-id').value;
+  const obj = {
+    id: id||uid(), cliente: document.getElementById('r-cliente').value.trim(),
+    telefono: document.getElementById('r-telefono').value.trim(),
+    direccion: document.getElementById('r-direccion').value.trim(),
+    importe: parseFloat(document.getElementById('r-importe').value)||0,
+    moneda: document.getElementById('r-moneda').value,
+    fecha: document.getElementById('r-fecha').value,
+    hora: document.getElementById('r-hora').value,
+    mensajero: document.getElementById('r-mensajero').value,
+    notas: document.getElementById('r-notas').value.trim(),
+    estado: document.getElementById('r-estado').value,
+    creado: id ? (db.remesas.find(r=>r.id===id)?.creado||today()) : today()
+  };
+  if (!obj.cliente||!obj.direccion||!obj.importe) { alert('Cliente, dirección e importe son obligatorios.'); return; }
+  if (id) { const i=db.remesas.findIndex(r=>r.id===id); db.remesas[i]=obj; }
+  else db.remesas.unshift(obj);
+  saveDB(); closeModal('modal-remesa'); clearRemesaForm();
+  renderRemesas(); renderEntregas();
+}
+function clearRemesaForm() {
+  ['r-cliente','r-telefono','r-direccion','r-importe','r-notas','r-fecha','r-hora','r-costo-mens'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('r-tipo').value='EeUu→Cuba';
+  document.getElementById('r-municipio').value='';
+  document.getElementById('r-estado').value='pendiente';
+  document.getElementById('r-mensajero').value='';
+  document.getElementById('remesa-edit-id').value='';
+  document.getElementById('remesa-modal-title').textContent='Nueva Remesa';
+}
+function editRemesa(id) {
+  const r=db.remesas.find(x=>x.id===id); if(!r) return;
+  document.getElementById('remesa-edit-id').value=r.id;
+  document.getElementById('r-cliente').value=r.cliente;
+  document.getElementById('r-telefono').value=r.telefono||'';
+  document.getElementById('r-direccion').value=r.direccion;
+  document.getElementById('r-importe').value=r.importe;
+  document.getElementById('r-moneda').value=r.moneda||'EUR';
+  document.getElementById('r-fecha').value=r.fecha||'';
+  document.getElementById('r-hora').value=r.hora||'';
+  document.getElementById('r-mensajero').value=r.mensajero||'';
+  document.getElementById('r-notas').value=r.notas||'';
+  document.getElementById('r-tipo').value=r.tipo||'EeUu→Cuba';
+  document.getElementById('r-municipio').value=r.municipio||'';
+  document.getElementById('r-costo-mens').value=r.costo_mens||'';
+  document.getElementById('r-estado').value=r.estado;
+  document.getElementById('remesa-modal-title').textContent='Editar Remesa';
+  openModal('modal-remesa');
+}
+function deleteRemesa(id) {
+  if(!confirm('¿Eliminar esta remesa?')) return;
+  db.remesas=db.remesas.filter(r=>r.id!==id);
+  saveDB(); renderRemesas(); renderEntregas();
+}
+function markEntregada(id) {
+  const r=db.remesas.find(x=>x.id===id); if(!r) return;
+  r.estado='entregada'; saveDB(); renderRemesas(); renderEntregas();
+}
+
+function filterRemesas(f, btn) {
+  currentFilter.remesas=f;
+  document.querySelectorAll('#sec-remesas .tab-mini').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRemesas();
+}
+function renderRemesas() {
+  const all=db.remesas;
+  const pend=all.filter(r=>r.estado==='pendiente'||r.estado==='en_camino');
+  const done=all.filter(r=>r.estado==='entregada');
+  const total=all.reduce((s,r)=>s+r.importe,0);
+  document.getElementById('stats-remesas').innerHTML=`
+    <div class="stat-card"><div class="stat-value">${all.length}</div><div class="stat-label">Total remesas</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--warning)">${pend.length}</div><div class="stat-label">Pendientes</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--success)">${done.length}</div><div class="stat-label">Entregadas</div></div>
+    <div class="stat-card"><div class="stat-value" style="font-size:1.1rem">${fmtMoney(total)}</div><div class="stat-label">Total gestionado</div></div>
+  `;
+  let list=all;
+  if (currentFilter.remesas==='pendiente') list=all.filter(r=>r.estado==='pendiente'||r.estado==='en_camino');
+  if (currentFilter.remesas==='entregada') list=all.filter(r=>r.estado==='entregada');
+  const div=document.getElementById('list-remesas');
+  if (!list.length) { div.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No hay remesas aquí todavía</div></div>`; return; }
+  const men = id => db.mensajeros.find(m=>m.id===id)?.nombre||'Sin asignar';
+  const estadoBadge = e => {
+    const map={pendiente:'badge-pending',en_camino:'badge-info',entregada:'badge-done',devuelta:'badge-pending'};
+    const lbl={pendiente:'Pendiente',en_camino:'En camino',entregada:'Entregada',devuelta:'Devuelta'};
+    return `<span class="badge ${map[e]||'badge-pending'}">${lbl[e]||e}</span>`;
+  };
+  div.innerHTML=list.map(r=>`
+    <div class="item ${r.estado==='entregada'?'done':'pending'}">
+      <div class="item-header">
+        <div class="item-name">${r.cliente}</div>
+        ${estadoBadge(r.estado)}
+      </div>
+      <div class="item-detail">
+        📍 ${r.direccion}${r.municipio?' · '+r.municipio:''}<br>
+        💰 ${fmtMoney(r.importe)} ${r.moneda!=='EUR'?'('+r.moneda+')':''} ${r.costo_mens?'· Mens: '+fmtMoney(r.costo_mens):''}<br>
+        🔄 ${r.tipo||'EeUu→Cuba'} · 🛵 ${men(r.mensajero)}<br>
+        ${r.fecha?'📅 '+fmtDate(r.fecha)+(r.hora?' a las '+r.hora:'')+'<br>':''}
+        ${r.notas?'📝 '+r.notas:''}
+      </div>
+      <div class="item-actions">
+        ${r.estado!=='entregada'?`<button class="btn btn-success btn-sm" onclick="markEntregada('${r.id}')">✓ Entregada</button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="editRemesa('${r.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRemesa('${r.id}')">Borrar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ENTREGAS
+function filterEntregas(f, btn) {
+  currentFilter.entregas=f;
+  document.querySelectorAll('#sec-entregas .tab-mini').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEntregas();
+}
+function renderEntregas() {
+  let list=db.remesas.filter(r=>r.fecha);
+  list.sort((a,b)=>{
+    const ta=(a.fecha+(a.hora||'00:00')).replace(/\D/g,'');
+    const tb=(b.fecha+(b.hora||'00:00')).replace(/\D/g,'');
+    return ta.localeCompare(tb);
+  });
+  const f=currentFilter.entregas;
+  if (f==='pendiente') list=list.filter(r=>r.estado!=='entregada'&&r.estado!=='devuelta');
+  if (f==='realizada') list=list.filter(r=>r.estado==='entregada');
+  const div=document.getElementById('list-entregas');
+  if (!list.length) { div.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No hay entregas programadas</div></div>`; return; }
+  const men = id => db.mensajeros.find(m=>m.id===id)?.nombre||'Sin asignar';
+  div.innerHTML=list.map(r=>`
+    <div class="item ${r.estado==='entregada'?'done':'pending'}">
+      <div class="item-header">
+        <div class="item-name">${r.cliente}</div>
+        <div style="font-size:0.8rem;font-weight:600;color:var(--primary)">${r.hora||'Sin hora'}</div>
+      </div>
+      <div class="item-detail">
+        📅 ${fmtDate(r.fecha)} ${r.hora?'· ⏰ '+r.hora:''}<br>
+        📍 ${r.direccion}<br>
+        🛵 ${men(r.mensajero)} · 💶 ${fmtMoney(r.importe)}
+      </div>
+      <div class="item-actions">
+        ${r.estado!=='entregada'?`<button class="btn btn-success btn-sm" onclick="markEntregada('${r.id}')">✓ Marcar entregada</button>`:`<span class="badge badge-done">✓ Completada</span>`}
+      </div>
+    </div>
+  `).join('');
+}
+
+// MENSAJEROS
+function saveMensajero() {
+  const id=document.getElementById('mensajero-edit-id').value;
+  const obj={
+    id:id||uid(),
+    nombre:document.getElementById('m-nombre').value.trim(),
+    tel:document.getElementById('m-tel').value.trim()
+  };
+  if(!obj.nombre){alert('El nombre es obligatorio.');return;}
+  if(id){const i=db.mensajeros.findIndex(m=>m.id===id);db.mensajeros[i]=obj;}
+  else db.mensajeros.push(obj);
+  saveDB(); closeModal('modal-mensajero');
+  document.getElementById('m-nombre').value=''; document.getElementById('m-tel').value='';
+  document.getElementById('mensajero-edit-id').value='';
+  renderMensajeros(); populateMensajeroSelects();
+}
+function deleteMensajero(id){
+  if(!confirm('¿Eliminar mensajero?'))return;
+  db.mensajeros=db.mensajeros.filter(m=>m.id!==id);
+  saveDB(); renderMensajeros(); populateMensajeroSelects();
+}
+function openPago(id){
+  const m=db.mensajeros.find(x=>x.id===id);
+  document.getElementById('pago-mensajero-id').value=id;
+  document.getElementById('pago-mensajero-nombre').value=m.nombre;
+  document.getElementById('pago-importe').value='';
+  document.getElementById('pago-concepto').value='';
+  openModal('modal-pago');
+}
+function savePago(){
+  const mid=document.getElementById('pago-mensajero-id').value;
+  const imp=parseFloat(document.getElementById('pago-importe').value);
+  if(!imp||imp<=0){alert('Importe inválido.');return;}
+  const tipo=document.getElementById('pago-tipo').value;
+  db.pagos.push({id:uid(),mensajeroId:mid,tipo,importe:imp,concepto:document.getElementById('pago-concepto').value.trim(),fecha:today()});
+  saveDB(); closeModal('modal-pago'); renderMensajeros();
+}
+function calcBalance(mid){
+  return db.pagos.filter(p=>p.mensajeroId===mid).reduce((s,p)=>{
+    return s + (p.tipo==='pago'? p.importe : -p.importe);
+  },0);
+}
+function renderMensajeros(){
+  const div=document.getElementById('list-mensajeros');
+  if(!db.mensajeros.length){div.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-text">No hay mensajeros registrados</div></div>`;return;}
+  div.innerHTML=db.mensajeros.map(m=>{
+    const bal=calcBalance(m.id);
+    const remActivas=db.remesas.filter(r=>r.mensajero===m.id&&r.estado!=='entregada').length;
+    const pagosHist=db.pagos.filter(p=>p.mensajeroId===m.id);
+    const histHTML=pagosHist.length?`<div style="margin-top:0.5rem;border-top:1px solid var(--gray-100);padding-top:0.5rem">
+      ${pagosHist.slice(-3).map(p=>`<div style="font-size:0.75rem;color:var(--gray-500);display:flex;justify-content:space-between"><span>${p.tipo==='pago'?'💸':'💰'} ${p.concepto||'Pago'} · ${fmtDate(p.fecha)}</span><span>${p.tipo==='pago'?'+':'-'}${fmtMoney(p.importe)}</span></div>`).join('')}
+    </div>`:'';
+    return `<div class="messenger-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="messenger-name">${m.nombre}</div>
+          ${m.tel?`<div class="messenger-detail">📱 ${m.tel}</div>`:''}
+          <div class="messenger-detail">Entregas activas: <strong>${remActivas}</strong></div>
+        </div>
+        <div style="text-align:right">
+          <div class="messenger-balance ${bal>0?'owe':bal<0?'paid':''}">${bal>0?'Le debes':bal<0?'Te debe':''}</div>
+          <div class="messenger-balance ${bal>0?'owe':bal<0?'paid':''}">${Math.abs(bal).toFixed(2)} €</div>
+        </div>
+      </div>
+      ${histHTML}
+      <div class="item-actions" style="margin-top:0.75rem">
+        <button class="btn btn-primary btn-sm" onclick="openPago('${m.id}')">💰 Pago</button>
+        <button class="btn btn-outline btn-sm" onclick="editMensajero('${m.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMensajero('${m.id}')">Borrar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function editMensajero(id){
+  const m=db.mensajeros.find(x=>x.id===id);
+  document.getElementById('mensajero-edit-id').value=m.id;
+  document.getElementById('m-nombre').value=m.nombre;
+  document.getElementById('m-tel').value=m.tel||'';
+  document.getElementById('mensajero-modal-title').textContent='Editar Mensajero';
+  openModal('modal-mensajero');
+}
+
+// SELECTS
+function populateMensajeroSelects(){
+  const opts=db.mensajeros.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
+  document.getElementById('r-mensajero').innerHTML='<option value="">— Sin asignar —</option>'+opts;
+  document.getElementById('resumen-mensajero').innerHTML='<option value="">— Todos —</option>'+opts;
+}
+function populateResumenSelect(){ populateMensajeroSelects(); }
+
+// RESUMEN MENSAJERO
+function generarResumen(){
+  const mid=document.getElementById('resumen-mensajero').value;
+  let list=db.remesas.filter(r=>r.estado!=='entregada'&&r.estado!=='devuelta');
+  if(mid) list=list.filter(r=>r.mensajero===mid);
+  list.sort((a,b)=>{
+    const ta=(a.fecha+''+(a.hora||'00:00')).replace(/\D/g,'');
+    const tb=(b.fecha+''+(b.hora||'00:00')).replace(/\D/g,'');
+    return ta.localeCompare(tb);
+  });
+  const men=mid?db.mensajeros.find(m=>m.id===mid)?.nombre:'Todos los mensajeros';
+  let txt=`📦 REMESAS PENDIENTES\n`;
+  txt+=`👤 ${men}\n`;
+  txt+=`📅 ${new Date().toLocaleDateString('es-ES')}\n`;
+  txt+=`${'─'.repeat(28)}\n\n`;
+  if(!list.length){txt+='No hay entregas pendientes.\n';}
+  else{
+    list.forEach((r,i)=>{
+      txt+=`${i+1}. 👤 ${r.cliente}\n`;
+      txt+=`   📍 ${r.direccion}\n`;
+      txt+=`   💶 ${fmtMoney(r.importe)}\n`;
+      if(r.fecha) txt+=`   📅 ${fmtDate(r.fecha)}${r.hora?' ⏰ '+r.hora:''}\n`;
+      if(r.telefono) txt+=`   📱 ${r.telefono}\n`;
+      if(r.notas) txt+=`   📝 ${r.notas}\n`;
+      txt+=`\n`;
+    });
+    txt+=`${'─'.repeat(28)}\n`;
+    txt+=`Total: ${list.length} entregas · ${fmtMoney(list.reduce((s,r)=>s+r.importe,0))}`;
+  }
+  document.getElementById('resumen-texto').textContent=txt;
+  document.getElementById('resumen-output').style.display='block';
+}
+function copiarResumen(){
+  const txt=document.getElementById('resumen-texto').textContent;
+  navigator.clipboard.writeText(txt).then(()=>alert('¡Copiado! Pégalo en WhatsApp.')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('¡Copiado!');
+  });
+}
+
+// GOOGLE SHEETS SYNC
+function saveGsUrl(){
+  const url=document.getElementById('gs-url').value.trim();
+  localStorage.setItem(GS_KEY,url);
+  alert('URL guardada. Ya puedes sincronizar.');
+}
+function updateSyncDot(synced){ document.getElementById('sync-dot').className='sync-dot'+(synced?' synced':''); }
+async function syncToSheets(){
+  const url=localStorage.getItem(GS_KEY);
+  if(!url){alert('Primero configura la URL de Google Sheets en Configuración.');return;}
+  if(!navigator.onLine){alert('Sin conexión. Los datos están guardados localmente y se sincronizarán cuando haya internet.');return;}
+  document.getElementById('sync-btn').textContent='Sincronizando...';
+  try{
+    // Enrich remesas with mensajero name before syncing
+    const enriched = {
+      ...db,
+      remesas: db.remesas.map(r=>({...r, mensajero_nombre: db.mensajeros.find(m=>m.id===r.mensajero)?.nombre||r.mensajero})),
+      pagos: db.pagos.map(p=>({...p, mensajeroNombre: db.mensajeros.find(m=>m.id===p.mensajeroId)?.nombre||''}))
+    };
+    await fetch(url,{method:'POST',body:JSON.stringify({action:'sync',data:enriched}),headers:{'Content-Type':'application/json'}});
+    updateSyncDot(true);
+    alert('✅ Sincronizado con Google Sheets.');
+  }catch(e){
+    alert('Error al sincronizar. Verifica la URL del script.');
+  }
+  document.getElementById('sync-btn').textContent='Sincronizar';
+}
+
+// EXPORT/IMPORT
+function exportarDatos(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`remesas-backup-${today()}.json`;a.click();
+}
+function importarDatos(){ document.getElementById('import-file').click(); }
+function handleImport(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const imported=JSON.parse(ev.target.result);
+      if(!imported.remesas||!imported.mensajeros){alert('Archivo inválido.');return;}
+      if(!confirm('¿Importar datos? Esto reemplazará los datos actuales.'))return;
+      db=imported; saveDB();
+      renderRemesas(); renderEntregas(); renderMensajeros(); populateMensajeroSelects();
+      alert('✅ Datos importados correctamente.');
+    }catch(err){alert('Error al importar el archivo.');}
+  };
+  reader.readAsText(file);
+}
+
+// APPS SCRIPT CODE
+function showScript(){
+  const code=`// =====================================================================
+// SCRIPT PARA GESTIÓN DE REMESAS - Rafael Garrido
+// Pega este código en Google Apps Script de tu hoja "Remesas"
+// Extensiones → Apps Script → borra todo → pega esto → Guardar → Publicar
+// =====================================================================
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (data.action === 'sync') {
+      syncRemesas(ss, data.data.remesas || []);
+      syncMensajeros(ss, data.data.mensajeros || []);
+      syncPagos(ss, data.data.pagos || []);
+      return jsonResponse({ ok: true, message: 'Sincronizado correctamente' });
+    }
+
+    if (data.action === 'nueva_operacion') {
+      appendOperacion(ss, data.operacion);
+      return jsonResponse({ ok: true, message: 'Operación añadida' });
+    }
+
+    return jsonResponse({ ok: false, message: 'Acción no reconocida' });
+
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.toString() });
+  }
+}
+
+function doGet(e) {
+  return jsonResponse({ ok: true, message: 'Script activo y funcionando' });
+}
+
+// -----------------------------------------------------------------------
+// SINCRONIZAR REMESAS → Escribe en hoja "App_Remesas" (nueva, no toca las tuyas)
+// -----------------------------------------------------------------------
+function syncRemesas(ss, remesas) {
+  var sheetName = 'App_Remesas';
+  var sh = ss.getSheetByName(sheetName);
+  if (!sh) sh = ss.insertSheet(sheetName);
+  sh.clearContents();
+
+  // Cabecera que coincide con el formato de tu libro
+  sh.appendRow([
+    'ID', 'Cliente', 'Teléfono', 'Dirección', 'Municipio',
+    'Importe Cobrado', 'Importe Entregado', 'Moneda',
+    'Fecha', 'Hora', 'Mensajero', 'Tipo',
+    'Ganancia', 'Costo Mens', 'Notas', 'Estado', 'Creado'
+  ]);
+
+  remesas.forEach(function(r) {
+    sh.appendRow([
+      r.id || '',
+      r.cliente || '',
+      r.telefono || '',
+      r.direccion || '',
+      r.municipio || '',
+      r.importe || 0,
+      calcEntrega(r.importe, r.costo_mens),
+      r.moneda || 'USD',
+      r.fecha || '',
+      r.hora || '',
+      r.mensajero_nombre || r.mensajero || '',
+      r.tipo || 'EeUu→Cuba',
+      calcGanancia(r.importe, r.costo_mens),
+      r.costo_mens || 0,
+      r.notas || '',
+      r.estado || 'pendiente',
+      r.creado || ''
+    ]);
+  });
+
+  formatearCabecera(sh);
+}
+
+// -----------------------------------------------------------------------
+// SINCRONIZAR MENSAJEROS → Hoja "App_Mensajeros"
+// -----------------------------------------------------------------------
+function syncMensajeros(ss, mensajeros) {
+  var sh = ss.getSheetByName('App_Mensajeros');
+  if (!sh) sh = ss.insertSheet('App_Mensajeros');
+  sh.clearContents();
+  sh.appendRow(['ID', 'Nombre', 'Teléfono', 'Balance (Le debes)']);
+  mensajeros.forEach(function(m) {
+    sh.appendRow([m.id, m.nombre, m.tel || '', m.balance || 0]);
+  });
+  formatearCabecera(sh);
+}
+
+// -----------------------------------------------------------------------
+// SINCRONIZAR PAGOS A MENSAJEROS → Hoja "App_Pagos_Mens"
+// -----------------------------------------------------------------------
+function syncPagos(ss, pagos) {
+  var sh = ss.getSheetByName('App_Pagos_Mens');
+  if (!sh) sh = ss.insertSheet('App_Pagos_Mens');
+  sh.clearContents();
+  sh.appendRow(['ID', 'Mensajero ID', 'Mensajero Nombre', 'Tipo', 'Importe', 'Concepto', 'Fecha']);
+  pagos.forEach(function(p) {
+    sh.appendRow([p.id, p.mensajeroId, p.mensajeroNombre || '', p.tipo, p.importe, p.concepto || '', p.fecha]);
+  });
+  formatearCabecera(sh);
+}
+
+// -----------------------------------------------------------------------
+// AÑADIR OPERACIÓN AL MES ACTUAL (formato de tu libro original)
+// Esto escribe directamente en la hoja del mes activo, como tú lo haces
+// -----------------------------------------------------------------------
+function appendOperacion(ss, op) {
+  // Busca la hoja del mes actual (ej: "Mayo 2026")
+  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var hoy = new Date();
+  var nombreMes = meses[hoy.getMonth()] + ' ' + hoy.getFullYear();
+  
+  var sh = ss.getSheetByName(nombreMes);
+  // Si no existe la hoja del mes, la crea con el formato correcto
+  if (!sh) {
+    sh = ss.insertSheet(nombreMes);
+    sh.appendRow([
+      'R', 'Daniela', 'OpeNumero', 'Dia', 'Tipo',
+      'Donde se cobra la ganancia', 'Cliente reside en EeUu',
+      'Cliente en Cuba', 'Cantidad a Depositar', 'Entrega',
+      'Costo Mens', 'Ganancia', 'Total', 'Ganado por cada uno',
+      'AcumMens', 'Mensajero'
+    ]);
+    formatearCabecera(sh);
+  }
+
+  // Calcula el próximo número de operación
+  var lastRow = sh.getLastRow();
+  var nextOpe = lastRow; // Número aproximado
+
+  sh.appendRow([
+    op.revisado_r || false,
+    op.revisado_daniela || false,
+    nextOpe,
+    hoy.getDate(),
+    op.tipo || 'EeUu→Cuba',
+    op.donde_ganancia || 'EeUu',
+    op.cliente_eeuu || op.cliente || '',
+    op.cliente_cuba || '',
+    op.cantidad_depositar || op.importe || 0,
+    op.entrega || 0,
+    op.costo_mens || 0,
+    op.ganancia || 0,
+    '',  // Total acumulado (calculado en Sheets)
+    '',  // Ganado por cada uno (calculado en Sheets)
+    op.costo_mens || 0,
+    op.mensajero || ''
+  ]);
+}
+
+// -----------------------------------------------------------------------
+// HELPERS
+// -----------------------------------------------------------------------
+function calcEntrega(importe, costoMens) {
+  if (!importe) return 0;
+  // Aproximación: entrega = depositar * 0.95 (tu tarifa habitual ~5%)
+  return Math.round(parseFloat(importe) * 0.95 * 100) / 100;
+}
+
+function calcGanancia(importe, costoMens) {
+  var imp = parseFloat(importe) || 0;
+  var costo = parseFloat(costoMens) || 0;
+  // Ganancia = importe - entrega - costo (aproximado)
+  return Math.round((imp * 0.05 - costo) * 100) / 100;
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function formatearCabecera(sh) {
+  try {
+    var headerRange = sh.getRange(1, 1, 1, sh.getLastColumn());
+    headerRange.setBackground('#1a1a2e');
+    headerRange.setFontColor('#ffffff');
+    headerRange.setFontWeight('bold');
+    sh.setFrozenRows(1);
+    sh.autoResizeColumns(1, sh.getLastColumn());
+  } catch(e) {}
+}
+
+// -----------------------------------------------------------------------
+// FUNCIÓN DE PRUEBA - Puedes ejecutarla manualmente desde Apps Script
+// para verificar que todo funciona antes de publicar
+// -----------------------------------------------------------------------
+function testScript() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  Logger.log('Hoja activa: ' + ss.getName());
+  Logger.log('Número de hojas: ' + ss.getSheets().length);
+  Logger.log('Script funcionando correctamente ✓');
+}
+`;
+  document.getElementById('script-code').value=code;
+  openModal('modal-script');
+}
+function copiarScript(){
+  const code=document.getElementById('script-code').value;
+  navigator.clipboard.writeText(code).then(()=>alert('Script copiado.')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Script copiado.');
+  });
+}
+
+// INIT
+window.addEventListener('DOMContentLoaded', () => {
+  if (isLoggedIn()) {
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    initApp();
+  } else if (!getAuth()) {
+    document.getElementById('auth-setup-box').style.display='block';
+    document.getElementById('auth-login-box').style.display='none';
+    document.getElementById('setup-toggle').textContent='Ya tengo cuenta';
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+});
+</script>
+</body>
+</html>
