@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#1a1a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Remesas">
-<title>Gestión de Remesas</title>
+<meta name="apple-mobile-web-app-title" content="Envíos">
+<title>Mi Negocio</title>
 <link rel="manifest" href="manifest.json">
 <style>
   :root {
@@ -163,8 +163,8 @@
 <!-- AUTH SCREEN -->
 <div id="auth-screen">
   <div class="auth-logo">📦</div>
-  <div class="auth-title">Gestión de Remesas</div>
-  <div class="auth-subtitle">Tu negocio en un solo lugar</div>
+  <div class="auth-title">Mi Negocio</div>
+  <div class="auth-subtitle">Gestión privada</div>
   <div class="auth-box" id="auth-login-box">
     <h2>Iniciar sesión</h2>
     <input type="text" id="auth-user" placeholder="Usuario" autocomplete="username">
@@ -186,7 +186,7 @@
 <!-- APP -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-title">📦 Remesas</div>
+    <div class="topbar-title">📦 Negocio</div>
     <div class="topbar-actions">
       <span class="sync-dot" id="sync-dot" title="Estado de sincronización"></span>
       <button class="topbar-btn" onclick="syncToSheets()" id="sync-btn">Sincronizar</button>
@@ -196,18 +196,18 @@
 
   <div class="content">
     <!-- REMESAS -->
-    <div class="section active" id="sec-remesas">
+    <div class="section active" id="sec-envios">
       <div class="section-header">
-        <div class="section-title">Remesas</div>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-remesa')">+ Nueva</button>
+        <div class="section-title">Negocio</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-envio')">+ Nueva</button>
       </div>
       <div class="tabs-mini">
-        <button class="tab-mini active" onclick="filterRemesas('todas',this)">Todas</button>
-        <button class="tab-mini" onclick="filterRemesas('pendiente',this)">Pendientes</button>
-        <button class="tab-mini" onclick="filterRemesas('entregada',this)">Entregadas</button>
+        <button class="tab-mini active" onclick="filterEnvíos('todas',this)">Todas</button>
+        <button class="tab-mini" onclick="filterEnvíos('pendiente',this)">Pendientes</button>
+        <button class="tab-mini" onclick="filterEnvíos('entregada',this)">Entregadas</button>
       </div>
-      <div id="stats-remesas" class="stats-grid"></div>
-      <div id="list-remesas"></div>
+      <div id="stats-envios" class="stats-grid"></div>
+      <div id="list-envios"></div>
     </div>
 
     <!-- ENTREGAS -->
@@ -235,7 +235,7 @@
     <!-- RESUMEN -->
     <div class="section" id="sec-resumen">
       <div class="section-header">
-        <div class="section-title">Resumen para Mensajeros</div>
+        <div class="section-title">Resumen para Repartidores</div>
       </div>
       <div class="card">
         <div class="form-group">
@@ -284,8 +284,8 @@
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="showSection('remesas',this)">
-      <span class="tab-icon">📦</span><span>Remesas</span>
+    <button class="tab active" onclick="showSection('envios',this)">
+      <span class="tab-icon">📦</span><span>Negocio</span>
     </button>
     <button class="tab" onclick="showSection('entregas',this)">
       <span class="tab-icon">🛵</span><span>Entregas</span>
@@ -303,11 +303,11 @@
 </div>
 
 <!-- MODAL REMESA -->
-<div class="modal-backdrop" id="modal-remesa">
+<div class="modal-backdrop" id="modal-envio">
   <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-remesa')">×</span>
-    <div class="modal-title" id="remesa-modal-title">Nueva Remesa</div>
-    <input type="hidden" id="remesa-edit-id">
+    <span class="modal-close" onclick="closeModal('modal-envio')">×</span>
+    <div class="modal-title" id="envio-modal-title">Nuevo Envío</div>
+    <input type="hidden" id="envio-edit-id">
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Nombre del cliente *</label>
@@ -397,7 +397,7 @@
         <option value="devuelta">Devuelta</option>
       </select>
     </div>
-    <button class="btn btn-primary" onclick="saveRemesa()">Guardar Remesa</button>
+    <button class="btn btn-primary" onclick="saveEnvio()">Guardar Remesa</button>
   </div>
 </div>
 
@@ -462,12 +462,12 @@
 <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
 
 <script>
-const DB_KEY = 'remesas_db';
-const AUTH_KEY = 'remesas_auth';
-const GS_KEY = 'remesas_gs_url';
+const DB_KEY = 'envios_db';
+const AUTH_KEY = 'envios_auth';
+const GS_KEY = 'envios_gs_url';
 
-let db = { remesas: [], mensajeros: [], pagos: [] };
-let currentFilter = { remesas: 'todas', entregas: 'pendiente' };
+let db = { envios: [], mensajeros: [], pagos: [] };
+let currentFilter = { envios: 'todas', entregas: 'pendiente' };
 
 function saveDB() {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
@@ -534,7 +534,7 @@ function cambiarPassword() {
 // APP INIT
 function initApp() {
   loadDB();
-  renderRemesas();
+  renderEnvíos();
   renderEntregas();
   renderMensajeros();
   populateMensajeroSelects();
@@ -562,8 +562,8 @@ document.querySelectorAll('.modal-backdrop').forEach(m => {
 });
 
 // REMESAS
-function saveRemesa() {
-  const id = document.getElementById('remesa-edit-id').value;
+function saveEnvio() {
+  const id = document.getElementById('envio-edit-id').value;
   const obj = {
     id: id||uid(), cliente: document.getElementById('r-cliente').value.trim(),
     telefono: document.getElementById('r-telefono').value.trim(),
@@ -575,26 +575,26 @@ function saveRemesa() {
     mensajero: document.getElementById('r-mensajero').value,
     notas: document.getElementById('r-notas').value.trim(),
     estado: document.getElementById('r-estado').value,
-    creado: id ? (db.remesas.find(r=>r.id===id)?.creado||today()) : today()
+    creado: id ? (db.envios.find(r=>r.id===id)?.creado||today()) : today()
   };
   if (!obj.cliente||!obj.direccion||!obj.importe) { alert('Cliente, dirección e importe son obligatorios.'); return; }
-  if (id) { const i=db.remesas.findIndex(r=>r.id===id); db.remesas[i]=obj; }
-  else db.remesas.unshift(obj);
-  saveDB(); closeModal('modal-remesa'); clearRemesaForm();
-  renderRemesas(); renderEntregas();
+  if (id) { const i=db.envios.findIndex(r=>r.id===id); db.envios[i]=obj; }
+  else db.envios.unshift(obj);
+  saveDB(); closeModal('modal-envio'); clearEnvioForm();
+  renderEnvíos(); renderEntregas();
 }
-function clearRemesaForm() {
+function clearEnvioForm() {
   ['r-cliente','r-telefono','r-direccion','r-importe','r-notas','r-fecha','r-hora','r-costo-mens'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('r-tipo').value='EeUu→Cuba';
   document.getElementById('r-municipio').value='';
   document.getElementById('r-estado').value='pendiente';
   document.getElementById('r-mensajero').value='';
-  document.getElementById('remesa-edit-id').value='';
-  document.getElementById('remesa-modal-title').textContent='Nueva Remesa';
+  document.getElementById('envio-edit-id').value='';
+  document.getElementById('envio-modal-title').textContent='Nuevo Envío';
 }
-function editRemesa(id) {
-  const r=db.remesas.find(x=>x.id===id); if(!r) return;
-  document.getElementById('remesa-edit-id').value=r.id;
+function editEnvio(id) {
+  const r=db.envios.find(x=>x.id===id); if(!r) return;
+  document.getElementById('envio-edit-id').value=r.id;
   document.getElementById('r-cliente').value=r.cliente;
   document.getElementById('r-telefono').value=r.telefono||'';
   document.getElementById('r-direccion').value=r.direccion;
@@ -608,41 +608,41 @@ function editRemesa(id) {
   document.getElementById('r-municipio').value=r.municipio||'';
   document.getElementById('r-costo-mens').value=r.costo_mens||'';
   document.getElementById('r-estado').value=r.estado;
-  document.getElementById('remesa-modal-title').textContent='Editar Remesa';
-  openModal('modal-remesa');
+  document.getElementById('envio-modal-title').textContent='Editar Envío';
+  openModal('modal-envio');
 }
-function deleteRemesa(id) {
+function deleteEnvio(id) {
   if(!confirm('¿Eliminar esta remesa?')) return;
-  db.remesas=db.remesas.filter(r=>r.id!==id);
-  saveDB(); renderRemesas(); renderEntregas();
+  db.envios=db.envios.filter(r=>r.id!==id);
+  saveDB(); renderEnvíos(); renderEntregas();
 }
 function markEntregada(id) {
-  const r=db.remesas.find(x=>x.id===id); if(!r) return;
-  r.estado='entregada'; saveDB(); renderRemesas(); renderEntregas();
+  const r=db.envios.find(x=>x.id===id); if(!r) return;
+  r.estado='entregada'; saveDB(); renderEnvíos(); renderEntregas();
 }
 
-function filterRemesas(f, btn) {
-  currentFilter.remesas=f;
-  document.querySelectorAll('#sec-remesas .tab-mini').forEach(b=>b.classList.remove('active'));
+function filterEnvíos(f, btn) {
+  currentFilter.envios=f;
+  document.querySelectorAll('#sec-envios .tab-mini').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderRemesas();
+  renderEnvíos();
 }
-function renderRemesas() {
-  const all=db.remesas;
+function renderEnvíos() {
+  const all=db.envios;
   const pend=all.filter(r=>r.estado==='pendiente'||r.estado==='en_camino');
   const done=all.filter(r=>r.estado==='entregada');
   const total=all.reduce((s,r)=>s+r.importe,0);
-  document.getElementById('stats-remesas').innerHTML=`
-    <div class="stat-card"><div class="stat-value">${all.length}</div><div class="stat-label">Total remesas</div></div>
+  document.getElementById('stats-envios').innerHTML=`
+    <div class="stat-card"><div class="stat-value">${all.length}</div><div class="stat-label">Total envios</div></div>
     <div class="stat-card"><div class="stat-value" style="color:var(--warning)">${pend.length}</div><div class="stat-label">Pendientes</div></div>
     <div class="stat-card"><div class="stat-value" style="color:var(--success)">${done.length}</div><div class="stat-label">Entregadas</div></div>
     <div class="stat-card"><div class="stat-value" style="font-size:1.1rem">${fmtMoney(total)}</div><div class="stat-label">Total gestionado</div></div>
   `;
   let list=all;
-  if (currentFilter.remesas==='pendiente') list=all.filter(r=>r.estado==='pendiente'||r.estado==='en_camino');
-  if (currentFilter.remesas==='entregada') list=all.filter(r=>r.estado==='entregada');
-  const div=document.getElementById('list-remesas');
-  if (!list.length) { div.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No hay remesas aquí todavía</div></div>`; return; }
+  if (currentFilter.envios==='pendiente') list=all.filter(r=>r.estado==='pendiente'||r.estado==='en_camino');
+  if (currentFilter.envios==='entregada') list=all.filter(r=>r.estado==='entregada');
+  const div=document.getElementById('list-envios');
+  if (!list.length) { div.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No hay envios aquí todavía</div></div>`; return; }
   const men = id => db.mensajeros.find(m=>m.id===id)?.nombre||'Sin asignar';
   const estadoBadge = e => {
     const map={pendiente:'badge-pending',en_camino:'badge-info',entregada:'badge-done',devuelta:'badge-pending'};
@@ -664,8 +664,8 @@ function renderRemesas() {
       </div>
       <div class="item-actions">
         ${r.estado!=='entregada'?`<button class="btn btn-success btn-sm" onclick="markEntregada('${r.id}')">✓ Entregada</button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="editRemesa('${r.id}')">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteRemesa('${r.id}')">Borrar</button>
+        <button class="btn btn-outline btn-sm" onclick="editEnvio('${r.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEnvio('${r.id}')">Borrar</button>
       </div>
     </div>
   `).join('');
@@ -679,7 +679,7 @@ function filterEntregas(f, btn) {
   renderEntregas();
 }
 function renderEntregas() {
-  let list=db.remesas.filter(r=>r.fecha);
+  let list=db.envios.filter(r=>r.fecha);
   list.sort((a,b)=>{
     const ta=(a.fecha+(a.hora||'00:00')).replace(/\D/g,'');
     const tb=(b.fecha+(b.hora||'00:00')).replace(/\D/g,'');
@@ -756,7 +756,7 @@ function renderMensajeros(){
   if(!db.mensajeros.length){div.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-text">No hay mensajeros registrados</div></div>`;return;}
   div.innerHTML=db.mensajeros.map(m=>{
     const bal=calcBalance(m.id);
-    const remActivas=db.remesas.filter(r=>r.mensajero===m.id&&r.estado!=='entregada').length;
+    const remActivas=db.envios.filter(r=>r.mensajero===m.id&&r.estado!=='entregada').length;
     const pagosHist=db.pagos.filter(p=>p.mensajeroId===m.id);
     const histHTML=pagosHist.length?`<div style="margin-top:0.5rem;border-top:1px solid var(--gray-100);padding-top:0.5rem">
       ${pagosHist.slice(-3).map(p=>`<div style="font-size:0.75rem;color:var(--gray-500);display:flex;justify-content:space-between"><span>${p.tipo==='pago'?'💸':'💰'} ${p.concepto||'Pago'} · ${fmtDate(p.fecha)}</span><span>${p.tipo==='pago'?'+':'-'}${fmtMoney(p.importe)}</span></div>`).join('')}
@@ -802,7 +802,7 @@ function populateResumenSelect(){ populateMensajeroSelects(); }
 // RESUMEN MENSAJERO
 function generarResumen(){
   const mid=document.getElementById('resumen-mensajero').value;
-  let list=db.remesas.filter(r=>r.estado!=='entregada'&&r.estado!=='devuelta');
+  let list=db.envios.filter(r=>r.estado!=='entregada'&&r.estado!=='devuelta');
   if(mid) list=list.filter(r=>r.mensajero===mid);
   list.sort((a,b)=>{
     const ta=(a.fecha+''+(a.hora||'00:00')).replace(/\D/g,'');
@@ -851,13 +851,20 @@ async function syncToSheets(){
   if(!navigator.onLine){alert('Sin conexión. Los datos están guardados localmente y se sincronizarán cuando haya internet.');return;}
   document.getElementById('sync-btn').textContent='Sincronizando...';
   try{
-    // Enrich remesas with mensajero name before syncing
+    // Enrich envios with mensajero name before syncing
     const enriched = {
       ...db,
-      remesas: db.remesas.map(r=>({...r, mensajero_nombre: db.mensajeros.find(m=>m.id===r.mensajero)?.nombre||r.mensajero})),
+      envios: db.envios.map(r=>({...r, mensajero_nombre: db.mensajeros.find(m=>m.id===r.mensajero)?.nombre||r.mensajero})),
       pagos: db.pagos.map(p=>({...p, mensajeroNombre: db.mensajeros.find(m=>m.id===p.mensajeroId)?.nombre||''}))
     };
-    await fetch(url,{method:'POST',body:JSON.stringify({action:'sync',data:enriched}),headers:{'Content-Type':'application/json'}});
+    const params = new URLSearchParams();
+    params.append('data', JSON.stringify({action:'sync', data:enriched}));
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: params.toString()
+    });
     updateSyncDot(true);
     alert('✅ Sincronizado con Google Sheets.');
   }catch(e){
@@ -870,7 +877,7 @@ async function syncToSheets(){
 function exportarDatos(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`remesas-backup-${today()}.json`;a.click();
+  a.download=`envios-backup-${today()}.json`;a.click();
 }
 function importarDatos(){ document.getElementById('import-file').click(); }
 function handleImport(e){
@@ -879,10 +886,10 @@ function handleImport(e){
   reader.onload=ev=>{
     try{
       const imported=JSON.parse(ev.target.result);
-      if(!imported.remesas||!imported.mensajeros){alert('Archivo inválido.');return;}
+      if(!imported.envios||!imported.mensajeros){alert('Archivo inválido.');return;}
       if(!confirm('¿Importar datos? Esto reemplazará los datos actuales.'))return;
       db=imported; saveDB();
-      renderRemesas(); renderEntregas(); renderMensajeros(); populateMensajeroSelects();
+      renderEnvíos(); renderEntregas(); renderMensajeros(); populateMensajeroSelects();
       alert('✅ Datos importados correctamente.');
     }catch(err){alert('Error al importar el archivo.');}
   };
@@ -893,7 +900,7 @@ function handleImport(e){
 function showScript(){
   const code=`// =====================================================================
 // SCRIPT PARA GESTIÓN DE REMESAS - Rafael Garrido
-// Pega este código en Google Apps Script de tu hoja "Remesas"
+// Pega este código en Google Apps Script de tu hoja "Envíos"
 // Extensiones → Apps Script → borra todo → pega esto → Guardar → Publicar
 // =====================================================================
 
@@ -903,7 +910,7 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     if (data.action === 'sync') {
-      syncRemesas(ss, data.data.remesas || []);
+      syncEnvíos(ss, data.data.envios || []);
       syncMensajeros(ss, data.data.mensajeros || []);
       syncPagos(ss, data.data.pagos || []);
       return jsonResponse({ ok: true, message: 'Sincronizado correctamente' });
@@ -926,10 +933,10 @@ function doGet(e) {
 }
 
 // -----------------------------------------------------------------------
-// SINCRONIZAR REMESAS → Escribe en hoja "App_Remesas" (nueva, no toca las tuyas)
+// SINCRONIZAR REMESAS → Escribe en hoja "App_Envíos" (nueva, no toca las tuyas)
 // -----------------------------------------------------------------------
-function syncRemesas(ss, remesas) {
-  var sheetName = 'App_Remesas';
+function syncEnvíos(ss, envios) {
+  var sheetName = 'App_Envíos';
   var sh = ss.getSheetByName(sheetName);
   if (!sh) sh = ss.insertSheet(sheetName);
   sh.clearContents();
@@ -942,7 +949,7 @@ function syncRemesas(ss, remesas) {
     'Ganancia', 'Costo Mens', 'Notas', 'Estado', 'Creado'
   ]);
 
-  remesas.forEach(function(r) {
+  envios.forEach(function(r) {
     sh.appendRow([
       r.id || '',
       r.cliente || '',
