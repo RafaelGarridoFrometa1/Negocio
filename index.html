@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Mi Negocio v3.0 - Build con todas las funciones -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -6,7 +7,7 @@
 <meta name="theme-color" content="#1a1a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Envíos">
+<meta name="apple-mobile-web-app-title" content="Negocio">
 <title>Mi Negocio</title>
 <link rel="manifest" href="manifest.json">
 <style>
@@ -149,7 +150,36 @@
   .tab-mini { padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--gray-200); background: white; color: var(--gray-600); }
   .tab-mini.active { background: var(--primary); color: white; border-color: var(--primary); }
   
-  .gs-setup { background: var(--warning-light); border: 1.5px solid #fde68a; border-radius: var(--radius); padding: 0.875rem; margin-bottom: 1rem; font-size: 0.85rem; }
+  /* OP FORM STYLES */
+.op-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; }
+.op-card-title { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 6px; }
+.op-card-title svg { width: 13px; height: 13px; opacity: .6; flex-shrink: 0; }
+.op-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.op-g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+@media(max-width:480px){ .op-g2, .op-g3 { grid-template-columns: 1fr; } }
+.op-field { display: flex; flex-direction: column; gap: 4px; }
+.op-label { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gray-500); }
+.op-input { font-size: 13px; color: var(--gray-900); background: white; border: 1.5px solid var(--gray-200); border-radius: 6px; padding: 8px 10px; width: 100%; outline: none; transition: border-color .15s; }
+.op-input:focus { border-color: var(--success); background: white; }
+.op-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; appearance: none; cursor: pointer; }
+.op-result { font-size: 13px; color: var(--gray-900); background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 6px; padding: 8px 10px; min-height: 36px; display: flex; align-items: center; font-weight: 600; }
+.op-result-label { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.op-divider { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gray-400); margin: 12px 0 10px; padding-top: 12px; border-top: 1px dashed var(--gray-200); display: flex; align-items: center; gap: 6px; }
+.op-chk-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 6px 0; }
+.op-chk-box { width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0; border: 1.5px solid var(--gray-300); background: white; display: flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s; }
+.op-chk-box.on { background: var(--success); border-color: var(--success); }
+.op-chk-box svg { width: 12px; height: 12px; stroke: white; display: none; }
+.op-chk-box.on svg { display: block; }
+.op-chk-lbl { font-size: 13px; color: var(--gray-700); }
+.op-search-wrap { position: relative; }
+.op-dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1px solid var(--gray-300); border-radius: 8px; max-height: 240px; overflow-y: auto; z-index: 300; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.op-dropdown.open { display: block; }
+.op-dd-item { padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--gray-800); border-bottom: 1px solid var(--gray-100); transition: background .1s; }
+.op-dd-item:last-child { border-bottom: none; }
+.op-dd-item:hover { background: var(--success-light); color: var(--success); }
+.op-dd-empty { padding: 8px 12px; font-size: 13px; color: var(--gray-400); font-style: italic; }
+
+.gs-setup { background: var(--warning-light); border: 1.5px solid #fde68a; border-radius: var(--radius); padding: 0.875rem; margin-bottom: 1rem; font-size: 0.85rem; }
   .gs-setup strong { color: var(--warning); }
   
   select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; }
@@ -232,6 +262,18 @@
       <div id="list-mensajeros"></div>
     </div>
 
+    <!-- ÚLTIMA OPERACIÓN GUARDADA -->
+    <div id="ultimo-resumen" style="display:none;margin-bottom:1rem">
+      <div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius);padding:0.875rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--success)">✓ Operación guardada — Mensaje para mensajero</div>
+          <button onclick="document.getElementById('ultimo-resumen').style.display='none'" style="background:none;border:none;color:var(--gray-500);font-size:1.2rem;cursor:pointer;padding:0;line-height:1">×</button>
+        </div>
+        <div id="ultimo-resumen-texto" style="background:white;border:1px solid var(--success);border-radius:6px;padding:0.75rem;font-family:monospace;font-size:0.78rem;line-height:1.7;color:var(--gray-800);white-space:pre-wrap;margin-bottom:0.5rem"></div>
+        <button onclick="copiarUltimoResumen()" style="background:var(--success);color:white;width:100%;padding:0.65rem;border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer">📲 Copiar para WhatsApp</button>
+      </div>
+    </div>
+
     <!-- RESUMEN -->
     <div class="section" id="sec-resumen">
       <div class="section-header">
@@ -250,6 +292,23 @@
         <div class="summary-box" id="resumen-texto"></div>
         <button class="btn btn-success" onclick="copiarResumen()" style="width:100%;margin-top:0.5rem">📱 Copiar para WhatsApp</button>
       </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="section" id="sec-clientes">
+      <div class="section-header">
+        <div class="section-title">Clientes</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-cliente')">+ Nuevo</button>
+      </div>
+      <div class="tabs-mini">
+        <button class="tab-mini active" onclick="filterClientes('todos',this)">Todos</button>
+        <button class="tab-mini" onclick="filterClientes('Cuba',this)">En Cuba</button>
+        <button class="tab-mini" onclick="filterClientes('EeUu',this)">En EeUu</button>
+      </div>
+      <div class="form-group" style="margin-bottom:0.75rem">
+        <input type="text" class="form-input" id="clientes-search" placeholder="🔍 Buscar cliente..." oninput="renderClientes()">
+      </div>
+      <div id="list-clientes"></div>
     </div>
 
     <!-- CONFIGURACIÓN -->
@@ -296,6 +355,9 @@
     <button class="tab" onclick="showSection('resumen',this)">
       <span class="tab-icon">📋</span><span>Resumen</span>
     </button>
+    <button class="tab" onclick="showSection('clientes',this)">
+      <span class="tab-icon">👥</span><span>Clientes</span>
+    </button>
     <button class="tab" onclick="showSection('config',this)">
       <span class="tab-icon">⚙️</span><span>Config</span>
     </button>
@@ -306,98 +368,201 @@
 <div class="modal-backdrop" id="modal-envio">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-envio')">×</span>
-    <div class="modal-title" id="envio-modal-title">Nuevo Envío</div>
+    <div class="modal-title" id="envio-modal-title">Nueva Operación</div>
     <input type="hidden" id="envio-edit-id">
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Nombre del cliente *</label>
-        <input type="text" class="form-input" id="r-cliente" placeholder="Nombre completo">
+
+    <!-- REVISIÓN Y FECHA -->
+    <div class="op-card">
+      <div class="op-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Revisión y fecha
       </div>
-      <div class="form-group">
-        <label class="form-label">Teléfono</label>
-        <input type="tel" class="form-input" id="r-telefono" placeholder="+34...">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Dirección de entrega *</label>
-      <input type="text" class="form-input" id="r-direccion" placeholder="Calle, número, piso...">
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Importe (€) *</label>
-        <input type="number" class="form-input" id="r-importe" placeholder="0.00" step="0.01">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Moneda origen</label>
-        <select class="form-input" id="r-moneda">
-          <option>EUR</option><option>USD</option><option>DOP</option><option>MXN</option><option>COP</option><option>VES</option><option>GTQ</option><option>HNL</option>
-        </select>
+      <div class="op-g2">
+        <div>
+          <label class="op-label">Revisado (Daniela)</label>
+          <div class="op-chk-wrap" onclick="toggleOpChk()">
+            <div class="op-chk-box" id="op-chk">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="op-chk-lbl" id="op-chk-lbl">No revisado</span>
+          </div>
+        </div>
+        <div class="op-field">
+          <label class="op-label">Día del mes</label>
+          <input type="number" class="op-input" id="op-dia" placeholder="1 – 31" min="1" max="31">
+        </div>
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Fecha de entrega</label>
-        <input type="date" class="form-input" id="r-fecha">
+
+    <!-- TIPO DE OPERACIÓN -->
+    <div class="op-card">
+      <div class="op-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+        Tipo de operación
       </div>
-      <div class="form-group">
-        <label class="form-label">Hora acordada</label>
-        <input type="time" class="form-input" id="r-hora">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Mensajero asignado</label>
-      <select class="form-input" id="r-mensajero">
-        <option value="">— Sin asignar —</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Tipo de operación</label>
-      <select class="form-input" id="r-tipo">
-        <option value="EeUu→Cuba">EeUu → Cuba (envío a Cuba)</option>
-        <option value="Cuba→EeUu">Cuba → EeUu (envío a EEUU)</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Municipio (Cuba)</label>
-        <select class="form-input" id="r-municipio">
-          <option value="">— Seleccionar —</option>
-          <option value="La Lisa">La Lisa (costo: 3-4$)</option>
-          <option value="La Coronela">La Coronela (costo: 0-1$)</option>
-          <option value="Playa">Playa (costo: 5-6$)</option>
-          <option value="Marianao">Marianao (costo: 5-6$)</option>
-          <option value="Plaza">Plaza (costo: 7-8$)</option>
-          <option value="Boyeros">Boyeros (costo: 7-8$)</option>
-          <option value="Cerro">Cerro (costo: 7-8$)</option>
-          <option value="Centro Habana">Centro Habana (costo: 7-8$)</option>
-          <option value="Habana Vieja">Habana Vieja (costo: 7-8$)</option>
-          <option value="10 de Octubre">10 de Octubre (costo: 8-9$)</option>
-          <option value="Arroyo Naranjo">Arroyo Naranjo (costo: 8-9$)</option>
-          <option value="Regla">Regla (costo: 10-11$)</option>
-          <option value="Guanabacoa">Guanabacoa (costo: 12-13$)</option>
-          <option value="Cotorro">Cotorro (costo: 12-13$)</option>
-          <option value="Habana del Este">Habana del Este (costo: 12-13$)</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Costo mensajero ($)</label>
-        <input type="number" class="form-input" id="r-costo-mens" placeholder="0" step="0.5">
+      <div class="op-g2">
+        <div class="op-field">
+          <label class="op-label">Tipo</label>
+          <select class="op-input op-select" id="op-tipo">
+            <option value="EeUu → Cuba">EeUu → Cuba</option>
+            <option value="Cuba → EeUu">Cuba → EeUu</option>
+          </select>
+        </div>
+        <div class="op-field">
+          <label class="op-label">Donde se cobra la ganancia</label>
+          <select class="op-input op-select" id="op-cobro">
+            <option value="EeUu">EeUu</option>
+            <option value="Cuba">Cuba</option>
+          </select>
+        </div>
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Notas adicionales</label>
-      <input type="text" class="form-input" id="r-notas" placeholder="Instrucciones especiales...">
+
+    <!-- CLIENTES -->
+    <div class="op-card">
+      <div class="op-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes
+      </div>
+      <div class="op-g2">
+        <div class="op-field">
+          <label class="op-label">Cliente en EEUU</label>
+          <div class="op-search-wrap">
+            <input type="text" class="op-input" id="op-search-usa" placeholder="Buscar cliente..." autocomplete="off"
+              oninput="filterOpDD('usa')" onfocus="openOpDD('usa')" onblur="closeOpDD('usa')">
+            <input type="hidden" id="op-val-usa">
+            <div class="op-dropdown" id="op-dd-usa"></div>
+          </div>
+        </div>
+        <div class="op-field">
+          <label class="op-label">Cliente en Cuba</label>
+          <div class="op-search-wrap">
+            <input type="text" class="op-input" id="op-search-cuba" placeholder="Buscar cliente..." autocomplete="off"
+              oninput="filterOpDD('cuba')" onfocus="openOpDD('cuba')" onblur="closeOpDD('cuba')">
+            <input type="hidden" id="op-val-cuba">
+            <div class="op-dropdown" id="op-dd-cuba"></div>
+          </div>
+        </div>
+      </div>
+      <div class="op-field" style="margin-top:10px">
+        <label class="op-label">Teléfono</label>
+        <input type="tel" class="op-input" id="op-telefono" placeholder="+1...">
+      </div>
+      <div class="op-field" style="margin-top:10px">
+        <label class="op-label">Dirección de entrega</label>
+        <input type="text" class="op-input" id="op-direccion" placeholder="Calle, número...">
+      </div>
+      <div class="op-g2" style="margin-top:10px">
+        <div class="op-field">
+          <label class="op-label">Municipio</label>
+          <select class="op-input op-select" id="op-municipio">
+            <option value="">— Seleccionar —</option>
+            <option value="La Lisa">La Lisa (3-4$)</option>
+            <option value="La Coronela">La Coronela (0-1$)</option>
+            <option value="Playa">Playa (5-6$)</option>
+            <option value="Marianao">Marianao (5-6$)</option>
+            <option value="Plaza">Plaza (7-8$)</option>
+            <option value="Boyeros">Boyeros (7-8$)</option>
+            <option value="Cerro">Cerro (7-8$)</option>
+            <option value="Centro Habana">Centro Habana (7-8$)</option>
+            <option value="Habana Vieja">Habana Vieja (7-8$)</option>
+            <option value="10 de Octubre">10 de Octubre (8-9$)</option>
+            <option value="Arroyo Naranjo">Arroyo Naranjo (8-9$)</option>
+            <option value="Regla">Regla (10-11$)</option>
+            <option value="Guanabacoa">Guanabacoa (12-13$)</option>
+            <option value="Cotorro">Cotorro (12-13$)</option>
+            <option value="Habana del Este">Habana del Este (12-13$)</option>
+          </select>
+        </div>
+        <div class="op-field">
+          <label class="op-label">Mensajero asignado</label>
+          <select class="op-input op-select" id="op-mensajero">
+            <option value="">— Sin asignar —</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Estado</label>
-      <select class="form-input" id="r-estado">
-        <option value="pendiente">Pendiente</option>
-        <option value="en_camino">En camino</option>
-        <option value="entregada">Entregada</option>
-        <option value="devuelta">Devuelta</option>
-      </select>
+
+    <!-- MONTOS -->
+    <div class="op-card">
+      <div class="op-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Montos
+      </div>
+      <div class="op-g3">
+        <div class="op-field">
+          <label class="op-label">Cantidad a depositar ($)</label>
+          <input type="number" class="op-input" id="op-depositar" placeholder="0.00" step="0.01" oninput="calcularOp()">
+        </div>
+        <div class="op-field">
+          <label class="op-label">Entrega ($)</label>
+          <input type="number" class="op-input" id="op-entrega" placeholder="0.00" step="0.01" oninput="calcularOp()">
+        </div>
+        <div class="op-field">
+          <label class="op-label">Costo mensajería ($)</label>
+          <input type="number" class="op-input" id="op-mensajeria" placeholder="0.00" step="0.01" oninput="calcularOp()">
+        </div>
+      </div>
+      <div class="op-divider">
+        <svg style="width:11px;height:11px;opacity:.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Resultados calculados
+      </div>
+      <div class="op-g3">
+        <div>
+          <div class="op-result-label">Ganancia ($)</div>
+          <div class="op-result" id="op-r-ganancia">—</div>
+        </div>
+        <div>
+          <div class="op-result-label">Ganado c/u ($)</div>
+          <div class="op-result" id="op-r-ganado">—</div>
+        </div>
+        <div>
+          <div class="op-result-label">Fecha</div>
+          <input type="date" class="op-input" id="op-fecha">
+        </div>
+      </div>
+      <div class="op-g2" style="margin-top:10px">
+        <div>
+          <div class="op-result-label">Hora acordada</div>
+          <input type="time" class="op-input" id="op-hora">
+        </div>
+        <div class="op-field">
+          <label class="op-label">Estado</label>
+          <select class="op-input op-select" id="op-estado">
+            <option value="pendiente">Pendiente</option>
+            <option value="en_camino">En camino</option>
+            <option value="entregada">Entregada</option>
+            <option value="devuelta">Devuelta</option>
+          </select>
+        </div>
+      </div>
+      <div class="op-field" style="margin-top:10px">
+        <label class="op-label">Notas</label>
+        <input type="text" class="op-input" id="op-notas" placeholder="Instrucciones especiales...">
+      </div>
     </div>
-    <button class="btn btn-primary" onclick="saveEnvio()">Guardar Remesa</button>
+
+    <button class="btn btn-primary" onclick="saveEnvio()" style="margin-top:0.5rem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="width:16px;height:16px;display:inline;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+      Guardar operación
+    </button>
+
+    <!-- RESUMEN PARA MENSAJERO -->
+    <div id="mensajero-resumen" style="display:none;margin-top:1rem">
+      <div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.75rem">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--success);margin-bottom:0.5rem;display:flex;align-items:center;gap:5px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg>
+          Operación guardada y enviada a Sheets
+        </div>
+      </div>
+      <div style="background:var(--primary-light);border:1.5px solid #bfdbfe;border-radius:var(--radius-sm);padding:0.875rem;margin-bottom:0.5rem">
+        <div style="font-size:0.7rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:0.5rem">📱 Mensaje para el mensajero</div>
+        <div id="mensajero-resumen-texto" style="font-family:monospace;font-size:0.8rem;line-height:1.7;color:var(--gray-800);white-space:pre-wrap"></div>
+      </div>
+      <button class="btn btn-success" onclick="copiarMensajeroResumen()" style="width:100%;padding:0.75rem;font-size:0.9rem">
+        📲 Copiar para WhatsApp
+      </button>
+    </div>
   </div>
 </div>
 
@@ -459,6 +624,125 @@
   </div>
 </div>
 
+<!-- MODAL CLIENTE NUEVO -->
+<div class="modal-backdrop" id="modal-cliente">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-cliente')">×</span>
+    <div class="modal-title" id="cliente-modal-title">Nuevo Cliente</div>
+    <input type="hidden" id="cliente-edit-id">
+
+    <div class="op-card">
+      <div class="op-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Datos personales
+      </div>
+      <div class="op-field" style="margin-bottom:10px">
+        <label class="op-label">Nombre completo *</label>
+        <input type="text" class="op-input" id="c-nombre" placeholder="Nombre y apellidos">
+      </div>
+      <div class="op-g2">
+        <div class="op-field">
+          <label class="op-label">Teléfono</label>
+          <input type="tel" class="op-input" id="c-telefono" placeholder="+53... / +1...">
+        </div>
+        <div class="op-field">
+          <label class="op-label">Email</label>
+          <input type="email" class="op-input" id="c-email" placeholder="correo@...">
+        </div>
+      </div>
+    </div>
+
+    <div class="op-card">
+      <div class="op-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Ubicación
+      </div>
+      <div class="op-field" style="margin-bottom:10px">
+        <label class="op-label">Dirección</label>
+        <input type="text" class="op-input" id="c-direccion" placeholder="Calle, número, municipio...">
+      </div>
+      <div class="op-g2">
+        <div class="op-field">
+          <label class="op-label">Municipio</label>
+          <select class="op-input op-select" id="c-municipio">
+            <option value="">— Seleccionar —</option>
+            <option value="La Lisa">La Lisa</option>
+            <option value="La Coronela">La Coronela</option>
+            <option value="Playa">Playa</option>
+            <option value="Marianao">Marianao</option>
+            <option value="Plaza">Plaza</option>
+            <option value="Boyeros">Boyeros</option>
+            <option value="Cerro">Cerro</option>
+            <option value="Centro Habana">Centro Habana</option>
+            <option value="Habana Vieja">Habana Vieja</option>
+            <option value="10 de Octubre">10 de Octubre</option>
+            <option value="Arroyo Naranjo">Arroyo Naranjo</option>
+            <option value="Regla">Regla</option>
+            <option value="Guanabacoa">Guanabacoa</option>
+            <option value="Cotorro">Cotorro</option>
+            <option value="Habana del Este">Habana del Este</option>
+            <option value="USA">USA</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="op-field">
+          <label class="op-label">Reside en</label>
+          <select class="op-input op-select" id="c-reside">
+            <option value="Cuba">Cuba</option>
+            <option value="EeUu">EeUu</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="op-card">
+      <div class="op-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Referencia y canal
+      </div>
+      <div class="op-g2">
+        <div class="op-field">
+          <label class="op-label">Con quién tiene contacto</label>
+          <input type="text" class="op-input" id="c-contacto" placeholder="Nombre del referido...">
+        </div>
+        <div class="op-field">
+          <label class="op-label">Canal</label>
+          <select class="op-input op-select" id="c-canal">
+            <option value="">— Seleccionar —</option>
+            <option value="Antiguos">Antiguos</option>
+            <option value="Revolico">Revolico</option>
+            <option value="Conocido">Conocido</option>
+            <option value="Referido">Referido</option>
+            <option value="Recomendado">Recomendado</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="op-field" style="margin-top:10px">
+        <label class="op-label">Decisión de compra</label>
+        <div style="display:flex;gap:1rem;padding:8px 0">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="radio" name="c-decision" id="c-decision-si" value="si"> Sí compra
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="radio" name="c-decision" id="c-decision-no" value="no" checked> No compra
+          </label>
+        </div>
+      </div>
+      <div class="op-field" style="margin-top:6px">
+        <label class="op-label">Nota</label>
+        <input type="text" class="op-input" id="c-nota" placeholder="Observaciones...">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveCliente()" style="margin-top:0.5rem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="width:16px;height:16px;display:inline;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+      Guardar cliente
+    </button>
+  </div>
+</div>
+
 <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
 
 <script>
@@ -466,7 +750,7 @@ const DB_KEY = 'envios_db';
 const AUTH_KEY = 'envios_auth';
 const GS_KEY = 'envios_gs_url';
 
-let db = { envios: [], mensajeros: [], pagos: [] };
+let db = { envios: [], mensajeros: [], pagos: [], clientes: [] };
 let currentFilter = { envios: 'todas', entregas: 'pendiente' };
 
 function saveDB() {
@@ -539,6 +823,9 @@ function initApp() {
   renderMensajeros();
   populateMensajeroSelects();
   document.getElementById('gs-url').value = localStorage.getItem(GS_KEY)||'';
+  refreshOpClientes();
+  renderClientes();
+  loadClientesFromSheets();
   updateSyncDot(true);
   window.addEventListener('online', () => { document.getElementById('offline-banner').style.display='none'; updateSyncDot(true); });
   window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display='block'; updateSyncDot(false); });
@@ -564,51 +851,87 @@ document.querySelectorAll('.modal-backdrop').forEach(m => {
 // REMESAS
 function saveEnvio() {
   const id = document.getElementById('envio-edit-id').value;
+  const usa = document.getElementById('op-val-usa').value || document.getElementById('op-search-usa').value.trim();
+  const cuba = document.getElementById('op-val-cuba').value || document.getElementById('op-search-cuba').value.trim();
+  const dep = parseFloat(document.getElementById('op-depositar').value)||0;
+  const ent = parseFloat(document.getElementById('op-entrega').value)||0;
+  const men = parseFloat(document.getElementById('op-mensajeria').value)||0;
+  const gan = dep - ent - men;
   const obj = {
-    id: id||uid(), cliente: document.getElementById('r-cliente').value.trim(),
-    telefono: document.getElementById('r-telefono').value.trim(),
-    direccion: document.getElementById('r-direccion').value.trim(),
-    importe: parseFloat(document.getElementById('r-importe').value)||0,
-    moneda: document.getElementById('r-moneda').value,
-    fecha: document.getElementById('r-fecha').value,
-    hora: document.getElementById('r-hora').value,
-    mensajero: document.getElementById('r-mensajero').value,
-    notas: document.getElementById('r-notas').value.trim(),
-    estado: document.getElementById('r-estado').value,
+    id: id||uid(),
+    cliente: usa,
+    cliente_cuba: cuba,
+    telefono: document.getElementById('op-telefono').value.trim(),
+    direccion: document.getElementById('op-direccion').value.trim(),
+    municipio: document.getElementById('op-municipio').value,
+    importe: dep,
+    entrega: ent,
+    costo_mens: men,
+    ganancia: parseFloat(gan.toFixed(2)),
+    ganado_cu: parseFloat((gan/2).toFixed(2)),
+    tipo: document.getElementById('op-tipo').value,
+    cobro: document.getElementById('op-cobro').value,
+    dia: document.getElementById('op-dia').value,
+    fecha: document.getElementById('op-fecha').value,
+    hora: document.getElementById('op-hora').value,
+    mensajero: document.getElementById('op-mensajero').value,
+    notas: document.getElementById('op-notas').value.trim(),
+    estado: document.getElementById('op-estado').value,
+    revisado: document.getElementById('op-chk').classList.contains('on'),
     creado: id ? (db.envios.find(r=>r.id===id)?.creado||today()) : today()
   };
-  if (!obj.cliente||!obj.direccion||!obj.importe) { alert('Cliente, dirección e importe son obligatorios.'); return; }
+  if (!obj.cliente || !obj.importe) { alert('El cliente en EEUU y la cantidad son obligatorios.'); return; }
   if (id) { const i=db.envios.findIndex(r=>r.id===id); db.envios[i]=obj; }
   else db.envios.unshift(obj);
-  saveDB(); closeModal('modal-envio'); clearEnvioForm();
-  renderEnvíos(); renderEntregas();
+  saveDB();
+  // Generate messenger summary BEFORE closing modal
+  generarResumenMensajero(obj);
+  closeModal('modal-envio'); clearEnvioForm();
+  refreshOpClientes(); renderEnvios(); renderEntregas();
+  // Show summary in main content area
+  mostrarUltimoResumen(window._lastMensajeroMsg);
+  // Enviar operación directamente a hoja del mes en Google Sheets
+  saveOperacionToSheets(obj);
 }
 function clearEnvioForm() {
-  ['r-cliente','r-telefono','r-direccion','r-importe','r-notas','r-fecha','r-hora','r-costo-mens'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('r-tipo').value='EeUu→Cuba';
-  document.getElementById('r-municipio').value='';
-  document.getElementById('r-estado').value='pendiente';
-  document.getElementById('r-mensajero').value='';
+  ['op-depositar','op-entrega','op-mensajeria','op-dia','op-telefono','op-direccion','op-notas','op-fecha','op-hora'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('op-tipo').value='EeUu → Cuba';
+  document.getElementById('op-cobro').value='EeUu';
+  document.getElementById('op-municipio').value='';
+  document.getElementById('op-mensajero').value='';
+  document.getElementById('op-estado').value='pendiente';
+  ['op-search-usa','op-search-cuba','op-val-usa','op-val-cuba'].forEach(id=>document.getElementById(id).value='');
+  ['op-r-ganancia','op-r-ganado'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('op-chk').classList.remove('on');
+  document.getElementById('op-chk-lbl').textContent='No revisado';
   document.getElementById('envio-edit-id').value='';
-  document.getElementById('envio-modal-title').textContent='Nuevo Envío';
+  document.getElementById('envio-modal-title').textContent='Nueva Operación';
 }
 function editEnvio(id) {
   const r=db.envios.find(x=>x.id===id); if(!r) return;
   document.getElementById('envio-edit-id').value=r.id;
-  document.getElementById('r-cliente').value=r.cliente;
-  document.getElementById('r-telefono').value=r.telefono||'';
-  document.getElementById('r-direccion').value=r.direccion;
-  document.getElementById('r-importe').value=r.importe;
-  document.getElementById('r-moneda').value=r.moneda||'EUR';
-  document.getElementById('r-fecha').value=r.fecha||'';
-  document.getElementById('r-hora').value=r.hora||'';
-  document.getElementById('r-mensajero').value=r.mensajero||'';
-  document.getElementById('r-notas').value=r.notas||'';
-  document.getElementById('r-tipo').value=r.tipo||'EeUu→Cuba';
-  document.getElementById('r-municipio').value=r.municipio||'';
-  document.getElementById('r-costo-mens').value=r.costo_mens||'';
-  document.getElementById('r-estado').value=r.estado;
-  document.getElementById('envio-modal-title').textContent='Editar Envío';
+  document.getElementById('op-search-usa').value=r.cliente||'';
+  document.getElementById('op-val-usa').value=r.cliente||'';
+  document.getElementById('op-search-cuba').value=r.cliente_cuba||'';
+  document.getElementById('op-val-cuba').value=r.cliente_cuba||'';
+  document.getElementById('op-telefono').value=r.telefono||'';
+  document.getElementById('op-direccion').value=r.direccion||'';
+  document.getElementById('op-municipio').value=r.municipio||'';
+  document.getElementById('op-depositar').value=r.importe||'';
+  document.getElementById('op-entrega').value=r.entrega||'';
+  document.getElementById('op-mensajeria').value=r.costo_mens||'';
+  document.getElementById('op-tipo').value=r.tipo||'EeUu → Cuba';
+  document.getElementById('op-cobro').value=r.cobro||'EeUu';
+  document.getElementById('op-dia').value=r.dia||'';
+  document.getElementById('op-fecha').value=r.fecha||'';
+  document.getElementById('op-hora').value=r.hora||'';
+  document.getElementById('op-mensajero').value=r.mensajero||'';
+  document.getElementById('op-notas').value=r.notas||'';
+  document.getElementById('op-estado').value=r.estado||'pendiente';
+  if(r.revisado) document.getElementById('op-chk').classList.add('on');
+  document.getElementById('op-chk-lbl').textContent=r.revisado?'Revisado':'No revisado';
+  document.getElementById('envio-modal-title').textContent='Editar Operación';
+  calcularOp();
   openModal('modal-envio');
 }
 function deleteEnvio(id) {
@@ -657,7 +980,7 @@ function renderEnvíos() {
       </div>
       <div class="item-detail">
         📍 ${r.direccion}${r.municipio?' · '+r.municipio:''}<br>
-        💰 ${fmtMoney(r.importe)} ${r.moneda!=='EUR'?'('+r.moneda+')':''} ${r.costo_mens?'· Mens: '+fmtMoney(r.costo_mens):''}<br>
+        💰 ${fmtMoney(r.importe)} ${r.moneda!=='EUR'?'('+r.moneda+')':''} ${r.costo_mens?'· Mens: $'+r.costo_mens:''}<br>
         🔄 ${r.tipo||'EeUu→Cuba'} · 🛵 ${men(r.mensajero)}<br>
         ${r.fecha?'📅 '+fmtDate(r.fecha)+(r.hora?' a las '+r.hora:'')+'<br>':''}
         ${r.notas?'📝 '+r.notas:''}
@@ -791,8 +1114,341 @@ function editMensajero(id){
   openModal('modal-mensajero');
 }
 
+// CLIENTES
+var SHEETS_CLIENTES = []; // Lista cargada desde Google Sheets
+var currentClienteFilter = 'todos';
+
+function loadClientesFromSheets() {
+  const url = localStorage.getItem(GS_KEY);
+  if (!url || !navigator.onLine) return;
+  const fullUrl = url + '?action=getClientes';
+  fetch(fullUrl, { method: 'GET', mode: 'cors' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.clientes) {
+        SHEETS_CLIENTES = data.clientes;
+        // Merge with local clients (avoid duplicates by name)
+        const sheetsNames = new Set(SHEETS_CLIENTES.map(c => c.nombre?.toLowerCase()));
+        const localOnly = db.clientes.filter(c => !sheetsNames.has(c.nombre?.toLowerCase()));
+        // Combined list for dropdown
+        OP_CLIENTES = [...new Set([
+          ...SHEETS_CLIENTES.map(c => c.nombre).filter(Boolean),
+          ...db.clientes.map(c => c.nombre).filter(Boolean)
+        ])].sort();
+      }
+    })
+    .catch(() => {
+      // Fallback to local clients only
+      refreshOpClientes();
+    });
+}
+
+function saveCliente() {
+  const id = document.getElementById('cliente-edit-id').value;
+  const nombre = document.getElementById('c-nombre').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  const obj = {
+    id: id || uid(),
+    nombre,
+    telefono: document.getElementById('c-telefono').value.trim(),
+    email: document.getElementById('c-email').value.trim(),
+    direccion: document.getElementById('c-direccion').value.trim(),
+    municipio: document.getElementById('c-municipio').value,
+    reside: document.getElementById('c-reside').value,
+    contacto: document.getElementById('c-contacto').value.trim(),
+    canal: document.getElementById('c-canal').value,
+    decision: document.querySelector('input[name="c-decision"]:checked')?.value || 'no',
+    nota: document.getElementById('c-nota').value.trim(),
+    creado: id ? (db.clientes.find(c => c.id === id)?.creado || today()) : today()
+  };
+  if (id) { const i = db.clientes.findIndex(c => c.id === id); db.clientes[i] = obj; }
+  else db.clientes.unshift(obj);
+  saveDB();
+  refreshOpClientes();
+  closeModal('modal-cliente');
+  clearClienteForm();
+  renderClientes();
+  // Save to Google Sheets immediately
+  saveClienteToSheets(obj);
+}
+
+function generarResumenMensajero(op) {
+  const mensajeroNombre = db.mensajeros.find(m => m.id === op.mensajero)?.nombre || op.mensajero || 'Sin asignar';
+  const clienteCuba = op.cliente_cuba || op.cliente || '—';
+  const tel = op.telefono || '—';
+  const dir = (op.direccion || '—') + (op.municipio ? ', ' + op.municipio : '');
+  const entrega = op.entrega ? '$' + parseFloat(op.entrega).toFixed(2) : '$' + parseFloat(op.importe||0).toFixed(2);
+  const costoMens = op.costo_mens ? '$' + parseFloat(op.costo_mens).toFixed(2) : '—';
+  const fecha = op.fecha ? fmtDate(op.fecha) : today();
+  const hora = op.hora || '—';
+
+  const txt =
+`🛵 ENTREGA PARA ${mensajeroNombre.toUpperCase()}
+${'─'.repeat(26)}
+👤 Cliente: ${clienteCuba}
+📱 Teléfono: ${tel}
+📍 Dirección: ${dir}
+💰 Entregar: ${entrega}
+🔧 Tu costo: ${costoMens}
+📅 Fecha: ${fecha}
+⏰ Hora: ${hora}
+${'─'.repeat(26)}
+Gracias 🙏`;
+
+  // Show the summary in the modal before it closes
+  const resDiv = document.getElementById('mensajero-resumen');
+  const resTxt = document.getElementById('mensajero-resumen-texto');
+  if (resDiv && resTxt) {
+    resTxt.textContent = txt;
+    resDiv.style.display = 'block';
+    // Store for copy button
+    window._lastMensajeroMsg = txt;
+  }
+}
+
+function copiarMensajeroResumen() {
+  const txt = window._lastMensajeroMsg || '';
+  navigator.clipboard.writeText(txt).then(() => alert('¡Copiado! Pégalo en WhatsApp.')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+    alert('¡Copiado!');
+  });
+}
+
+function mostrarUltimoResumen(txt) {
+  if (!txt) return;
+  const div = document.getElementById('ultimo-resumen');
+  const pre = document.getElementById('ultimo-resumen-texto');
+  if (div && pre) {
+    pre.textContent = txt;
+    div.style.display = 'block';
+    // Scroll to top of content
+    div.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function copiarUltimoResumen() {
+  const txt = window._lastMensajeroMsg || '';
+  navigator.clipboard.writeText(txt).then(() => {
+    alert('¡Copiado! Pégalo en WhatsApp.');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+    alert('¡Copiado!');
+  });
+}
+
+function saveOperacionToSheets(op) {
+  const url = localStorage.getItem(GS_KEY);
+  if (!url || !navigator.onLine) return;
+  const mensajeroNombre = db.mensajeros.find(m => m.id === op.mensajero)?.nombre || op.mensajero || '';
+  const payload = encodeURIComponent(JSON.stringify({
+    action: 'saveOperacion',
+    operacion: {
+      revisado_r: false,
+      revisado_daniela: op.revisado || false,
+      dia: op.dia || new Date().getDate(),
+      tipo: op.tipo || 'EeUu->Cuba',
+      cobro: op.cobro || 'EeUu',
+      cliente_eeuu: op.cliente || '',
+      cliente_cuba: op.cliente_cuba || '',
+      depositar: op.importe || 0,
+      entrega: op.entrega || 0,
+      costo_mens: op.costo_mens || 0,
+      mensajero: mensajeroNombre
+    }
+  }));
+  fetch(url + '?data=' + payload, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+}
+
+function saveClienteToSheets(cliente) {
+  const url = localStorage.getItem(GS_KEY);
+  if (!url || !navigator.onLine) return;
+  const payload = encodeURIComponent(JSON.stringify({ action: 'saveCliente', cliente }));
+  fetch(url + '?data=' + payload, { method: 'GET', mode: 'no-cors' })
+    .catch(() => {});
+}
+
+function clearClienteForm() {
+  ['c-nombre','c-telefono','c-email','c-direccion','c-contacto','c-nota'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-municipio').value = '';
+  document.getElementById('c-reside').value = 'Cuba';
+  document.getElementById('c-canal').value = '';
+  document.getElementById('c-decision-no').checked = true;
+  document.getElementById('cliente-edit-id').value = '';
+  document.getElementById('cliente-modal-title').textContent = 'Nuevo Cliente';
+}
+
+function editCliente(id) {
+  const c = db.clientes.find(x => x.id === id); if (!c) return;
+  document.getElementById('cliente-edit-id').value = c.id;
+  document.getElementById('c-nombre').value = c.nombre || '';
+  document.getElementById('c-telefono').value = c.telefono || '';
+  document.getElementById('c-email').value = c.email || '';
+  document.getElementById('c-direccion').value = c.direccion || '';
+  document.getElementById('c-municipio').value = c.municipio || '';
+  document.getElementById('c-reside').value = c.reside || 'Cuba';
+  document.getElementById('c-contacto').value = c.contacto || '';
+  document.getElementById('c-canal').value = c.canal || '';
+  if (c.decision === 'si') document.getElementById('c-decision-si').checked = true;
+  else document.getElementById('c-decision-no').checked = true;
+  document.getElementById('c-nota').value = c.nota || '';
+  document.getElementById('cliente-modal-title').textContent = 'Editar Cliente';
+  openModal('modal-cliente');
+}
+
+function deleteCliente(id) {
+  if (!confirm('¿Eliminar este cliente?')) return;
+  db.clientes = db.clientes.filter(c => c.id !== id);
+  saveDB(); refreshOpClientes(); renderClientes();
+}
+
+function filterClientes(f, btn) {
+  currentClienteFilter = f;
+  document.querySelectorAll('#sec-clientes .tab-mini').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderClientes();
+}
+
+function renderClientes() {
+  // Combine Sheets clients + local clients, deduplicate by name
+  const sheetsSet = new Set(SHEETS_CLIENTES.map(c => c.nombre?.toLowerCase().trim()));
+  // Local clients not in Sheets
+  const localExtra = db.clientes.filter(c => !sheetsSet.has(c.nombre?.toLowerCase().trim()));
+  // All for display: Sheets first, then local-only
+  let all = [
+    ...SHEETS_CLIENTES.map(c => ({ ...c, fromSheets: true })),
+    ...localExtra.map(c => ({ ...c, fromSheets: false }))
+  ];
+  const q = (document.getElementById('clientes-search')?.value || '').toLowerCase();
+  if (q) all = all.filter(c =>
+    (c.nombre||'').toLowerCase().includes(q) ||
+    (c.telefono||'').toLowerCase().includes(q) ||
+    (c.municipio||'').toLowerCase().includes(q) ||
+    (c.contacto||'').toLowerCase().includes(q)
+  );
+  if (currentClienteFilter === 'Cuba') all = all.filter(c => (c.reside||'').toLowerCase().includes('cuba'));
+  if (currentClienteFilter === 'EeUu') all = all.filter(c => (c.reside||'').toLowerCase().includes('eeuu') || (c.reside||'').toLowerCase().includes('usa'));
+  const div = document.getElementById('list-clientes');
+  if (!all.length) {
+    div.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No hay clientes que coincidan</div></div>`;
+    return;
+  }
+  div.innerHTML = all.map(c => `
+    <div class="item" style="border-left-color:${c.fromSheets?'var(--primary)':'var(--success)'}">
+      <div class="item-header">
+        <div class="item-name">${c.nombre}</div>
+        <span class="badge ${c.reside==='Cuba'||c.reside==='cuba'?'badge-pending':'badge-info'}">${c.reside||'—'}</span>
+      </div>
+      <div class="item-detail">
+        ${c.telefono?'📱 '+c.telefono+'<br>':''}
+        ${c.municipio?'📍 '+c.municipio+(c.direccion?' · '+c.direccion:'')+'<br>':''}
+        ${c.contacto?'🤝 '+c.contacto:''}
+        ${c.canal?'<span class="badge badge-info" style="font-size:0.65rem;margin-left:4px">'+c.canal+'</span>':''}
+        ${c.nota?'<br>📝 '+c.nota:''}
+        ${c.fromSheets?'':'<br><span style="font-size:0.7rem;color:var(--success)">✓ Guardado localmente</span>'}
+      </div>
+      ${!c.fromSheets?`<div class="item-actions">
+        <button class="btn btn-outline btn-sm" onclick="editCliente('${c.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCliente('${c.id}')">Borrar</button>
+      </div>`:''}
+    </div>
+  `).join('');
+}
+
+// OP FORM HELPERS
+function toggleOpChk() {
+  const box=document.getElementById('op-chk');
+  const lbl=document.getElementById('op-chk-lbl');
+  box.classList.toggle('on');
+  lbl.textContent=box.classList.contains('on')?'Revisado':'No revisado';
+}
+function calcularOp() {
+  const dep=parseFloat(document.getElementById('op-depositar').value)||0;
+  const ent=parseFloat(document.getElementById('op-entrega').value)||0;
+  const men=parseFloat(document.getElementById('op-mensajeria').value)||0;
+  const gan=dep-ent-men;
+  document.getElementById('op-r-ganancia').textContent='$'+gan.toFixed(2);
+  document.getElementById('op-r-ganado').textContent='$'+(gan/2).toFixed(2);
+}
+var OP_CLIENTES = [];
+function buildOpDD(id) {
+  const dd=document.getElementById('op-dd-'+id);
+  dd.innerHTML='';
+  // Always show full combined list: Sheets clients + local clients, sorted
+  const allNames = getAllClientNames();
+  allNames.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='op-dd-item';
+    d.textContent=c;
+    d.onmousedown=e=>{e.preventDefault();selectOpItem(id,c);};
+    dd.appendChild(d);
+  });
+  if(!allNames.length){
+    const emp=document.createElement('div');
+    emp.className='op-dd-empty';
+    emp.textContent='Sin conexión — los clientes cargarán al sincronizar';
+    dd.appendChild(emp);
+  }
+}
+
+function getAllClientNames() {
+  const fromSheets = SHEETS_CLIENTES.map(c=>c.nombre).filter(Boolean);
+  const fromLocal = db.clientes.map(c=>c.nombre).filter(Boolean);
+  return [...new Set([...fromSheets, ...fromLocal])].sort((a,b)=>a.localeCompare(b,'es'));
+}
+function filterOpDD(id) {
+  const q=document.getElementById('op-search-'+id).value.toLowerCase().trim();
+  const dd=document.getElementById('op-dd-'+id);
+  dd.classList.add('open');
+  // Rebuild filtered list from source (not from DOM) for accuracy
+  const allNames = getAllClientNames();
+  const filtered = q ? allNames.filter(n=>n.toLowerCase().includes(q)) : allNames;
+  dd.innerHTML='';
+  if(filtered.length===0){
+    const emp=document.createElement('div');
+    emp.className='op-dd-empty';
+    emp.textContent=q?'Sin resultados — puedes escribir el nombre directamente':'No hay clientes';
+    dd.appendChild(emp);
+    return;
+  }
+  filtered.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='op-dd-item';
+    // Bold the matching part
+    if(q){
+      const idx=c.toLowerCase().indexOf(q);
+      d.innerHTML=c.slice(0,idx)+'<strong>'+c.slice(idx,idx+q.length)+'</strong>'+c.slice(idx+q.length);
+    } else {
+      d.textContent=c;
+    }
+    d.onmousedown=e=>{e.preventDefault();selectOpItem(id,c);};
+    dd.appendChild(d);
+  });
+}
+function openOpDD(id){buildOpDD(id);filterOpDD(id);}
+function closeOpDD(id){setTimeout(()=>document.getElementById('op-dd-'+id).classList.remove('open'),160);}
+function selectOpItem(id,val){
+  document.getElementById('op-search-'+id).value=val;
+  document.getElementById('op-val-'+id).value=val;
+  document.getElementById('op-dd-'+id).classList.remove('open');
+}
+function refreshOpClientes(){
+  // OP_CLIENTES is now always built from getAllClientNames() dynamically
+  // This function kept for compatibility — just combine local sources
+  const names=new Set();
+  db.clientes.forEach(c=>{if(c.nombre)names.add(c.nombre);});
+  db.envios.forEach(r=>{if(r.cliente)names.add(r.cliente);if(r.cliente_cuba)names.add(r.cliente_cuba);});
+  OP_CLIENTES=Array.from(names).sort((a,b)=>a.localeCompare(b,'es'));
+}
+
 // SELECTS
 function populateMensajeroSelects(){
+  const opts=db.mensajeros.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
+  const opMens=document.getElementById('op-mensajero');
+  if(opMens) opMens.innerHTML='<option value="">— Sin asignar —</option>'+opts;
   const opts=db.mensajeros.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
   document.getElementById('r-mensajero').innerHTML='<option value="">— Sin asignar —</option>'+opts;
   document.getElementById('resumen-mensajero').innerHTML='<option value="">— Todos —</option>'+opts;
@@ -893,198 +1549,288 @@ function handleImport(e){
 // APPS SCRIPT CODE
 function showScript(){
   const code=`// =====================================================================
-// SCRIPT PARA GESTIÓN DE REMESAS - Rafael Garrido
-// Pega este código en Google Apps Script de tu hoja "Envíos"
-// Extensiones → Apps Script → borra todo → pega esto → Guardar → Publicar
+// SCRIPT PARA MI NEGOCIO - Google Apps Script
+// Abrir desde tu hoja "Remesas" → Extensiones → Apps Script
 // =====================================================================
 
-function doPost(e) {
+function doGet(e) {
   try {
-    var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var action = e.parameter.action || '';
+    var raw = decodeURIComponent(e.parameter.data || '');
 
-    if (data.action === 'sync') {
-      syncEnvíos(ss, data.data.envios || []);
-      syncMensajeros(ss, data.data.mensajeros || []);
-      syncPagos(ss, data.data.pagos || []);
-      return jsonResponse({ ok: true, message: 'Sincronizado correctamente' });
+    // ── Devolver lista de clientes desde hoja Clientes ──────────────
+    if (action === 'getClientes') {
+      var clientes = getClientesFromSheet(ss);
+      return jsonResponse({ ok: true, clientes: clientes });
     }
 
-    if (data.action === 'nueva_operacion') {
-      appendOperacion(ss, data.operacion);
-      return jsonResponse({ ok: true, message: 'Operación añadida' });
+    // ── Procesar data ───────────────────────────────────────────────
+    if (raw) {
+      var data = JSON.parse(raw);
+
+      // Guardar cliente nuevo en hoja Clientes
+      if (data.action === 'saveCliente') {
+        appendCliente(ss, data.cliente);
+        return jsonResponse({ ok: true });
+      }
+
+      // Guardar operación nueva en hoja del mes actual (Junio 2026, etc.)
+      if (data.action === 'saveOperacion') {
+        appendOperacion(ss, data.operacion);
+        return jsonResponse({ ok: true });
+      }
+
+      // Sincronización completa
+      if (data.action === 'sync') {
+        syncEnvios(ss, data.data.envios || []);
+        syncMensajeros(ss, data.data.mensajeros || []);
+        syncPagos(ss, data.data.pagos || []);
+        return jsonResponse({ ok: true });
+      }
     }
 
-    return jsonResponse({ ok: false, message: 'Acción no reconocida' });
+    return jsonResponse({ ok: true, message: 'Script activo' });
 
   } catch (err) {
     return jsonResponse({ ok: false, error: err.toString() });
   }
 }
 
-function doGet(e) {
-  return jsonResponse({ ok: true, message: 'Script activo y funcionando' });
+function doPost(e) {
+  return doGet(e);
 }
 
-// -----------------------------------------------------------------------
-// SINCRONIZAR REMESAS → Escribe en hoja "App_Envíos" (nueva, no toca las tuyas)
-// -----------------------------------------------------------------------
-function syncEnvíos(ss, envios) {
-  var sheetName = 'App_Envíos';
-  var sh = ss.getSheetByName(sheetName);
-  if (!sh) sh = ss.insertSheet(sheetName);
-  sh.clearContents();
+// ── Leer hoja Clientes ─────────────────────────────────────────────
+function getClientesFromSheet(ss) {
+  var sh = ss.getSheetByName('Clientes');
+  if (!sh) return [];
+  var data = sh.getDataRange().getValues();
+  if (data.length < 2) return [];
 
-  // Cabecera que coincide con el formato de tu libro
+  // Buscar fila de cabecera (la que contiene "Nombre completo")
+  var headerRow = 0;
+  for (var i = 0; i < Math.min(5, data.length); i++) {
+    for (var j = 0; j < data[i].length; j++) {
+      if ((data[i][j] + '').toLowerCase().includes('nombre')) {
+        headerRow = i;
+        break;
+      }
+    }
+  }
+
+  var headers = data[headerRow].map(function(h) { return (h + '').toLowerCase().trim(); });
+  var iNombre   = findCol(headers, ['nombre completo', 'nombre']);
+  var iTel      = findCol(headers, ['telefono', 'teléfono', 'tel']);
+  var iEmail    = findCol(headers, ['email', 'correo']);
+  var iDir      = findCol(headers, ['direccion', 'dirección']);
+  var iMun      = findCol(headers, ['municipio']);
+  var iReside   = findCol(headers, ['reside']);
+  var iContacto = findCol(headers, ['con quien', 'contacto']);
+  var iDecision = findCol(headers, ['decision', 'decisión']);
+  var iCanal    = findCol(headers, ['canal']);
+  var iNota     = findCol(headers, ['nota']);
+
+  var clientes = [];
+  for (var r = headerRow + 1; r < data.length; r++) {
+    var row = data[r];
+    var nombre = iNombre >= 0 ? (row[iNombre] + '').trim() : '';
+    if (!nombre) continue;
+    clientes.push({
+      nombre:    nombre,
+      telefono:  iTel >= 0      ? (row[iTel] + '').trim()      : '',
+      email:     iEmail >= 0    ? (row[iEmail] + '').trim()     : '',
+      direccion: iDir >= 0      ? (row[iDir] + '').trim()       : '',
+      municipio: iMun >= 0      ? (row[iMun] + '').trim()       : '',
+      reside:    iReside >= 0   ? (row[iReside] + '').trim()    : '',
+      contacto:  iContacto >= 0 ? (row[iContacto] + '').trim()  : '',
+      decision:  iDecision >= 0 ? (row[iDecision] + '').trim()  : '',
+      canal:     iCanal >= 0    ? (row[iCanal] + '').trim()     : '',
+      nota:      iNota >= 0     ? (row[iNota] + '').trim()      : '',
+      fromSheets: true
+    });
+  }
+  return clientes;
+}
+
+// ── Añadir cliente nuevo a hoja Clientes ──────────────────────────
+function appendCliente(ss, c) {
+  var sh = ss.getSheetByName('Clientes');
+  if (!sh) sh = ss.insertSheet('Clientes');
+
+  // Si la hoja está vacía, crear cabecera igual a la tuya
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(['N°', 'Nombre completo', 'Telefono', 'Email',
+      'Direccion', 'Municipio', 'Reside', 'Con quien tiene contacto',
+      'Decision de compra', 'Canal', 'Nota', '']);
+    formatearCabecera(sh);
+  }
+
+  var nextN = sh.getLastRow(); // Número correlativo
   sh.appendRow([
-    'ID', 'Cliente', 'Teléfono', 'Dirección', 'Municipio',
-    'Importe Cobrado', 'Importe Entregado', 'Moneda',
-    'Fecha', 'Hora', 'Mensajero', 'Tipo',
-    'Ganancia', 'Costo Mens', 'Notas', 'Estado', 'Creado'
+    nextN,
+    c.nombre    || '',
+    c.telefono  || '',
+    c.email     || '',
+    c.direccion || '',
+    c.municipio || '',
+    c.reside    || '',
+    c.contacto  || '',
+    c.decision  || 'no',
+    c.canal     || '',
+    c.nota      || '',
+    ''
   ]);
-
-  envios.forEach(function(r) {
-    sh.appendRow([
-      r.id || '',
-      r.cliente || '',
-      r.telefono || '',
-      r.direccion || '',
-      r.municipio || '',
-      r.importe || 0,
-      calcEntrega(r.importe, r.costo_mens),
-      r.moneda || 'USD',
-      r.fecha || '',
-      r.hora || '',
-      r.mensajero_nombre || r.mensajero || '',
-      r.tipo || 'EeUu→Cuba',
-      calcGanancia(r.importe, r.costo_mens),
-      r.costo_mens || 0,
-      r.notas || '',
-      r.estado || 'pendiente',
-      r.creado || ''
-    ]);
-  });
-
-  formatearCabecera(sh);
 }
 
-// -----------------------------------------------------------------------
-// SINCRONIZAR MENSAJEROS → Hoja "App_Mensajeros"
-// -----------------------------------------------------------------------
-function syncMensajeros(ss, mensajeros) {
-  var sh = ss.getSheetByName('App_Mensajeros');
-  if (!sh) sh = ss.insertSheet('App_Mensajeros');
-  sh.clearContents();
-  sh.appendRow(['ID', 'Nombre', 'Teléfono', 'Balance (Le debes)']);
-  mensajeros.forEach(function(m) {
-    sh.appendRow([m.id, m.nombre, m.tel || '', m.balance || 0]);
-  });
-  formatearCabecera(sh);
-}
-
-// -----------------------------------------------------------------------
-// SINCRONIZAR PAGOS A MENSAJEROS → Hoja "App_Pagos_Mens"
-// -----------------------------------------------------------------------
-function syncPagos(ss, pagos) {
-  var sh = ss.getSheetByName('App_Pagos_Mens');
-  if (!sh) sh = ss.insertSheet('App_Pagos_Mens');
-  sh.clearContents();
-  sh.appendRow(['ID', 'Mensajero ID', 'Mensajero Nombre', 'Tipo', 'Importe', 'Concepto', 'Fecha']);
-  pagos.forEach(function(p) {
-    sh.appendRow([p.id, p.mensajeroId, p.mensajeroNombre || '', p.tipo, p.importe, p.concepto || '', p.fecha]);
-  });
-  formatearCabecera(sh);
-}
-
-// -----------------------------------------------------------------------
-// AÑADIR OPERACIÓN AL MES ACTUAL (formato de tu libro original)
-// Esto escribe directamente en la hoja del mes activo, como tú lo haces
-// -----------------------------------------------------------------------
+// ── Añadir operación nueva a hoja del mes activo ──────────────────
+// Escribe en el formato EXACTO de tus hojas mensuales:
+// R | Daniela | OpeNumero | Dia | Tipo | Donde se cobra la ganancia |
+// Cliente reside en EeUu | Cliente en Cuba | Cantidad a Depositar |
+// Entrega | Costo Mens | Ganancia | Total de Alberto-Dani |
+// Ganado por cada uno | AcumMens | Mensajerias Rosy
 function appendOperacion(ss, op) {
-  // Busca la hoja del mes actual (ej: "Mayo 2026")
   var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var hoy = new Date();
   var nombreMes = meses[hoy.getMonth()] + ' ' + hoy.getFullYear();
-  
+
+  // Buscar hoja del mes — si no existe, la crea
   var sh = ss.getSheetByName(nombreMes);
-  // Si no existe la hoja del mes, la crea con el formato correcto
   if (!sh) {
     sh = ss.insertSheet(nombreMes);
+    // Cabecera exacta de tus hojas
     sh.appendRow([
       'R', 'Daniela', 'OpeNumero', 'Dia', 'Tipo',
       'Donde se cobra la ganancia', 'Cliente reside en EeUu',
       'Cliente en Cuba', 'Cantidad a Depositar', 'Entrega',
-      'Costo Mens', 'Ganancia', 'Total', 'Ganado por cada uno',
-      'AcumMens', 'Mensajero'
+      'Costo Mens', 'Ganancia', 'Total de Alberto-Dani',
+      'Gananado por cada uno', 'AcumMens', 'Mensajerias Rosy'
     ]);
+    // Fila 0 vacía igual que en tus hojas
+    sh.appendRow([false, false, 0, 0, '', '', '', '', '', '', '', 0, 0, 0, 0, '']);
     formatearCabecera(sh);
   }
 
-  // Calcula el próximo número de operación
+  // Calcular siguiente OpeNumero
   var lastRow = sh.getLastRow();
-  var nextOpe = lastRow; // Número aproximado
+  var nextOpe = lastRow - 1; // -1 por la fila de cabecera, igual que tus hojas
+
+  // Calcular Ganancia = Depositar - Entrega - CostoMens
+  var depositar  = parseFloat(op.depositar)  || 0;
+  var entrega    = parseFloat(op.entrega)    || 0;
+  var costoMens  = parseFloat(op.costo_mens) || 0;
+  var ganancia   = depositar - entrega - costoMens;
+  var ganadoCu   = ganancia / 2;
 
   sh.appendRow([
-    op.revisado_r || false,
-    op.revisado_daniela || false,
-    nextOpe,
-    hoy.getDate(),
-    op.tipo || 'EeUu→Cuba',
-    op.donde_ganancia || 'EeUu',
-    op.cliente_eeuu || op.cliente || '',
-    op.cliente_cuba || '',
-    op.cantidad_depositar || op.importe || 0,
-    op.entrega || 0,
-    op.costo_mens || 0,
-    op.ganancia || 0,
-    '',  // Total acumulado (calculado en Sheets)
-    '',  // Ganado por cada uno (calculado en Sheets)
-    op.costo_mens || 0,
-    op.mensajero || ''
+    op.revisado_r       ? true : false,   // R
+    op.revisado_daniela ? true : false,   // Daniela
+    nextOpe,                              // OpeNumero
+    op.dia || hoy.getDate(),             // Dia
+    op.tipo || 'EeUu-\\u003eCuba',       // Tipo
+    op.cobro || 'EeUu',                  // Donde se cobra la ganancia
+    op.cliente_eeuu || '',               // Cliente reside en EeUu
+    op.cliente_cuba || '',               // Cliente en Cuba
+    depositar,                            // Cantidad a Depositar
+    entrega,                              // Entrega
+    costoMens || '',                      // Costo Mens
+    ganancia,                             // Ganancia
+    '',                                   // Total de Alberto-Dani (fórmula en Sheets)
+    ganadoCu,                             // Ganado por cada uno
+    costoMens || '',                      // AcumMens
+    op.mensajero || ''                    // Mensajerias Rosy
   ]);
 }
 
-// -----------------------------------------------------------------------
-// HELPERS
-// -----------------------------------------------------------------------
-function calcEntrega(importe, costoMens) {
-  if (!importe) return 0;
-  // Aproximación: entrega = depositar * 0.95 (tu tarifa habitual ~5%)
-  return Math.round(parseFloat(importe) * 0.95 * 100) / 100;
+// ── Sincronización completa a hojas App_ ──────────────────────────
+function syncEnvios(ss, envios) {
+  var sh = ss.getSheetByName('App_Envios');
+  if (!sh) sh = ss.insertSheet('App_Envios');
+  sh.clearContents();
+  sh.appendRow([
+    'ID','Cliente EEUU','Cliente Cuba','Teléfono','Dirección','Municipio',
+    'Depositar','Entrega','Costo Mens','Tipo','Cobro',
+    'Dia','Fecha','Hora','Mensajero','Ganancia','Ganado c/u',
+    'Notas','Estado','Revisado','Creado'
+  ]);
+  envios.forEach(function(r) {
+    sh.appendRow([
+      r.id||'', r.cliente||'', r.cliente_cuba||'', r.telefono||'',
+      r.direccion||'', r.municipio||'',
+      r.importe||0, r.entrega||0, r.costo_mens||0,
+      r.tipo||'EeUu → Cuba', r.cobro||'EeUu',
+      r.dia||'', r.fecha||'', r.hora||'',
+      r.mensajero_nombre||r.mensajero||'',
+      r.ganancia||0, r.ganado_cu||0,
+      r.notas||'', r.estado||'pendiente',
+      r.revisado?'TRUE':'FALSE', r.creado||''
+    ]);
+  });
+  formatearCabecera(sh);
 }
 
-function calcGanancia(importe, costoMens) {
-  var imp = parseFloat(importe) || 0;
-  var costo = parseFloat(costoMens) || 0;
-  // Ganancia = importe - entrega - costo (aproximado)
-  return Math.round((imp * 0.05 - costo) * 100) / 100;
+function syncMensajeros(ss, mensajeros) {
+  var sh = ss.getSheetByName('App_Mensajeros');
+  if (!sh) sh = ss.insertSheet('App_Mensajeros');
+  sh.clearContents();
+  sh.appendRow(['ID','Nombre','Teléfono']);
+  mensajeros.forEach(function(m) {
+    sh.appendRow([m.id, m.nombre, m.tel||'']);
+  });
+  formatearCabecera(sh);
 }
 
-function jsonResponse(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+function syncPagos(ss, pagos) {
+  var sh = ss.getSheetByName('App_Pagos_Mens');
+  if (!sh) sh = ss.insertSheet('App_Pagos_Mens');
+  sh.clearContents();
+  sh.appendRow(['ID','Mensajero','Tipo','Importe','Concepto','Fecha']);
+  pagos.forEach(function(p) {
+    sh.appendRow([p.id, p.mensajeroNombre||p.mensajeroId||'', p.tipo, p.importe, p.concepto||'', p.fecha]);
+  });
+  formatearCabecera(sh);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+function findCol(headers, names) {
+  for (var i = 0; i < names.length; i++) {
+    for (var j = 0; j < headers.length; j++) {
+      if (headers[j].includes(names[i])) return j;
+    }
+  }
+  return -1;
 }
 
 function formatearCabecera(sh) {
   try {
-    var headerRange = sh.getRange(1, 1, 1, sh.getLastColumn());
-    headerRange.setBackground('#1a1a2e');
-    headerRange.setFontColor('#ffffff');
-    headerRange.setFontWeight('bold');
+    var r = sh.getRange(1, 1, 1, sh.getLastColumn());
+    r.setBackground('#1a1a2e');
+    r.setFontColor('#ffffff');
+    r.setFontWeight('bold');
     sh.setFrozenRows(1);
     sh.autoResizeColumns(1, sh.getLastColumn());
   } catch(e) {}
 }
 
-// -----------------------------------------------------------------------
-// FUNCIÓN DE PRUEBA - Puedes ejecutarla manualmente desde Apps Script
-// para verificar que todo funciona antes de publicar
-// -----------------------------------------------------------------------
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Función de prueba ──────────────────────────────────────────────
 function testScript() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  Logger.log('Hoja activa: ' + ss.getName());
-  Logger.log('Número de hojas: ' + ss.getSheets().length);
+  var clientes = getClientesFromSheet(ss);
+  Logger.log('Clientes encontrados: ' + clientes.length);
+  if (clientes.length > 0) Logger.log('Primer cliente: ' + clientes[0].nombre);
+  
+  // Prueba escribir una operación de ejemplo
+  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var hoy = new Date();
+  Logger.log('Hoja del mes: ' + meses[hoy.getMonth()] + ' ' + hoy.getFullYear());
   Logger.log('Script funcionando correctamente ✓');
 }
 `;
