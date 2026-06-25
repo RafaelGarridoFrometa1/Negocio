@@ -1,4 +1,4 @@
-const CACHE = 'remesas-v1';
+const CACHE = 'negocio-v3';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
