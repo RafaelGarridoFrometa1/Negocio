@@ -1,7 +1,7 @@
 {
-  "name": "Gestión de Remesas",
-  "short_name": "Remesas",
-  "description": "Gestiona remesas, entregas y mensajeros",
+  "name": "Mi Negocio",
+  "short_name": "Negocio",
+  "description": "Gestión privada de operaciones",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a2e",
@@ -9,7 +9,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
