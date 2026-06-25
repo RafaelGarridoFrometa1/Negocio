@@ -1449,9 +1449,10 @@ function populateMensajeroSelects(){
   const opts=db.mensajeros.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
   const opMens=document.getElementById('op-mensajero');
   if(opMens) opMens.innerHTML='<option value="">— Sin asignar —</option>'+opts;
-  const opts=db.mensajeros.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
-  document.getElementById('r-mensajero').innerHTML='<option value="">— Sin asignar —</option>'+opts;
-  document.getElementById('resumen-mensajero').innerHTML='<option value="">— Todos —</option>'+opts;
+  const rMens=document.getElementById('r-mensajero');
+  if(rMens) rMens.innerHTML='<option value="">— Sin asignar —</option>'+opts;
+  const resMens=document.getElementById('resumen-mensajero');
+  if(resMens) resMens.innerHTML='<option value="">— Todos —</option>'+opts;
 }
 function populateResumenSelect(){ populateMensajeroSelects(); }
 
