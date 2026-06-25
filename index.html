@@ -1,1557 +1,1346 @@
 <!DOCTYPE html>
-<!-- Mi Negocio v3.0 - Build con todas las funciones -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Negocio">
+<meta name="theme-color" content="#1a1a2e">
 <title>Mi Negocio</title>
 <link rel="manifest" href="manifest.json">
 <style>
-  :root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --primary-light: #eff6ff;
-    --success: #16a34a;
-    --success-light: #f0fdf4;
-    --danger: #dc2626;
-    --danger-light: #fef2f2;
-    --warning: #d97706;
-    --warning-light: #fffbeb;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-400: #9ca3af;
-    --gray-500: #6b7280;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-800: #1f2937;
-    --gray-900: #111827;
-    --radius: 12px;
-    --radius-sm: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-900); min-height: 100vh; }
-  
-  /* AUTH */
-  #auth-screen { position: fixed; inset: 0; background: #1a1a2e; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 2rem; }
-  .auth-logo { font-size: 3rem; margin-bottom: 0.5rem; }
-  .auth-title { color: white; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
-  .auth-subtitle { color: rgba(255,255,255,0.5); font-size: 0.875rem; margin-bottom: 2rem; }
-  .auth-box { background: white; border-radius: var(--radius); padding: 1.5rem; width: 100%; max-width: 340px; }
-  .auth-box h2 { font-size: 1rem; font-weight: 600; color: var(--gray-700); margin-bottom: 1rem; }
-  .auth-box input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 1rem; margin-bottom: 0.75rem; outline: none; transition: border-color 0.2s; }
-  .auth-box input:focus { border-color: var(--primary); }
-  .auth-box button { width: 100%; padding: 0.75rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-size: 1rem; font-weight: 600; cursor: pointer; }
-  .auth-box button:active { background: var(--primary-dark); }
-  .auth-error { color: var(--danger); font-size: 0.8rem; margin-top: 0.5rem; text-align: center; }
-  .auth-setup-link { color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 1rem; text-decoration: underline; cursor: pointer; }
+:root {
+  --pri:#2563eb; --pri2:#1d4ed8; --pri-bg:#eff6ff;
+  --ok:#16a34a;  --ok-bg:#f0fdf4;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --err:#dc2626;  --err-bg:#fef2f2;
+  --g0:#f9fafb; --g1:#f3f4f6; --g2:#e5e7eb; --g3:#d1d5db;
+  --g4:#9ca3af; --g5:#6b7280; --g6:#4b5563; --g7:#374151;
+  --g8:#1f2937; --g9:#111827;
+  --r:12px; --rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--g0);color:var(--g9);min-height:100vh}
 
-  /* APP SHELL */
-  #app { display: none; flex-direction: column; min-height: 100vh; }
-  .topbar { background: #1a1a2e; color: white; padding: 0.875rem 1rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .topbar-title { font-size: 1.1rem; font-weight: 700; }
-  .topbar-actions { display: flex; gap: 0.5rem; align-items: center; }
-  .topbar-btn { background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.8rem; cursor: pointer; }
-  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); display: inline-block; }
-  .sync-dot.synced { background: #4ade80; }
-  
-  .content { flex: 1; padding: 1rem; max-width: 680px; margin: 0 auto; width: 100%; padding-bottom: 5rem; }
-  
-  /* TABS */
-  .tabs { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--gray-200); display: flex; z-index: 100; }
-  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.6rem 0.25rem; gap: 0.2rem; border: none; background: none; color: var(--gray-400); font-size: 0.65rem; cursor: pointer; transition: color 0.2s; }
-  .tab.active { color: var(--primary); }
-  .tab-icon { font-size: 1.3rem; }
-  
-  /* SECTIONS */
-  .section { display: none; }
-  .section.active { display: block; }
-  
-  /* CARDS */
-  .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem; margin-bottom: 0.75rem; }
-  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
-  .card-title { font-size: 0.875rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.05em; }
-  
-  /* FORMS */
-  .form-group { margin-bottom: 0.75rem; }
-  .form-label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--gray-600); margin-bottom: 0.25rem; }
-  .form-input { width: 100%; padding: 0.65rem 0.875rem; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 0.95rem; outline: none; transition: border-color 0.2s; background: white; color: var(--gray-900); }
-  .form-input:focus { border-color: var(--primary); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  
-  /* BUTTONS */
-  .btn { padding: 0.65rem 1.25rem; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
-  .btn-primary { background: var(--primary); color: white; width: 100%; padding: 0.875rem; font-size: 1rem; }
-  .btn-primary:active { background: var(--primary-dark); transform: scale(0.99); }
-  .btn-success { background: var(--success); color: white; }
-  .btn-danger { background: var(--danger); color: white; }
-  .btn-outline { background: transparent; border: 1.5px solid var(--gray-300); color: var(--gray-700); }
-  .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; }
-  
-  /* BADGES */
-  .badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
-  .badge-pending { background: var(--warning-light); color: var(--warning); }
-  .badge-done { background: var(--success-light); color: var(--success); }
-  .badge-info { background: var(--primary-light); color: var(--primary); }
-  
-  /* ITEMS LIST */
-  .item { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.875rem 1rem; margin-bottom: 0.5rem; border-left: 4px solid var(--gray-200); }
-  .item.pending { border-left-color: var(--warning); }
-  .item.done { border-left-color: var(--success); opacity: 0.8; }
-  .item-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.4rem; }
-  .item-name { font-weight: 600; font-size: 0.95rem; }
-  .item-detail { font-size: 0.8rem; color: var(--gray-500); line-height: 1.5; }
-  .item-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
-  
-  /* STATS */
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
-  .stat-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem; text-align: center; }
-  .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
-  .stat-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 0.25rem; }
-  
-  /* MESSENGER SUMMARY */
-  .summary-box { background: var(--primary-light); border: 1.5px solid #bfdbfe; border-radius: var(--radius); padding: 1rem; margin-bottom: 0.75rem; white-space: pre-wrap; font-size: 0.85rem; line-height: 1.7; color: var(--gray-800); font-family: monospace; max-height: 200px; overflow-y: auto; }
-  
-  /* SECTION HEADER */
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-  .section-title { font-size: 1.15rem; font-weight: 700; color: var(--gray-800); }
-  
-  /* EMPTY STATE */
-  .empty { text-align: center; padding: 2rem 1rem; color: var(--gray-400); }
-  .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-  .empty-text { font-size: 0.9rem; }
-  
-  /* OFFLINE BANNER */
-  .offline-banner { background: var(--warning); color: white; text-align: center; padding: 0.4rem; font-size: 0.8rem; font-weight: 600; }
-  
-  /* MODAL */
-  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; }
-  .modal-backdrop.open { display: flex; }
-  .modal { background: white; border-radius: 20px 20px 0 0; padding: 1.5rem; width: 100%; max-height: 85vh; overflow-y: auto; }
-  .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
-  .modal-close { float: right; font-size: 1.5rem; cursor: pointer; color: var(--gray-400); line-height: 1; }
-  
-  /* MESSENGER CARD */
-  .messenger-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem; margin-bottom: 0.75rem; }
-  .messenger-name { font-weight: 700; font-size: 1rem; }
-  .messenger-balance { font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0; }
-  .messenger-balance.owe { color: var(--danger); }
-  .messenger-balance.paid { color: var(--success); }
-  .messenger-detail { font-size: 0.8rem; color: var(--gray-500); }
-  
-  .tabs-mini { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-  .tab-mini { padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--gray-200); background: white; color: var(--gray-600); }
-  .tab-mini.active { background: var(--primary); color: white; border-color: var(--primary); }
-  
-  /* OP FORM STYLES */
-.op-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; }
-.op-card-title { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 6px; }
-.op-card-title svg { width: 13px; height: 13px; opacity: .6; flex-shrink: 0; }
-.op-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.op-g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-@media(max-width:480px){ .op-g2, .op-g3 { grid-template-columns: 1fr; } }
-.op-field { display: flex; flex-direction: column; gap: 4px; }
-.op-label { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gray-500); }
-.op-input { font-size: 13px; color: var(--gray-900); background: white; border: 1.5px solid var(--gray-200); border-radius: 6px; padding: 8px 10px; width: 100%; outline: none; transition: border-color .15s; }
-.op-input:focus { border-color: var(--success); background: white; }
-.op-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; appearance: none; cursor: pointer; }
-.op-result { font-size: 13px; color: var(--gray-900); background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 6px; padding: 8px 10px; min-height: 36px; display: flex; align-items: center; font-weight: 600; }
-.op-result-label { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-.op-divider { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gray-400); margin: 12px 0 10px; padding-top: 12px; border-top: 1px dashed var(--gray-200); display: flex; align-items: center; gap: 6px; }
-.op-chk-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 6px 0; }
-.op-chk-box { width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0; border: 1.5px solid var(--gray-300); background: white; display: flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s; }
-.op-chk-box.on { background: var(--success); border-color: var(--success); }
-.op-chk-box svg { width: 12px; height: 12px; stroke: white; display: none; }
-.op-chk-box.on svg { display: block; }
-.op-chk-lbl { font-size: 13px; color: var(--gray-700); }
-.op-search-wrap { position: relative; }
-.op-dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1px solid var(--gray-300); border-radius: 8px; max-height: 240px; overflow-y: auto; z-index: 300; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-.op-dropdown.open { display: block; }
-.op-dd-item { padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--gray-800); border-bottom: 1px solid var(--gray-100); transition: background .1s; }
-.op-dd-item:last-child { border-bottom: none; }
-.op-dd-item:hover { background: var(--success-light); color: var(--success); }
-.op-dd-empty { padding: 8px 12px; font-size: 13px; color: var(--gray-400); font-style: italic; }
+/* ── AUTH ── */
+#auth{position:fixed;inset:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:2rem}
+.auth-ico{font-size:3rem;margin-bottom:.5rem}
+.auth-ttl{color:#fff;font-size:1.5rem;font-weight:700;margin-bottom:.25rem}
+.auth-sub{color:rgba(255,255,255,.5);font-size:.875rem;margin-bottom:2rem}
+.auth-box{background:#fff;border-radius:var(--r);padding:1.5rem;width:100%;max-width:340px}
+.auth-box h2{font-size:1rem;font-weight:600;color:var(--g7);margin-bottom:1rem}
+.auth-box input{width:100%;padding:.75rem 1rem;border:1.5px solid var(--g2);border-radius:var(--rs);font-size:1rem;margin-bottom:.75rem;outline:none}
+.auth-box input:focus{border-color:var(--pri)}
+.auth-box button{width:100%;padding:.75rem;background:var(--pri);color:#fff;border:none;border-radius:var(--rs);font-size:1rem;font-weight:600;cursor:pointer}
+.auth-err{color:var(--err);font-size:.8rem;margin-top:.5rem;text-align:center;min-height:1rem}
+.auth-lnk{color:rgba(255,255,255,.6);font-size:.8rem;margin-top:1rem;text-decoration:underline;cursor:pointer}
 
-.gs-setup { background: var(--warning-light); border: 1.5px solid #fde68a; border-radius: var(--radius); padding: 0.875rem; margin-bottom: 1rem; font-size: 0.85rem; }
-  .gs-setup strong { color: var(--warning); }
-  
-  select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; }
+/* ── APP SHELL ── */
+#app{display:none;flex-direction:column;min-height:100vh}
+.topbar{background:#1a1a2e;color:#fff;padding:.875rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-ttl{font-size:1.1rem;font-weight:700}
+.topbar-r{display:flex;gap:.5rem;align-items:center}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.sync-dot.ok{background:#4ade80}
+.tbtn{background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:8px;padding:.4rem .75rem;font-size:.8rem;cursor:pointer}
+.offline{background:var(--warn);color:#fff;text-align:center;padding:.4rem;font-size:.8rem;font-weight:600;display:none}
+
+/* ── CONTENT ── */
+.content{flex:1;padding:1rem;max-width:680px;margin:0 auto;width:100%;padding-bottom:5rem}
+.section{display:none}.section.active{display:block}
+
+/* ── BOTTOM TABS ── */
+.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--g2);display:flex;z-index:100}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:.6rem .25rem;gap:.2rem;border:none;background:none;color:var(--g4);font-size:.6rem;cursor:pointer}
+.tab.active{color:var(--pri)}
+.tab-ico{font-size:1.3rem}
+
+/* ── CARDS / ITEMS ── */
+.card{background:#fff;border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1rem;margin-bottom:.75rem}
+.card-ttl{font-size:.8rem;font-weight:600;color:var(--g5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem}
+.item{background:#fff;border-radius:0 var(--r) var(--r) 0;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:.875rem 1rem;margin-bottom:.5rem;border-left:4px solid var(--g3)}
+.item.pend{border-left-color:var(--warn)}
+.item.done{border-left-color:var(--ok);opacity:.8}
+.item.transit{border-left-color:var(--pri)}
+.item-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.4rem}
+.item-name{font-weight:600;font-size:.95rem}
+.item-detail{font-size:.8rem;color:var(--g5);line-height:1.55}
+.item-actions{display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem}
+.stat{background:#fff;border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1rem;text-align:center}
+.stat-val{font-size:1.5rem;font-weight:700;color:var(--pri)}
+.stat-val.w{color:var(--warn)}.stat-val.g{color:var(--ok)}.stat-val.s{font-size:1.1rem}
+.stat-lbl{font-size:.75rem;color:var(--g5);margin-top:.25rem}
+
+/* ── BUTTONS ── */
+.btn{padding:.65rem 1.25rem;border-radius:var(--rs);font-size:.9rem;font-weight:600;cursor:pointer;border:none}
+.btn-pri{background:var(--pri);color:#fff;width:100%;padding:.875rem;font-size:1rem}
+.btn-ok{background:var(--ok);color:#fff}
+.btn-err{background:var(--err);color:#fff}
+.btn-out{background:transparent;border:1.5px solid var(--g3);color:var(--g7)}
+.btn-sm{padding:.35rem .75rem;font-size:.8rem;border-radius:6px}
+
+/* ── BADGES ── */
+.bdg{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:20px;font-size:.7rem;font-weight:600}
+.bdg-warn{background:var(--warn-bg);color:var(--warn)}
+.bdg-ok{background:var(--ok-bg);color:var(--ok)}
+.bdg-pri{background:var(--pri-bg);color:var(--pri)}
+
+/* ── TABS MINI ── */
+.tmini{display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+.tmi{padding:.4rem 1rem;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;border:1.5px solid var(--g2);background:#fff;color:var(--g6)}
+.tmi.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.sec-ttl{font-size:1.15rem;font-weight:700}
+
+/* ── FORMS ── */
+.fgroup{margin-bottom:.75rem}
+.flabel{display:block;font-size:.75rem;font-weight:600;color:var(--g6);margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
+.finput{width:100%;padding:.65rem .875rem;border:1.5px solid var(--g2);border-radius:var(--rs);font-size:.9rem;outline:none;background:#fff;color:var(--g9)}
+.finput:focus{border-color:var(--pri)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
+select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center}
+
+/* ── OP FORM CARDS ── */
+.op-card{background:var(--g0);border:1px solid var(--g2);border-radius:var(--rs);padding:1rem;margin-bottom:.75rem}
+.op-card-ttl{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g5);margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--g2)}
+.op-result{background:var(--g1);border:1px solid var(--g2);border-radius:6px;padding:.5rem .75rem;font-size:.9rem;font-weight:700;color:var(--g9)}
+.op-divider{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g4);margin:10px 0 8px;padding-top:10px;border-top:1px dashed var(--g2)}
+
+/* ── DROPDOWN ── */
+.dd-wrap{position:relative}
+.dd-list{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;background:#fff;border:1.5px solid var(--g3);border-radius:var(--rs);max-height:200px;overflow-y:auto;z-index:300;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.dd-list.open{display:block}
+.dd-item{padding:8px 12px;font-size:.8rem;cursor:pointer;color:var(--g8);border-bottom:1px solid var(--g1)}
+.dd-item:last-child{border-bottom:none}
+.dd-item:hover{background:var(--ok-bg);color:var(--ok)}
+.dd-empty{padding:8px 12px;font-size:.8rem;color:var(--g4);font-style:italic}
+.add-link{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;font-weight:700;color:var(--pri);cursor:pointer;margin-top:4px;background:none;border:none;padding:2px 0}
+
+/* ── MINI FORM ── */
+.mini-form{background:var(--pri-bg);border:1.5px solid #bfdbfe;border-radius:var(--rs);padding:.875rem;margin-top:.5rem}
+.mini-ttl{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center}
+.mini-close{background:none;border:none;color:var(--pri);font-size:1.25rem;cursor:pointer;line-height:1}
+.mini-save{background:var(--pri);color:#fff;border:none;border-radius:6px;padding:.6rem 1rem;font-size:.8rem;font-weight:700;cursor:pointer;width:100%;margin-top:.5rem}
+
+/* ── CHKBOX ── */
+.chk-wrap{display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:.35rem 0}
+.chk-box{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--g3);background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chk-box.on{background:var(--ok);border-color:var(--ok)}
+.chk-box.on::after{content:'✓';color:#fff;font-size:.75rem;font-weight:700}
+
+/* ── MESSENGER CARD ── */
+.mc{background:#fff;border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1rem;margin-bottom:.75rem}
+.mc-name{font-weight:700;font-size:1rem}
+.mc-bal{font-size:1.4rem;font-weight:700;color:var(--err)}
+.mc-bal.ok{color:var(--ok)}
+.mc-hist{margin-top:.75rem;border-top:1px solid var(--g1);padding-top:.75rem}
+.mc-row{display:flex;justify-content:space-between;font-size:.75rem;color:var(--g5);padding:2px 0}
+
+/* ── SUMMARY BOX ── */
+.sbox{background:var(--pri-bg);border:1.5px solid #bfdbfe;border-radius:var(--r);padding:1rem;font-family:monospace;font-size:.8rem;line-height:1.7;color:var(--g8);white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:.75rem}
+
+/* ── NOTICE ── */
+.notice{background:var(--ok-bg);border:1px solid #86efac;border-radius:var(--rs);padding:.6rem 1rem;font-size:.8rem;color:var(--ok);font-weight:600;margin-bottom:.75rem}
+.warn-box{background:var(--warn-bg);border:1.5px solid #fde68a;border-radius:var(--rs);padding:.875rem;font-size:.8rem;line-height:1.5;margin-bottom:.75rem}
+
+/* ── CLIENT ITEM ── */
+.citm{background:#fff;border-radius:0 var(--r) var(--r) 0;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:.875rem 1rem;margin-bottom:.5rem;border-left:4px solid var(--pri)}
+.citm.local{border-left-color:var(--ok)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:2rem 1rem;color:var(--g4)}
+.empty-ico{font-size:2.5rem;margin-bottom:.5rem}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-height:90vh;overflow-y:auto}
+.modal-ttl{font-size:1.1rem;font-weight:700;margin-bottom:1rem}
+.modal-close{float:right;font-size:1.5rem;cursor:pointer;color:var(--g4);line-height:1;background:none;border:none}
+
+/* ── SEARCH ── */
+.search-inp{width:100%;padding:.65rem .875rem;border:1.5px solid var(--g2);border-radius:var(--rs);font-size:.9rem;outline:none;background:#fff;color:var(--g9);margin-bottom:.75rem}
+
+/* ── OP SUMMARY ── */
+.op-result-box{background:var(--ok-bg);border:1.5px solid var(--ok);border-radius:var(--r);padding:.875rem;margin-top:1rem}
+.op-result-ttl{font-size:.7rem;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center}
+.op-result-msg{background:#fff;border:1px solid var(--ok);border-radius:6px;padding:.75rem;font-family:monospace;font-size:.75rem;line-height:1.7;white-space:pre-wrap;margin-bottom:.5rem}
+
+/* ── CONFIG ── */
+.cfg-btn{width:100%;padding:.75rem;border:1.5px solid var(--g2);border-radius:var(--rs);background:#fff;font-size:.875rem;font-weight:600;color:var(--g8);cursor:pointer;margin-bottom:.5rem;text-align:left}
 </style>
 </head>
 <body>
 
-<!-- OFFLINE -->
-<div class="offline-banner" id="offline-banner" style="display:none">📡 Sin conexión — los datos se guardarán localmente</div>
+<div class="offline" id="offline-bar">📡 Sin conexión — los datos se guardan localmente</div>
 
-<!-- AUTH SCREEN -->
-<div id="auth-screen">
-  <div class="auth-logo">📦</div>
-  <div class="auth-title">Mi Negocio</div>
-  <div class="auth-subtitle">Gestión privada</div>
-  <div class="auth-box" id="auth-login-box">
+<!-- ══ AUTH ══ -->
+<div id="auth">
+  <div class="auth-ico">💼</div>
+  <div class="auth-ttl">Mi Negocio</div>
+  <div class="auth-sub">Gestión privada de operaciones</div>
+
+  <div class="auth-box" id="box-login">
     <h2>Iniciar sesión</h2>
-    <input type="text" id="auth-user" placeholder="Usuario" autocomplete="username">
-    <input type="password" id="auth-pass" placeholder="Contraseña" autocomplete="current-password">
+    <input type="text" id="login-user" placeholder="Usuario" autocomplete="username">
+    <input type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password">
     <button onclick="doLogin()">Entrar</button>
-    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-err" id="login-err"></div>
   </div>
-  <div class="auth-box" id="auth-setup-box" style="display:none; margin-top:1rem;">
-    <h2>Crear cuenta</h2>
+
+  <div class="auth-box" id="box-setup" style="display:none">
+    <h2>Crear cuenta nueva</h2>
     <input type="text" id="setup-user" placeholder="Nombre de usuario">
-    <input type="password" id="setup-pass" placeholder="Contraseña">
+    <input type="password" id="setup-pass" placeholder="Contraseña (mín. 4 caracteres)">
     <input type="password" id="setup-pass2" placeholder="Repetir contraseña">
     <button onclick="doSetup()">Crear cuenta</button>
-    <div class="auth-error" id="setup-error"></div>
+    <div class="auth-err" id="setup-err"></div>
   </div>
-  <div class="auth-setup-link" id="setup-toggle" onclick="toggleSetup()">Crear cuenta nueva</div>
+
+  <div class="auth-lnk" id="auth-toggle" onclick="toggleAuth()">Crear cuenta nueva</div>
 </div>
 
-<!-- APP -->
+<!-- ══ APP ══ -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-title">📦 Negocio</div>
-    <div class="topbar-actions">
-      <span class="sync-dot" id="sync-dot" title="Estado de sincronización"></span>
-      <button class="topbar-btn" onclick="syncToSheets()" id="sync-btn">Sincronizar</button>
-      <button class="topbar-btn" onclick="doLogout()">Salir</button>
+    <div class="topbar-ttl">💼 Mi Negocio</div>
+    <div class="topbar-r">
+      <span class="sync-dot" id="sync-dot"></span>
+      <button class="tbtn" onclick="doSync()">Sincronizar</button>
+      <button class="tbtn" onclick="doLogout()">Salir</button>
     </div>
   </div>
 
   <div class="content">
-    <!-- REMESAS -->
+
+    <!-- ENVÍOS -->
     <div class="section active" id="sec-envios">
-      <div class="section-header">
-        <div class="section-title">Negocio</div>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-envio')">+ Nueva</button>
+      <div class="sec-hdr">
+        <div class="sec-ttl">Envíos</div>
+        <button class="btn btn-ok btn-sm" onclick="openModal('modal-op')">+ Nuevo</button>
       </div>
-      <div class="tabs-mini">
-        <button class="tab-mini active" onclick="filterEnvíos('todas',this)">Todas</button>
-        <button class="tab-mini" onclick="filterEnvíos('pendiente',this)">Pendientes</button>
-        <button class="tab-mini" onclick="filterEnvíos('entregada',this)">Entregadas</button>
+      <div id="op-result-area"></div>
+      <div class="tmini">
+        <button class="tmi on" onclick="filterEnvios('todos',this)">Todos</button>
+        <button class="tmi" onclick="filterEnvios('pendiente',this)">Pendientes</button>
+        <button class="tmi" onclick="filterEnvios('entregada',this)">Entregados</button>
       </div>
-      <div id="stats-envios" class="stats-grid"></div>
+      <div class="stats" id="stats-envios"></div>
       <div id="list-envios"></div>
     </div>
 
     <!-- ENTREGAS -->
     <div class="section" id="sec-entregas">
-      <div class="section-header">
-        <div class="section-title">Horario de Entregas</div>
-      </div>
-      <div class="tabs-mini">
-        <button class="tab-mini active" onclick="filterEntregas('pendiente',this)">Pendientes</button>
-        <button class="tab-mini" onclick="filterEntregas('realizada',this)">Realizadas</button>
-        <button class="tab-mini" onclick="filterEntregas('todas',this)">Todas</button>
+      <div class="sec-hdr"><div class="sec-ttl">Horario de entregas</div></div>
+      <div class="tmini">
+        <button class="tmi on" onclick="filterEntregas('pendiente',this)">Pendientes</button>
+        <button class="tmi" onclick="filterEntregas('realizada',this)">Realizadas</button>
+        <button class="tmi" onclick="filterEntregas('todas',this)">Todas</button>
       </div>
       <div id="list-entregas"></div>
     </div>
 
     <!-- MENSAJEROS -->
     <div class="section" id="sec-mensajeros">
-      <div class="section-header">
-        <div class="section-title">Mensajeros</div>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-mensajero')">+ Nuevo</button>
+      <div class="sec-hdr">
+        <div class="sec-ttl">Mensajeros</div>
+        <button class="btn btn-ok btn-sm" onclick="openModal('modal-mens')">+ Nuevo</button>
       </div>
       <div id="list-mensajeros"></div>
     </div>
 
-    <!-- ÚLTIMA OPERACIÓN GUARDADA -->
-    <div id="ultimo-resumen" style="display:none;margin-bottom:1rem">
-      <div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius);padding:0.875rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
-          <div style="font-size:0.75rem;font-weight:700;color:var(--success)">✓ Operación guardada — Mensaje para mensajero</div>
-          <button onclick="document.getElementById('ultimo-resumen').style.display='none'" style="background:none;border:none;color:var(--gray-500);font-size:1.2rem;cursor:pointer;padding:0;line-height:1">×</button>
-        </div>
-        <div id="ultimo-resumen-texto" style="background:white;border:1px solid var(--success);border-radius:6px;padding:0.75rem;font-family:monospace;font-size:0.78rem;line-height:1.7;color:var(--gray-800);white-space:pre-wrap;margin-bottom:0.5rem"></div>
-        <button onclick="copiarUltimoResumen()" style="background:var(--success);color:white;width:100%;padding:0.65rem;border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer">📲 Copiar para WhatsApp</button>
-      </div>
-    </div>
-
     <!-- RESUMEN -->
     <div class="section" id="sec-resumen">
-      <div class="section-header">
-        <div class="section-title">Resumen para Repartidores</div>
-      </div>
+      <div class="sec-hdr"><div class="sec-ttl">Resumen para repartidores</div></div>
       <div class="card">
-        <div class="form-group">
-          <label class="form-label">Seleccionar mensajero</label>
-          <select class="form-input" id="resumen-mensajero" onchange="generarResumen()">
-            <option value="">— Todos —</option>
-          </select>
+        <div class="fgroup">
+          <label class="flabel">Seleccionar mensajero</label>
+          <select class="finput" id="res-sel-mens"><option value="">— Todos —</option></select>
         </div>
-        <button class="btn btn-primary" onclick="generarResumen()">📋 Generar Resumen</button>
+        <button class="btn btn-pri" onclick="generarResumen()">📋 Generar resumen</button>
       </div>
-      <div id="resumen-output" style="display:none">
-        <div class="summary-box" id="resumen-texto"></div>
-        <button class="btn btn-success" onclick="copiarResumen()" style="width:100%;margin-top:0.5rem">📱 Copiar para WhatsApp</button>
+      <div id="res-out" style="display:none">
+        <div class="sbox" id="res-txt"></div>
+        <button class="btn btn-ok" style="width:100%" onclick="copiarResumen()">📱 Copiar para WhatsApp</button>
       </div>
     </div>
 
     <!-- CLIENTES -->
     <div class="section" id="sec-clientes">
-      <div class="section-header">
-        <div class="section-title">Clientes</div>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-cliente')">+ Nuevo</button>
+      <div class="sec-hdr">
+        <div class="sec-ttl">Clientes</div>
+        <button class="btn btn-ok btn-sm" onclick="openModal('modal-cliente')">+ Nuevo</button>
       </div>
-      <div class="tabs-mini">
-        <button class="tab-mini active" onclick="filterClientes('todos',this)">Todos</button>
-        <button class="tab-mini" onclick="filterClientes('Cuba',this)">En Cuba</button>
-        <button class="tab-mini" onclick="filterClientes('EeUu',this)">En EeUu</button>
+      <div class="tmini">
+        <button class="tmi on" onclick="filterClientes('todos',this)">Todos</button>
+        <button class="tmi" onclick="filterClientes('Cuba',this)">En Cuba</button>
+        <button class="tmi" onclick="filterClientes('EeUu',this)">En EeUu</button>
       </div>
-      <div class="form-group" style="margin-bottom:0.75rem">
-        <input type="text" class="form-input" id="clientes-search" placeholder="🔍 Buscar cliente..." oninput="renderClientes()">
-      </div>
+      <input class="search-inp" id="srch-clientes" placeholder="🔍 Buscar cliente..." oninput="renderClientes()">
       <div id="list-clientes"></div>
     </div>
 
-    <!-- CONFIGURACIÓN -->
+    <!-- CONFIG -->
     <div class="section" id="sec-config">
-      <div class="section-title" style="margin-bottom:1rem">Configuración</div>
+      <div class="sec-ttl" style="margin-bottom:1rem">Configuración</div>
       <div class="card">
-        <div class="card-header"><div class="card-title">Google Sheets</div></div>
-        <div class="gs-setup">
-          <strong>⚠️ Instrucciones:</strong><br>
-          1. Abre Google Sheets y crea una hoja nueva<br>
-          2. Ve a <em>Extensiones → Apps Script</em><br>
-          3. Pega el script que aparece abajo<br>
-          4. Publica → <em>Implementar como aplicación web</em><br>
-          5. Copia la URL y pégala aquí
+        <div class="card-ttl">Google Sheets</div>
+        <div class="warn-box">
+          <strong>Instrucciones:</strong><br>
+          1. Abre tu hoja "Remesas" en Google Sheets<br>
+          2. Extensiones → Apps Script → pega el script<br>
+          3. Implementar → Aplicación web → copia la URL<br>
+          4. Pégala aquí abajo
         </div>
-        <div class="form-group">
-          <label class="form-label">URL del Script de Google</label>
-          <input type="url" class="form-input" id="gs-url" placeholder="https://script.google.com/..." value="">
+        <div class="fgroup">
+          <label class="flabel">URL del Script de Google</label>
+          <input type="url" class="finput" id="gs-url" placeholder="https://script.google.com/macros/s/...">
         </div>
-        <button class="btn btn-primary" onclick="saveGsUrl()">Guardar URL</button>
-        <div style="margin-top:1rem">
-          <button class="btn btn-outline btn-sm" onclick="showScript()" style="width:100%">📄 Ver script para Apps Script</button>
-        </div>
+        <button class="btn btn-pri" onclick="saveGsUrl()">Guardar URL</button>
+        <button class="cfg-btn" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
       </div>
-      <div class="card" style="margin-top:0.75rem">
-        <div class="card-header"><div class="card-title">Cuenta</div></div>
-        <button class="btn btn-danger btn-sm" onclick="cambiarPassword()">Cambiar contraseña</button>
-        <button class="btn btn-outline btn-sm" onclick="exportarDatos()" style="margin-top:0.5rem;width:100%">📤 Exportar copia de seguridad</button>
-        <button class="btn btn-outline btn-sm" onclick="importarDatos()" style="margin-top:0.5rem;width:100%">📥 Importar copia de seguridad</button>
+      <div class="card" style="margin-top:.75rem">
+        <div class="card-ttl">Cuenta</div>
+        <button class="cfg-btn" onclick="cambiarPass()">🔐 Cambiar contraseña</button>
+        <button class="cfg-btn" onclick="exportar()">📤 Exportar copia de seguridad</button>
+        <button class="cfg-btn" onclick="importar()">📥 Importar copia de seguridad</button>
       </div>
     </div>
+
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="showSection('envios',this)">
-      <span class="tab-icon">📦</span><span>Negocio</span>
-    </button>
-    <button class="tab" onclick="showSection('entregas',this)">
-      <span class="tab-icon">🛵</span><span>Entregas</span>
-    </button>
-    <button class="tab" onclick="showSection('mensajeros',this)">
-      <span class="tab-icon">👤</span><span>Mensajeros</span>
-    </button>
-    <button class="tab" onclick="showSection('resumen',this)">
-      <span class="tab-icon">📋</span><span>Resumen</span>
-    </button>
-    <button class="tab" onclick="showSection('clientes',this)">
-      <span class="tab-icon">👥</span><span>Clientes</span>
-    </button>
-    <button class="tab" onclick="showSection('config',this)">
-      <span class="tab-icon">⚙️</span><span>Config</span>
-    </button>
+    <button class="tab active" onclick="showSection('envios',this)"><span class="tab-ico">📦</span><span>Envíos</span></button>
+    <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
+    <button class="tab" onclick="showSection('mensajeros',this)"><span class="tab-ico">👤</span><span>Mensajeros</span></button>
+    <button class="tab" onclick="showSection('resumen',this)"><span class="tab-ico">📋</span><span>Resumen</span></button>
+    <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
+    <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
   </div>
 </div>
 
-<!-- MODAL REMESA -->
-<div class="modal-backdrop" id="modal-envio">
-  <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-envio')">×</span>
-    <div class="modal-title" id="envio-modal-title">Nueva Operación</div>
-    <input type="hidden" id="envio-edit-id">
+<!-- ══ MODAL: NUEVA OPERACIÓN ══ -->
+<div class="modal-bg" id="modal-op">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-op')">×</button>
+  <div class="modal-ttl" id="op-modal-ttl">Nueva operación</div>
+  <input type="hidden" id="op-id">
 
-    <!-- REVISIÓN Y FECHA -->
-    <div class="op-card">
-      <div class="op-card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Revisión y fecha
+  <div class="op-card">
+    <div class="op-card-ttl">📅 Revisión y fecha</div>
+    <div class="frow">
+      <div>
+        <div class="flabel" style="margin-bottom:.3rem">Revisado (Daniela)</div>
+        <div class="chk-wrap" onclick="toggleChk('op-chk','op-chk-lbl')">
+          <div class="chk-box" id="op-chk"></div>
+          <span id="op-chk-lbl">No revisado</span>
+        </div>
       </div>
-      <div class="op-g2">
-        <div>
-          <label class="op-label">Revisado (Daniela)</label>
-          <div class="op-chk-wrap" onclick="toggleOpChk()">
-            <div class="op-chk-box" id="op-chk">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <div class="fgroup">
+        <label class="flabel">Día del mes</label>
+        <input type="number" class="finput" id="op-dia" placeholder="1-31" min="1" max="31">
+      </div>
+    </div>
+  </div>
+
+  <div class="op-card">
+    <div class="op-card-ttl">🔄 Tipo de operación</div>
+    <div class="frow">
+      <div class="fgroup">
+        <label class="flabel">Tipo</label>
+        <select class="finput" id="op-tipo">
+          <option value="EeUu → Cuba">EeUu → Cuba</option>
+          <option value="Cuba → EeUu">Cuba → EeUu</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Donde se cobra</label>
+        <select class="finput" id="op-cobro">
+          <option value="EeUu">EeUu</option>
+          <option value="Cuba">Cuba</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="op-card">
+    <div class="op-card-ttl">👥 Clientes</div>
+    <div class="frow">
+      <div>
+        <label class="flabel">Cliente en EEUU</label>
+        <div class="dd-wrap">
+          <input type="text" class="finput" id="dd-usa" placeholder="Buscar cliente..." autocomplete="off"
+            oninput="filterDD('usa')" onfocus="openDD('usa')" onblur="setTimeout(function(){closeDD('usa')},200)">
+          <div class="dd-list" id="ddl-usa"></div>
+        </div>
+        <button class="add-link" onclick="toggleMini('usa')"><span id="mini-lbl-usa">＋ Añadir cliente nuevo</span></button>
+        <div class="mini-form" id="mini-usa" style="display:none">
+          <div class="mini-ttl">Nuevo cliente — EEUU <button class="mini-close" onclick="toggleMini('usa')">×</button></div>
+          <div class="fgroup"><label class="flabel">Nombre *</label><input type="text" class="finput" id="musa-nombre" placeholder="Nombre completo"></div>
+          <div class="frow">
+            <div class="fgroup"><label class="flabel">Teléfono</label><input type="tel" class="finput" id="musa-tel" placeholder="+1..."></div>
+            <div class="fgroup"><label class="flabel">Canal</label>
+              <select class="finput" id="musa-canal"><option value="">—</option><option>Antiguos</option><option>Revolico</option><option>Conocido</option><option>Referido</option></select>
             </div>
-            <span class="op-chk-lbl" id="op-chk-lbl">No revisado</span>
           </div>
-        </div>
-        <div class="op-field">
-          <label class="op-label">Día del mes</label>
-          <input type="number" class="op-input" id="op-dia" placeholder="1 – 31" min="1" max="31">
+          <div class="fgroup"><label class="flabel">Dirección</label><input type="text" class="finput" id="musa-dir" placeholder="Calle, ciudad..."></div>
+          <button class="mini-save" onclick="saveMiniCliente('usa')">✓ Guardar y seleccionar</button>
         </div>
       </div>
-    </div>
-
-    <!-- TIPO DE OPERACIÓN -->
-    <div class="op-card">
-      <div class="op-card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
-        Tipo de operación
-      </div>
-      <div class="op-g2">
-        <div class="op-field">
-          <label class="op-label">Tipo</label>
-          <select class="op-input op-select" id="op-tipo">
-            <option value="EeUu → Cuba">EeUu → Cuba</option>
-            <option value="Cuba → EeUu">Cuba → EeUu</option>
-          </select>
+      <div>
+        <label class="flabel">Cliente en Cuba</label>
+        <div class="dd-wrap">
+          <input type="text" class="finput" id="dd-cuba" placeholder="Buscar cliente..." autocomplete="off"
+            oninput="filterDD('cuba')" onfocus="openDD('cuba')" onblur="setTimeout(function(){closeDD('cuba')},200)">
+          <div class="dd-list" id="ddl-cuba"></div>
         </div>
-        <div class="op-field">
-          <label class="op-label">Donde se cobra la ganancia</label>
-          <select class="op-input op-select" id="op-cobro">
-            <option value="EeUu">EeUu</option>
-            <option value="Cuba">Cuba</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- CLIENTES -->
-    <div class="op-card">
-      <div class="op-card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Clientes
-      </div>
-      <div class="op-g2">
-        <div class="op-field">
-          <label class="op-label">Cliente en EEUU</label>
-          <div class="op-search-wrap">
-            <input type="text" class="op-input" id="op-search-usa" placeholder="Buscar cliente..." autocomplete="off"
-              oninput="filterOpDD('usa')" onfocus="openOpDD('usa')" onblur="closeOpDD('usa')">
-            <input type="hidden" id="op-val-usa">
-            <div class="op-dropdown" id="op-dd-usa"></div>
+        <button class="add-link" onclick="toggleMini('cuba')"><span id="mini-lbl-cuba">＋ Añadir cliente nuevo</span></button>
+        <div class="mini-form" id="mini-cuba" style="display:none">
+          <div class="mini-ttl">Nuevo cliente — Cuba <button class="mini-close" onclick="toggleMini('cuba')">×</button></div>
+          <div class="fgroup"><label class="flabel">Nombre *</label><input type="text" class="finput" id="mcuba-nombre" placeholder="Nombre completo"></div>
+          <div class="frow">
+            <div class="fgroup"><label class="flabel">Teléfono</label><input type="tel" class="finput" id="mcuba-tel" placeholder="+53..."></div>
+            <div class="fgroup"><label class="flabel">Municipio</label>
+              <select class="finput" id="mcuba-mun">
+                <option value="">—</option>
+                <option>La Lisa</option><option>La Coronela</option><option>Playa</option>
+                <option>Marianao</option><option>Plaza</option><option>Boyeros</option>
+                <option>Cerro</option><option>Centro Habana</option><option>Habana Vieja</option>
+                <option>10 de Octubre</option><option>Arroyo Naranjo</option><option>Regla</option>
+                <option>Guanabacoa</option><option>Cotorro</option><option>Habana del Este</option>
+              </select>
+            </div>
           </div>
-        </div>
-        <div class="op-field">
-          <label class="op-label">Cliente en Cuba</label>
-          <div class="op-search-wrap">
-            <input type="text" class="op-input" id="op-search-cuba" placeholder="Buscar cliente..." autocomplete="off"
-              oninput="filterOpDD('cuba')" onfocus="openOpDD('cuba')" onblur="closeOpDD('cuba')">
-            <input type="hidden" id="op-val-cuba">
-            <div class="op-dropdown" id="op-dd-cuba"></div>
-          </div>
-        </div>
-      </div>
-      <div class="op-field" style="margin-top:10px">
-        <label class="op-label">Teléfono</label>
-        <input type="tel" class="op-input" id="op-telefono" placeholder="+1...">
-      </div>
-      <div class="op-field" style="margin-top:10px">
-        <label class="op-label">Dirección de entrega</label>
-        <input type="text" class="op-input" id="op-direccion" placeholder="Calle, número...">
-      </div>
-      <div class="op-g2" style="margin-top:10px">
-        <div class="op-field">
-          <label class="op-label">Municipio</label>
-          <select class="op-input op-select" id="op-municipio">
-            <option value="">— Seleccionar —</option>
-            <option value="La Lisa">La Lisa (3-4$)</option>
-            <option value="La Coronela">La Coronela (0-1$)</option>
-            <option value="Playa">Playa (5-6$)</option>
-            <option value="Marianao">Marianao (5-6$)</option>
-            <option value="Plaza">Plaza (7-8$)</option>
-            <option value="Boyeros">Boyeros (7-8$)</option>
-            <option value="Cerro">Cerro (7-8$)</option>
-            <option value="Centro Habana">Centro Habana (7-8$)</option>
-            <option value="Habana Vieja">Habana Vieja (7-8$)</option>
-            <option value="10 de Octubre">10 de Octubre (8-9$)</option>
-            <option value="Arroyo Naranjo">Arroyo Naranjo (8-9$)</option>
-            <option value="Regla">Regla (10-11$)</option>
-            <option value="Guanabacoa">Guanabacoa (12-13$)</option>
-            <option value="Cotorro">Cotorro (12-13$)</option>
-            <option value="Habana del Este">Habana del Este (12-13$)</option>
-          </select>
-        </div>
-        <div class="op-field">
-          <label class="op-label">Mensajero asignado</label>
-          <select class="op-input op-select" id="op-mensajero">
-            <option value="">— Sin asignar —</option>
-          </select>
+          <div class="fgroup"><label class="flabel">Dirección</label><input type="text" class="finput" id="mcuba-dir" placeholder="Calle, número..."></div>
+          <button class="mini-save" onclick="saveMiniCliente('cuba')">✓ Guardar y seleccionar</button>
         </div>
       </div>
     </div>
-
-    <!-- MONTOS -->
-    <div class="op-card">
-      <div class="op-card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        Montos
+    <div class="frow">
+      <div class="fgroup">
+        <label class="flabel">Municipio</label>
+        <select class="finput" id="op-municipio">
+          <option value="">— Seleccionar —</option>
+          <option>La Lisa</option><option>La Coronela</option><option>Playa</option>
+          <option>Marianao</option><option>Plaza</option><option>Boyeros</option>
+          <option>Cerro</option><option>Centro Habana</option><option>Habana Vieja</option>
+          <option>10 de Octubre</option><option>Arroyo Naranjo</option><option>Regla</option>
+          <option>Guanabacoa</option><option>Cotorro</option><option>Habana del Este</option>
+        </select>
       </div>
-      <div class="op-g3">
-        <div class="op-field">
-          <label class="op-label">Cantidad a depositar ($)</label>
-          <input type="number" class="op-input" id="op-depositar" placeholder="0.00" step="0.01" oninput="calcularOp()">
-        </div>
-        <div class="op-field">
-          <label class="op-label">Entrega ($)</label>
-          <input type="number" class="op-input" id="op-entrega" placeholder="0.00" step="0.01" oninput="calcularOp()">
-        </div>
-        <div class="op-field">
-          <label class="op-label">Costo mensajería ($)</label>
-          <input type="number" class="op-input" id="op-mensajeria" placeholder="0.00" step="0.01" oninput="calcularOp()">
-        </div>
-      </div>
-      <div class="op-divider">
-        <svg style="width:11px;height:11px;opacity:.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Resultados calculados
-      </div>
-      <div class="op-g3">
-        <div>
-          <div class="op-result-label">Ganancia ($)</div>
-          <div class="op-result" id="op-r-ganancia">—</div>
-        </div>
-        <div>
-          <div class="op-result-label">Ganado c/u ($)</div>
-          <div class="op-result" id="op-r-ganado">—</div>
-        </div>
-        <div>
-          <div class="op-result-label">Fecha</div>
-          <input type="date" class="op-input" id="op-fecha">
-        </div>
-      </div>
-      <div class="op-g2" style="margin-top:10px">
-        <div>
-          <div class="op-result-label">Hora acordada</div>
-          <input type="time" class="op-input" id="op-hora">
-        </div>
-        <div class="op-field">
-          <label class="op-label">Estado</label>
-          <select class="op-input op-select" id="op-estado">
-            <option value="pendiente">Pendiente</option>
-            <option value="en_camino">En camino</option>
-            <option value="entregada">Entregada</option>
-            <option value="devuelta">Devuelta</option>
-          </select>
-        </div>
-      </div>
-      <div class="op-field" style="margin-top:10px">
-        <label class="op-label">Notas</label>
-        <input type="text" class="op-input" id="op-notas" placeholder="Instrucciones especiales...">
+      <div class="fgroup">
+        <label class="flabel">Mensajero</label>
+        <select class="finput" id="op-mensajero"><option value="">— Sin asignar —</option></select>
       </div>
     </div>
-
-    <button class="btn btn-primary" onclick="saveEnvio()" style="margin-top:0.5rem">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="width:16px;height:16px;display:inline;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
-      Guardar operación
-    </button>
-
-    <!-- RESUMEN PARA MENSAJERO -->
-    <div id="mensajero-resumen" style="display:none;margin-top:1rem">
-      <div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.75rem">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--success);margin-bottom:0.5rem;display:flex;align-items:center;gap:5px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg>
-          Operación guardada y enviada a Sheets
-        </div>
-      </div>
-      <div style="background:var(--primary-light);border:1.5px solid #bfdbfe;border-radius:var(--radius-sm);padding:0.875rem;margin-bottom:0.5rem">
-        <div style="font-size:0.7rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:0.5rem">📱 Mensaje para el mensajero</div>
-        <div id="mensajero-resumen-texto" style="font-family:monospace;font-size:0.8rem;line-height:1.7;color:var(--gray-800);white-space:pre-wrap"></div>
-      </div>
-      <button class="btn btn-success" onclick="copiarMensajeroResumen()" style="width:100%;padding:0.75rem;font-size:0.9rem">
-        📲 Copiar para WhatsApp
-      </button>
+    <div class="fgroup">
+      <label class="flabel">Teléfono cliente</label>
+      <input type="tel" class="finput" id="op-telefono" placeholder="+53...">
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Dirección de entrega</label>
+      <input type="text" class="finput" id="op-direccion" placeholder="Calle, número...">
     </div>
   </div>
+
+  <div class="op-card">
+    <div class="op-card-ttl">💰 Montos</div>
+    <div class="f3">
+      <div class="fgroup"><label class="flabel">Cantidad depositar ($)</label><input type="number" class="finput" id="op-dep" placeholder="0.00" step="0.01" oninput="calcOp()"></div>
+      <div class="fgroup"><label class="flabel">Entrega ($)</label><input type="number" class="finput" id="op-ent" placeholder="0.00" step="0.01" oninput="calcOp()"></div>
+      <div class="fgroup"><label class="flabel">Costo mensajero ($)</label><input type="number" class="finput" id="op-mens" placeholder="0.00" step="0.01" oninput="calcOp()"></div>
+    </div>
+    <div class="op-divider">Resultados calculados</div>
+    <div class="f3">
+      <div><div class="flabel">Ganancia</div><div class="op-result" id="op-r-gan">—</div></div>
+      <div><div class="flabel">Ganado c/u</div><div class="op-result" id="op-r-gcu">—</div></div>
+      <div class="fgroup"><label class="flabel">Hora</label><input type="time" class="finput" id="op-hora"></div>
+    </div>
+    <div class="frow" style="margin-top:.75rem">
+      <div class="fgroup"><label class="flabel">Fecha</label><input type="date" class="finput" id="op-fecha"></div>
+      <div class="fgroup"><label class="flabel">Estado</label>
+        <select class="finput" id="op-estado">
+          <option value="pendiente">Pendiente</option>
+          <option value="en_camino">En camino</option>
+          <option value="entregada">Entregada</option>
+          <option value="devuelta">Devuelta</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgroup"><label class="flabel">Notas</label><input type="text" class="finput" id="op-notas" placeholder="Instrucciones especiales..."></div>
+  </div>
+
+  <button class="btn btn-pri" onclick="saveOp()">✓ Guardar operación</button>
+</div>
 </div>
 
-<!-- MODAL MENSAJERO -->
-<div class="modal-backdrop" id="modal-mensajero">
-  <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-mensajero')">×</span>
-    <div class="modal-title" id="mensajero-modal-title">Nuevo Mensajero</div>
-    <input type="hidden" id="mensajero-edit-id">
-    <div class="form-group">
-      <label class="form-label">Nombre *</label>
-      <input type="text" class="form-input" id="m-nombre" placeholder="Nombre del mensajero">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Teléfono</label>
-      <input type="tel" class="form-input" id="m-tel" placeholder="+34...">
-    </div>
-    <button class="btn btn-primary" onclick="saveMensajero()">Guardar</button>
-  </div>
+<!-- ══ MODAL: NUEVO MENSAJERO ══ -->
+<div class="modal-bg" id="modal-mens">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-mens')">×</button>
+  <div class="modal-ttl" id="mens-modal-ttl">Nuevo mensajero</div>
+  <input type="hidden" id="mens-id">
+  <div class="fgroup"><label class="flabel">Nombre *</label><input type="text" class="finput" id="mens-nombre" placeholder="Nombre del mensajero"></div>
+  <div class="fgroup"><label class="flabel">Teléfono</label><input type="tel" class="finput" id="mens-tel" placeholder="+53..."></div>
+  <button class="btn btn-pri" onclick="saveMens()">Guardar</button>
+</div>
 </div>
 
-<!-- MODAL PAGO MENSAJERO -->
-<div class="modal-backdrop" id="modal-pago">
-  <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-pago')">×</span>
-    <div class="modal-title">Registrar Pago</div>
-    <input type="hidden" id="pago-mensajero-id">
-    <div class="form-group">
-      <label class="form-label">Mensajero</label>
-      <input type="text" class="form-input" id="pago-mensajero-nombre" readonly>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Tipo</label>
-      <select class="form-input" id="pago-tipo">
-        <option value="pago">Pago entregado al mensajero</option>
-        <option value="cobro">Cobro recibido del mensajero</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Importe (€) *</label>
-      <input type="number" class="form-input" id="pago-importe" placeholder="0.00" step="0.01">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Concepto</label>
-      <input type="text" class="form-input" id="pago-concepto" placeholder="Ej: Pago semana del 23/06">
-    </div>
-    <button class="btn btn-primary" onclick="savePago()">Registrar</button>
+<!-- ══ MODAL: PAGO MENSAJERO ══ -->
+<div class="modal-bg" id="modal-pago">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-pago')">×</button>
+  <div class="modal-ttl">Registrar pago</div>
+  <input type="hidden" id="pago-mens-id">
+  <div class="fgroup"><label class="flabel">Mensajero</label><input type="text" class="finput" id="pago-mens-nombre" readonly></div>
+  <div class="fgroup"><label class="flabel">Tipo</label>
+    <select class="finput" id="pago-tipo">
+      <option value="pago">Pago entregado al mensajero</option>
+      <option value="cobro">Cobro recibido del mensajero</option>
+    </select>
   </div>
+  <div class="fgroup"><label class="flabel">Importe ($) *</label><input type="number" class="finput" id="pago-importe" placeholder="0.00" step="0.01"></div>
+  <div class="fgroup"><label class="flabel">Concepto</label><input type="text" class="finput" id="pago-concepto" placeholder="Ej: Pago semana del 23/06"></div>
+  <button class="btn btn-pri" onclick="savePago()">Registrar</button>
+</div>
 </div>
 
-<!-- MODAL SCRIPT -->
-<div class="modal-backdrop" id="modal-script">
-  <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-script')">×</span>
-    <div class="modal-title">Script para Google Apps Script</div>
-    <p style="font-size:0.8rem;color:var(--gray-600);margin-bottom:0.75rem">Copia este código y pégalo en Google Apps Script:</p>
-    <textarea class="form-input" id="script-code" rows="12" readonly style="font-family:monospace;font-size:0.75rem;line-height:1.4"></textarea>
-    <button class="btn btn-primary" onclick="copiarScript()" style="margin-top:0.75rem">Copiar script</button>
+<!-- ══ MODAL: NUEVO CLIENTE ══ -->
+<div class="modal-bg" id="modal-cliente">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-cliente')">×</button>
+  <div class="modal-ttl" id="cliente-modal-ttl">Nuevo cliente</div>
+  <input type="hidden" id="cliente-id">
+
+  <div class="op-card">
+    <div class="op-card-ttl">👤 Datos personales</div>
+    <div class="fgroup"><label class="flabel">Nombre completo *</label><input type="text" class="finput" id="cli-nombre" placeholder="Nombre y apellidos"></div>
+    <div class="frow">
+      <div class="fgroup"><label class="flabel">Teléfono</label><input type="tel" class="finput" id="cli-tel" placeholder="+53..."></div>
+      <div class="fgroup"><label class="flabel">Email</label><input type="email" class="finput" id="cli-email" placeholder="correo@..."></div>
+    </div>
   </div>
+
+  <div class="op-card">
+    <div class="op-card-ttl">📍 Ubicación</div>
+    <div class="fgroup"><label class="flabel">Dirección</label><input type="text" class="finput" id="cli-dir" placeholder="Calle, número..."></div>
+    <div class="frow">
+      <div class="fgroup"><label class="flabel">Municipio</label>
+        <select class="finput" id="cli-municipio">
+          <option value="">— Seleccionar —</option>
+          <option>La Lisa</option><option>La Coronela</option><option>Playa</option>
+          <option>Marianao</option><option>Plaza</option><option>Boyeros</option>
+          <option>Cerro</option><option>Centro Habana</option><option>Habana Vieja</option>
+          <option>10 de Octubre</option><option>Arroyo Naranjo</option><option>Regla</option>
+          <option>Guanabacoa</option><option>Cotorro</option><option>Habana del Este</option>
+          <option>USA</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="fgroup"><label class="flabel">Reside en</label>
+        <select class="finput" id="cli-reside">
+          <option value="Cuba">Cuba</option>
+          <option value="EeUu">EeUu</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="op-card">
+    <div class="op-card-ttl">🤝 Referencia y canal</div>
+    <div class="frow">
+      <div class="fgroup"><label class="flabel">Con quién tiene contacto</label><input type="text" class="finput" id="cli-contacto" placeholder="Nombre del referido..."></div>
+      <div class="fgroup"><label class="flabel">Canal</label>
+        <select class="finput" id="cli-canal">
+          <option value="">— Seleccionar —</option>
+          <option>Antiguos</option><option>Revolico</option><option>Conocido</option>
+          <option>Referido</option><option>Recomendado</option><option>Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Decisión de compra</label>
+      <div style="display:flex;gap:1.5rem;padding:.5rem 0">
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer"><input type="radio" name="cli-dec" value="si" id="cli-dec-si"> Sí compra</label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer"><input type="radio" name="cli-dec" value="no" id="cli-dec-no" checked> No compra</label>
+      </div>
+    </div>
+    <div class="fgroup"><label class="flabel">Nota</label><input type="text" class="finput" id="cli-nota" placeholder="Observaciones..."></div>
+  </div>
+
+  <div class="notice">💾 Se guardará automáticamente en tu hoja "Clientes" de Google Sheets</div>
+  <button class="btn btn-pri" onclick="saveCliente()">✓ Guardar cliente</button>
+</div>
 </div>
 
-<!-- MODAL CLIENTE NUEVO -->
-<div class="modal-backdrop" id="modal-cliente">
-  <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-cliente')">×</span>
-    <div class="modal-title" id="cliente-modal-title">Nuevo Cliente</div>
-    <input type="hidden" id="cliente-edit-id">
-
-    <div class="op-card">
-      <div class="op-card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Datos personales
-      </div>
-      <div class="op-field" style="margin-bottom:10px">
-        <label class="op-label">Nombre completo *</label>
-        <input type="text" class="op-input" id="c-nombre" placeholder="Nombre y apellidos">
-      </div>
-      <div class="op-g2">
-        <div class="op-field">
-          <label class="op-label">Teléfono</label>
-          <input type="tel" class="op-input" id="c-telefono" placeholder="+53... / +1...">
-        </div>
-        <div class="op-field">
-          <label class="op-label">Email</label>
-          <input type="email" class="op-input" id="c-email" placeholder="correo@...">
-        </div>
-      </div>
-    </div>
-
-    <div class="op-card">
-      <div class="op-card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Ubicación
-      </div>
-      <div class="op-field" style="margin-bottom:10px">
-        <label class="op-label">Dirección</label>
-        <input type="text" class="op-input" id="c-direccion" placeholder="Calle, número, municipio...">
-      </div>
-      <div class="op-g2">
-        <div class="op-field">
-          <label class="op-label">Municipio</label>
-          <select class="op-input op-select" id="c-municipio">
-            <option value="">— Seleccionar —</option>
-            <option value="La Lisa">La Lisa</option>
-            <option value="La Coronela">La Coronela</option>
-            <option value="Playa">Playa</option>
-            <option value="Marianao">Marianao</option>
-            <option value="Plaza">Plaza</option>
-            <option value="Boyeros">Boyeros</option>
-            <option value="Cerro">Cerro</option>
-            <option value="Centro Habana">Centro Habana</option>
-            <option value="Habana Vieja">Habana Vieja</option>
-            <option value="10 de Octubre">10 de Octubre</option>
-            <option value="Arroyo Naranjo">Arroyo Naranjo</option>
-            <option value="Regla">Regla</option>
-            <option value="Guanabacoa">Guanabacoa</option>
-            <option value="Cotorro">Cotorro</option>
-            <option value="Habana del Este">Habana del Este</option>
-            <option value="USA">USA</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
-        <div class="op-field">
-          <label class="op-label">Reside en</label>
-          <select class="op-input op-select" id="c-reside">
-            <option value="Cuba">Cuba</option>
-            <option value="EeUu">EeUu</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div class="op-card">
-      <div class="op-card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Referencia y canal
-      </div>
-      <div class="op-g2">
-        <div class="op-field">
-          <label class="op-label">Con quién tiene contacto</label>
-          <input type="text" class="op-input" id="c-contacto" placeholder="Nombre del referido...">
-        </div>
-        <div class="op-field">
-          <label class="op-label">Canal</label>
-          <select class="op-input op-select" id="c-canal">
-            <option value="">— Seleccionar —</option>
-            <option value="Antiguos">Antiguos</option>
-            <option value="Revolico">Revolico</option>
-            <option value="Conocido">Conocido</option>
-            <option value="Referido">Referido</option>
-            <option value="Recomendado">Recomendado</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
-      </div>
-      <div class="op-field" style="margin-top:10px">
-        <label class="op-label">Decisión de compra</label>
-        <div style="display:flex;gap:1rem;padding:8px 0">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-            <input type="radio" name="c-decision" id="c-decision-si" value="si"> Sí compra
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-            <input type="radio" name="c-decision" id="c-decision-no" value="no" checked> No compra
-          </label>
-        </div>
-      </div>
-      <div class="op-field" style="margin-top:6px">
-        <label class="op-label">Nota</label>
-        <input type="text" class="op-input" id="c-nota" placeholder="Observaciones...">
-      </div>
-    </div>
-
-    <button class="btn btn-primary" onclick="saveCliente()" style="margin-top:0.5rem">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="width:16px;height:16px;display:inline;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
-      Guardar cliente
-    </button>
-  </div>
+<!-- ══ MODAL: SCRIPT ══ -->
+<div class="modal-bg" id="modal-script">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-script')">×</button>
+  <div class="modal-ttl">Script para Apps Script</div>
+  <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem">Copia este código en Google Apps Script:</p>
+  <textarea class="finput" id="script-txt" rows="10" readonly style="font-family:monospace;font-size:.7rem;line-height:1.4"></textarea>
+  <button class="btn btn-pri" style="margin-top:.75rem" onclick="copiarScript()">Copiar script</button>
+</div>
 </div>
 
 <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
 
 <script>
-const DB_KEY = 'envios_db';
-const AUTH_KEY = 'envios_auth';
-const GS_KEY = 'envios_gs_url';
+// ══ DB & AUTH KEYS ══
+var DB_KEY='negocio_db', AUTH_KEY='negocio_auth', GS_KEY='negocio_gs';
 
-let db = { envios: [], mensajeros: [], pagos: [], clientes: [] };
-let currentFilter = { envios: 'todas', entregas: 'pendiente' };
+// ══ DB ══
+var db = {envios:[], mensajeros:[], pagos:[], clientes:[]};
+var sheetsClientes = [];
+var clienteFilter = 'todos';
+var envioFilter = 'todos';
+var entregaFilter = 'pendiente';
 
-function saveDB() {
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
-  updateSyncDot(false);
-}
-function loadDB() {
-  const raw = localStorage.getItem(DB_KEY);
-  if (raw) db = JSON.parse(raw);
-}
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-function today() { return new Date().toISOString().split('T')[0]; }
-function fmtDate(d) { if (!d) return ''; const [y,m,dd] = d.split('-'); return `${dd}/${m}/${y}`; }
-function fmtMoney(n) { return parseFloat(n||0).toFixed(2) + ' €'; }
+function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); updateDot(false); }
+function loadDB(){ var r=localStorage.getItem(DB_KEY); if(r) db=JSON.parse(r); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function fmtDate(d){ if(!d) return ''; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function fmtMoney(n){ return '$'+parseFloat(n||0).toFixed(2); }
 
-// AUTH
-function getAuth() { return JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }
-function saveAuth(u,p) { localStorage.setItem(AUTH_KEY, JSON.stringify({user:u,pass:btoa(p)})); }
-function checkAuth(u,p) { const a=getAuth(); return a && a.user===u && a.pass===btoa(p); }
-function isLoggedIn() { return sessionStorage.getItem('logged')===getAuth()?.user; }
+// ══ AUTH ══
+function getAuth(){ return JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }
+function saveAuth(u,p){ localStorage.setItem(AUTH_KEY, JSON.stringify({u:u,p:btoa(p)})); }
+function checkAuth(u,p){ var a=getAuth(); return a&&a.u===u&&a.p===btoa(p); }
+function isLogged(){ return sessionStorage.getItem('logged')===((getAuth()||{}).u||''); }
 
-function doLogin() {
-  const u=document.getElementById('auth-user').value.trim();
-  const p=document.getElementById('auth-pass').value;
-  if (!getAuth()) { document.getElementById('auth-error').textContent='Primero crea una cuenta.'; return; }
-  if (checkAuth(u,p)) {
-    sessionStorage.setItem('logged', u);
-    document.getElementById('auth-screen').style.display='none';
+function doLogin(){
+  var u=document.getElementById('login-user').value.trim();
+  var p=document.getElementById('login-pass').value;
+  var err=document.getElementById('login-err');
+  if(!getAuth()){ err.textContent='Primero crea una cuenta.'; return; }
+  if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
+  if(checkAuth(u,p)){
+    sessionStorage.setItem('logged',u);
+    document.getElementById('auth').style.display='none';
     document.getElementById('app').style.display='flex';
     initApp();
   } else {
-    document.getElementById('auth-error').textContent='Usuario o contraseña incorrectos.';
+    err.textContent='Usuario o contraseña incorrectos.';
   }
 }
-function doLogout() {
+
+function doSetup(){
+  var u=document.getElementById('setup-user').value.trim();
+  var p=document.getElementById('setup-pass').value;
+  var p2=document.getElementById('setup-pass2').value;
+  var err=document.getElementById('setup-err');
+  if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
+  if(p.length<4){ err.textContent='La contraseña debe tener al menos 4 caracteres.'; return; }
+  if(p!==p2){ err.textContent='Las contraseñas no coinciden.'; return; }
+  saveAuth(u,p);
+  err.style.color='var(--ok)';
+  err.textContent='¡Cuenta creada! Inicia sesión.';
+  setTimeout(function(){
+    document.getElementById('box-setup').style.display='none';
+    document.getElementById('box-login').style.display='block';
+    document.getElementById('auth-toggle').textContent='Crear cuenta nueva';
+    err.textContent='';
+  },1500);
+}
+
+function doLogout(){
   sessionStorage.removeItem('logged');
   location.reload();
 }
-function doSetup() {
-  const u=document.getElementById('setup-user').value.trim();
-  const p=document.getElementById('setup-pass').value;
-  const p2=document.getElementById('setup-pass2').value;
-  const err=document.getElementById('setup-error');
-  if (!u||!p) { err.textContent='Completa todos los campos.'; return; }
-  if (p!==p2) { err.textContent='Las contraseñas no coinciden.'; return; }
-  if (p.length<4) { err.textContent='Mínimo 4 caracteres.'; return; }
-  saveAuth(u,p);
-  err.style.color='green'; err.textContent='¡Cuenta creada! Inicia sesión.';
-  setTimeout(()=>{ document.getElementById('auth-setup-box').style.display='none'; document.getElementById('auth-login-box').style.display='block'; document.getElementById('setup-toggle').textContent='Crear cuenta nueva'; },1200);
-}
-function toggleSetup() {
-  const lb=document.getElementById('auth-login-box'), sb=document.getElementById('auth-setup-box');
-  const tog=document.getElementById('setup-toggle');
-  if (sb.style.display==='none') { sb.style.display='block'; lb.style.display='none'; tog.textContent='Ya tengo cuenta'; }
-  else { sb.style.display='none'; lb.style.display='block'; tog.textContent='Crear cuenta nueva'; }
-}
-function cambiarPassword() {
-  const np=prompt('Nueva contraseña (mín. 4 caracteres):');
-  if (!np||np.length<4) { alert('Contraseña muy corta.'); return; }
-  const auth=getAuth();
-  saveAuth(auth.user,np);
-  alert('Contraseña actualizada.');
+
+function toggleAuth(){
+  var login=document.getElementById('box-login');
+  var setup=document.getElementById('box-setup');
+  var tog=document.getElementById('auth-toggle');
+  if(setup.style.display==='none'){
+    setup.style.display='block'; login.style.display='none';
+    tog.textContent='Ya tengo cuenta';
+  } else {
+    setup.style.display='none'; login.style.display='block';
+    tog.textContent='Crear cuenta nueva';
+  }
 }
 
-// APP INIT
-function initApp() {
+function cambiarPass(){
+  var np=prompt('Nueva contraseña (mín. 4 caracteres):');
+  if(!np||np.length<4){ alert('Contraseña demasiado corta.'); return; }
+  var a=getAuth(); saveAuth(a.u,np);
+  alert('Contraseña actualizada correctamente.');
+}
+
+// ══ INIT ══
+function initApp(){
   loadDB();
-  renderEnvíos();
-  renderEntregas();
-  renderMensajeros();
-  populateMensajeroSelects();
   document.getElementById('gs-url').value = localStorage.getItem(GS_KEY)||'';
-  refreshOpClientes();
-  renderClientes();
-  loadClientesFromSheets();
-  updateSyncDot(true);
-  window.addEventListener('online', () => { document.getElementById('offline-banner').style.display='none'; updateSyncDot(true); });
-  window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display='block'; updateSyncDot(false); });
-  if (!navigator.onLine) document.getElementById('offline-banner').style.display='block';
+  updateDot(true);
+  buildScriptText();
+  renderAll();
+  loadSheetsClientes();
+  window.addEventListener('online', function(){ document.getElementById('offline-bar').style.display='none'; updateDot(true); });
+  window.addEventListener('offline', function(){ document.getElementById('offline-bar').style.display='block'; updateDot(false); });
+  if(!navigator.onLine) document.getElementById('offline-bar').style.display='block';
 }
 
-// NAVIGATION
-function showSection(name, btn) {
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+function renderAll(){
+  renderEnvios(); renderEntregas(); renderMensajeros(); renderClientes();
+  populateMensSelects();
+}
+
+// ══ NAV ══
+function showSection(name, btn){
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('sec-'+name).classList.add('active');
   btn.classList.add('active');
-  if (name==='resumen') populateResumenSelect();
+  if(name==='resumen') populateMensSelects();
+  if(name==='clientes') renderClientes();
 }
 
-// MODALS
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-backdrop').forEach(m => {
-  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+// ══ MODALS ══
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(function(m){
+  m.addEventListener('click', function(e){ if(e.target===m) m.classList.remove('open'); });
 });
 
-// REMESAS
-function saveEnvio() {
-  const id = document.getElementById('envio-edit-id').value;
-  const usa = document.getElementById('op-val-usa').value || document.getElementById('op-search-usa').value.trim();
-  const cuba = document.getElementById('op-val-cuba').value || document.getElementById('op-search-cuba').value.trim();
-  const dep = parseFloat(document.getElementById('op-depositar').value)||0;
-  const ent = parseFloat(document.getElementById('op-entrega').value)||0;
-  const men = parseFloat(document.getElementById('op-mensajeria').value)||0;
-  const gan = dep - ent - men;
-  const obj = {
-    id: id||uid(),
-    cliente: usa,
-    cliente_cuba: cuba,
-    telefono: document.getElementById('op-telefono').value.trim(),
-    direccion: document.getElementById('op-direccion').value.trim(),
-    municipio: document.getElementById('op-municipio').value,
-    importe: dep,
-    entrega: ent,
-    costo_mens: men,
-    ganancia: parseFloat(gan.toFixed(2)),
-    ganado_cu: parseFloat((gan/2).toFixed(2)),
-    tipo: document.getElementById('op-tipo').value,
-    cobro: document.getElementById('op-cobro').value,
-    dia: document.getElementById('op-dia').value,
-    fecha: document.getElementById('op-fecha').value,
-    hora: document.getElementById('op-hora').value,
-    mensajero: document.getElementById('op-mensajero').value,
-    notas: document.getElementById('op-notas').value.trim(),
-    estado: document.getElementById('op-estado').value,
-    revisado: document.getElementById('op-chk').classList.contains('on'),
-    creado: id ? (db.envios.find(r=>r.id===id)?.creado||today()) : today()
+// ══ CHECKBOX ══
+function toggleChk(boxId, lblId){
+  var box=document.getElementById(boxId);
+  var lbl=document.getElementById(lblId);
+  box.classList.toggle('on');
+  lbl.textContent = box.classList.contains('on') ? 'Revisado' : 'No revisado';
+}
+
+// ══ CALC ══
+function calcOp(){
+  var dep=parseFloat(document.getElementById('op-dep').value)||0;
+  var ent=parseFloat(document.getElementById('op-ent').value)||0;
+  var cmen=parseFloat(document.getElementById('op-mens').value)||0;
+  var gan=dep-ent-cmen;
+  document.getElementById('op-r-gan').textContent = fmtMoney(gan);
+  document.getElementById('op-r-gcu').textContent = fmtMoney(gan/2);
+}
+
+// ══ DROPDOWN CLIENTES ══
+function getAllClientNames(){
+  var fromSheets = sheetsClientes.map(function(c){ return c.nombre||''; }).filter(Boolean);
+  var fromLocal  = db.clientes.map(function(c){ return c.nombre||''; }).filter(Boolean);
+  var all = fromSheets.concat(fromLocal);
+  var unique = all.filter(function(v,i){ return all.indexOf(v)===i; });
+  return unique.sort(function(a,b){ return a.localeCompare(b,'es'); });
+}
+
+function openDD(id){ filterDD(id); }
+function closeDD(id){ document.getElementById('ddl-'+id).classList.remove('open'); }
+
+function filterDD(id){
+  var q = document.getElementById('dd-'+id).value.toLowerCase().trim();
+  var list = document.getElementById('ddl-'+id);
+  var names = getAllClientNames();
+  var filtered = q ? names.filter(function(n){ return n.toLowerCase().indexOf(q)>=0; }) : names;
+  list.innerHTML='';
+  if(!filtered.length){
+    var emp=document.createElement('div'); emp.className='dd-empty';
+    emp.textContent = q ? 'Sin resultados — puedes escribir el nombre directamente' : 'Sin clientes aún';
+    list.appendChild(emp);
+    list.classList.add('open'); return;
+  }
+  filtered.slice(0,50).forEach(function(c){
+    var d=document.createElement('div'); d.className='dd-item';
+    if(q){
+      var idx=c.toLowerCase().indexOf(q);
+      d.innerHTML=c.slice(0,idx)+'<strong>'+c.slice(idx,idx+q.length)+'</strong>'+c.slice(idx+q.length);
+    } else { d.textContent=c; }
+    d.onmousedown=function(e){ e.preventDefault(); document.getElementById('dd-'+id).value=c; closeDD(id); };
+    list.appendChild(d);
+  });
+  list.classList.add('open');
+}
+
+// ══ MINI CLIENT FORM ══
+function toggleMini(id){
+  var box=document.getElementById('mini-'+id);
+  var lbl=document.getElementById('mini-lbl-'+id);
+  var open = box.style.display==='none';
+  box.style.display = open ? 'block' : 'none';
+  lbl.textContent = open ? '× Cancelar' : '＋ Añadir cliente nuevo';
+}
+
+function saveMiniCliente(id){
+  var nombre = document.getElementById('m'+id+'-nombre').value.trim();
+  if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  var tel = document.getElementById('m'+id+'-tel').value.trim();
+  var dir = document.getElementById('m'+id+'-dir').value.trim();
+  var extra = id==='cuba'
+    ? {municipio: document.getElementById('mcuba-mun').value, reside:'Cuba'}
+    : {canal: document.getElementById('musa-canal').value, reside:'EeUu'};
+  var nuevo = Object.assign({id:uid(), nombre:nombre, telefono:tel, direccion:dir, creado:today()}, extra);
+  db.clientes.unshift(nuevo);
+  saveDB();
+  saveClienteToSheets(nuevo);
+  document.getElementById('dd-'+id).value = nombre;
+  toggleMini(id);
+  document.getElementById('m'+id+'-nombre').value='';
+  document.getElementById('m'+id+'-tel').value='';
+  document.getElementById('m'+id+'-dir').value='';
+}
+
+// ══ SAVE OPERACIÓN ══
+function saveOp(){
+  var eid = document.getElementById('op-id').value;
+  var dep = parseFloat(document.getElementById('op-dep').value)||0;
+  var ent = parseFloat(document.getElementById('op-ent').value)||0;
+  var cmen= parseFloat(document.getElementById('op-mens').value)||0;
+  var gan = dep-ent-cmen;
+  var obj = {
+    id: eid||uid(),
+    cliente:    document.getElementById('dd-usa').value.trim(),
+    clienteCuba:document.getElementById('dd-cuba').value.trim(),
+    telefono:   document.getElementById('op-telefono').value.trim(),
+    direccion:  document.getElementById('op-direccion').value.trim(),
+    municipio:  document.getElementById('op-municipio').value,
+    mensajero:  document.getElementById('op-mensajero').value,
+    tipo:       document.getElementById('op-tipo').value,
+    cobro:      document.getElementById('op-cobro').value,
+    dia:        document.getElementById('op-dia').value,
+    fecha:      document.getElementById('op-fecha').value,
+    hora:       document.getElementById('op-hora').value,
+    depositar:  dep,
+    entrega:    ent,
+    costoMens:  cmen,
+    ganancia:   parseFloat(gan.toFixed(2)),
+    ganadoCu:   parseFloat((gan/2).toFixed(2)),
+    notas:      document.getElementById('op-notas').value.trim(),
+    estado:     document.getElementById('op-estado').value,
+    revisado:   document.getElementById('op-chk').classList.contains('on'),
+    creado:     eid ? (db.envios.find(function(r){ return r.id===eid; })||{}).creado||today() : today()
   };
-  if (!obj.cliente || !obj.importe) { alert('El cliente en EEUU y la cantidad son obligatorios.'); return; }
-  if (id) { const i=db.envios.findIndex(r=>r.id===id); db.envios[i]=obj; }
+  if(!obj.cliente && !obj.clienteCuba){ alert('Introduce al menos un cliente.'); return; }
+  if(!obj.depositar){ alert('La cantidad a depositar es obligatoria.'); return; }
+  if(eid){ var idx=db.envios.findIndex(function(r){ return r.id===eid; }); db.envios[idx]=obj; }
   else db.envios.unshift(obj);
   saveDB();
-  // Generate messenger summary BEFORE closing modal
-  generarResumenMensajero(obj);
-  closeModal('modal-envio'); clearEnvioForm();
-  refreshOpClientes(); renderEnvios(); renderEntregas();
-  // Show summary in main content area
-  mostrarUltimoResumen(window._lastMensajeroMsg);
-  // Enviar operación directamente a hoja del mes en Google Sheets
-  saveOperacionToSheets(obj);
+  saveOpToSheets(obj);
+  mostrarResumenMensajero(obj);
+  closeModal('modal-op');
+  clearOpForm();
+  renderAll();
 }
-function clearEnvioForm() {
-  ['op-depositar','op-entrega','op-mensajeria','op-dia','op-telefono','op-direccion','op-notas','op-fecha','op-hora'].forEach(id=>document.getElementById(id).value='');
+
+function clearOpForm(){
+  var campos=['op-id','dd-usa','dd-cuba','op-telefono','op-direccion','op-notas','op-dep','op-ent','op-mens','op-hora','op-dia'];
+  campos.forEach(function(c){ document.getElementById(c).value=''; });
+  document.getElementById('op-fecha').value=today();
   document.getElementById('op-tipo').value='EeUu → Cuba';
   document.getElementById('op-cobro').value='EeUu';
   document.getElementById('op-municipio').value='';
   document.getElementById('op-mensajero').value='';
   document.getElementById('op-estado').value='pendiente';
-  ['op-search-usa','op-search-cuba','op-val-usa','op-val-cuba'].forEach(id=>document.getElementById(id).value='');
-  ['op-r-ganancia','op-r-ganado'].forEach(id=>document.getElementById(id).textContent='—');
   document.getElementById('op-chk').classList.remove('on');
   document.getElementById('op-chk-lbl').textContent='No revisado';
-  document.getElementById('envio-edit-id').value='';
-  document.getElementById('envio-modal-title').textContent='Nueva Operación';
+  document.getElementById('op-r-gan').textContent='—';
+  document.getElementById('op-r-gcu').textContent='—';
+  document.getElementById('op-modal-ttl').textContent='Nueva operación';
 }
-function editEnvio(id) {
-  const r=db.envios.find(x=>x.id===id); if(!r) return;
-  document.getElementById('envio-edit-id').value=r.id;
-  document.getElementById('op-search-usa').value=r.cliente||'';
-  document.getElementById('op-val-usa').value=r.cliente||'';
-  document.getElementById('op-search-cuba').value=r.cliente_cuba||'';
-  document.getElementById('op-val-cuba').value=r.cliente_cuba||'';
+
+function editOp(id){
+  var r=db.envios.find(function(x){ return x.id===id; }); if(!r) return;
+  document.getElementById('op-id').value=r.id;
+  document.getElementById('dd-usa').value=r.cliente||'';
+  document.getElementById('dd-cuba').value=r.clienteCuba||'';
   document.getElementById('op-telefono').value=r.telefono||'';
   document.getElementById('op-direccion').value=r.direccion||'';
   document.getElementById('op-municipio').value=r.municipio||'';
-  document.getElementById('op-depositar').value=r.importe||'';
-  document.getElementById('op-entrega').value=r.entrega||'';
-  document.getElementById('op-mensajeria').value=r.costo_mens||'';
+  document.getElementById('op-mensajero').value=r.mensajero||'';
   document.getElementById('op-tipo').value=r.tipo||'EeUu → Cuba';
   document.getElementById('op-cobro').value=r.cobro||'EeUu';
   document.getElementById('op-dia').value=r.dia||'';
   document.getElementById('op-fecha').value=r.fecha||'';
   document.getElementById('op-hora').value=r.hora||'';
-  document.getElementById('op-mensajero').value=r.mensajero||'';
+  document.getElementById('op-dep').value=r.depositar||'';
+  document.getElementById('op-ent').value=r.entrega||'';
+  document.getElementById('op-mens').value=r.costoMens||'';
   document.getElementById('op-notas').value=r.notas||'';
   document.getElementById('op-estado').value=r.estado||'pendiente';
   if(r.revisado) document.getElementById('op-chk').classList.add('on');
   document.getElementById('op-chk-lbl').textContent=r.revisado?'Revisado':'No revisado';
-  document.getElementById('envio-modal-title').textContent='Editar Operación';
-  calcularOp();
-  openModal('modal-envio');
-}
-function deleteEnvio(id) {
-  if(!confirm('¿Eliminar esta remesa?')) return;
-  db.envios=db.envios.filter(r=>r.id!==id);
-  saveDB(); renderEnvíos(); renderEntregas();
-}
-function markEntregada(id) {
-  const r=db.envios.find(x=>x.id===id); if(!r) return;
-  r.estado='entregada'; saveDB(); renderEnvíos(); renderEntregas();
+  document.getElementById('op-modal-ttl').textContent='Editar operación';
+  calcOp();
+  openModal('modal-op');
 }
 
-function filterEnvíos(f, btn) {
-  currentFilter.envios=f;
-  document.querySelectorAll('#sec-envios .tab-mini').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderEnvíos();
-}
-function renderEnvíos() {
-  const all=db.envios;
-  const pend=all.filter(r=>r.estado==='pendiente'||r.estado==='en_camino');
-  const done=all.filter(r=>r.estado==='entregada');
-  const total=all.reduce((s,r)=>s+r.importe,0);
-  document.getElementById('stats-envios').innerHTML=`
-    <div class="stat-card"><div class="stat-value">${all.length}</div><div class="stat-label">Total envios</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--warning)">${pend.length}</div><div class="stat-label">Pendientes</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--success)">${done.length}</div><div class="stat-label">Entregadas</div></div>
-    <div class="stat-card"><div class="stat-value" style="font-size:1.1rem">${fmtMoney(total)}</div><div class="stat-label">Total gestionado</div></div>
-  `;
-  let list=all;
-  if (currentFilter.envios==='pendiente') list=all.filter(r=>r.estado==='pendiente'||r.estado==='en_camino');
-  if (currentFilter.envios==='entregada') list=all.filter(r=>r.estado==='entregada');
-  const div=document.getElementById('list-envios');
-  if (!list.length) { div.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No hay envios aquí todavía</div></div>`; return; }
-  const men = id => db.mensajeros.find(m=>m.id===id)?.nombre||'Sin asignar';
-  const estadoBadge = e => {
-    const map={pendiente:'badge-pending',en_camino:'badge-info',entregada:'badge-done',devuelta:'badge-pending'};
-    const lbl={pendiente:'Pendiente',en_camino:'En camino',entregada:'Entregada',devuelta:'Devuelta'};
-    return `<span class="badge ${map[e]||'badge-pending'}">${lbl[e]||e}</span>`;
-  };
-  div.innerHTML=list.map(r=>`
-    <div class="item ${r.estado==='entregada'?'done':'pending'}">
-      <div class="item-header">
-        <div class="item-name">${r.cliente}</div>
-        ${estadoBadge(r.estado)}
-      </div>
-      <div class="item-detail">
-        📍 ${r.direccion}${r.municipio?' · '+r.municipio:''}<br>
-        💰 ${fmtMoney(r.importe)} ${r.moneda!=='EUR'?'('+r.moneda+')':''} ${r.costo_mens?'· Mens: $'+r.costo_mens:''}<br>
-        🔄 ${r.tipo||'EeUu→Cuba'} · 🛵 ${men(r.mensajero)}<br>
-        ${r.fecha?'📅 '+fmtDate(r.fecha)+(r.hora?' a las '+r.hora:'')+'<br>':''}
-        ${r.notas?'📝 '+r.notas:''}
-      </div>
-      <div class="item-actions">
-        ${r.estado!=='entregada'?`<button class="btn btn-success btn-sm" onclick="markEntregada('${r.id}')">✓ Entregada</button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="editEnvio('${r.id}')">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteEnvio('${r.id}')">Borrar</button>
-      </div>
-    </div>
-  `).join('');
+function deleteOp(id){
+  if(!confirm('¿Eliminar este envío?')) return;
+  db.envios=db.envios.filter(function(r){ return r.id!==id; });
+  saveDB(); renderAll();
 }
 
-// ENTREGAS
-function filterEntregas(f, btn) {
-  currentFilter.entregas=f;
-  document.querySelectorAll('#sec-entregas .tab-mini').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+function markEntregada(id){
+  var r=db.envios.find(function(x){ return x.id===id; }); if(!r) return;
+  r.estado='entregada'; saveDB(); renderAll();
+}
+
+// ══ RESUMEN MENSAJERO ══
+function mostrarResumenMensajero(op){
+  var mNombre=db.mensajeros.find(function(m){ return m.id===op.mensajero; });
+  var mens = mNombre ? mNombre.nombre.toUpperCase() : 'MENSAJERO';
+  var cliente = op.clienteCuba || op.cliente || '—';
+  var tel = op.telefono || '—';
+  var dir = (op.direccion||'—') + (op.municipio ? ', '+op.municipio : '');
+  var fecha = op.fecha ? fmtDate(op.fecha) : fmtDate(today());
+  var hora = op.hora || '—';
+  var sep = '─'.repeat(26);
+  var txt = '🛵 ENTREGA PARA '+mens+'\n'+sep+'\n'
+    +'👤 Cliente: '+cliente+'\n'
+    +'📱 Teléfono: '+tel+'\n'
+    +'📍 Dirección: '+dir+'\n'
+    +'💰 Entregar: '+fmtMoney(op.entrega||op.depositar)+'\n'
+    +'🔧 Costo mensajería: '+fmtMoney(op.costoMens)+'\n'
+    +'📅 Fecha: '+fecha+'\n'
+    +'⏰ Hora: '+hora+'\n'
+    +sep+'\nGracias 🙏';
+  window._lastMensMsg = txt;
+  var area = document.getElementById('op-result-area');
+  area.innerHTML = '<div class="op-result-box">'
+    +'<div class="op-result-ttl">✅ Operación guardada · Mensaje para el mensajero'
+    +'<button onclick="document.getElementById(\'op-result-area\').innerHTML=\'\'" style="background:none;border:none;color:var(--ok);font-size:1.1rem;cursor:pointer">×</button></div>'
+    +'<div class="op-result-msg">'+txt.replace(/</g,'&lt;')+'</div>'
+    +'<button class="btn btn-ok btn-sm" onclick="copiarUltimoMsg()" style="width:100%">📲 Copiar para WhatsApp</button>'
+    +'</div>';
+  area.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function copiarUltimoMsg(){
+  var txt=window._lastMensMsg||'';
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ alert('¡Copiado!'); }); }
+  else { var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('¡Copiado!'); }
+}
+
+// ══ RENDER ENVÍOS ══
+function filterEnvios(f,btn){
+  envioFilter=f;
+  document.querySelectorAll('#sec-envios .tmi').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  renderEnvios();
+}
+
+function renderEnvios(){
+  var all=db.envios;
+  var pend=all.filter(function(r){ return r.estado==='pendiente'||r.estado==='en_camino'; });
+  var done=all.filter(function(r){ return r.estado==='entregada'; });
+  var totalGan=all.reduce(function(s,r){ return s+(r.ganancia||0); },0);
+  document.getElementById('stats-envios').innerHTML=
+    '<div class="stat"><div class="stat-val">'+all.length+'</div><div class="stat-lbl">Total envíos</div></div>'
+    +'<div class="stat"><div class="stat-val w">'+pend.length+'</div><div class="stat-lbl">Pendientes</div></div>'
+    +'<div class="stat"><div class="stat-val g">'+done.length+'</div><div class="stat-lbl">Entregados</div></div>'
+    +'<div class="stat"><div class="stat-val s">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>';
+  var list=all;
+  if(envioFilter==='pendiente') list=all.filter(function(r){ return r.estado==='pendiente'||r.estado==='en_camino'; });
+  if(envioFilter==='entregada') list=all.filter(function(r){ return r.estado==='entregada'; });
+  var div=document.getElementById('list-envios');
+  if(!list.length){ div.innerHTML='<div class="empty"><div class="empty-ico">📭</div><div>No hay envíos aquí todavía</div></div>'; return; }
+  var estadoMap={pendiente:'<span class="bdg bdg-warn">Pendiente</span>',en_camino:'<span class="bdg bdg-pri">En camino</span>',entregada:'<span class="bdg bdg-ok">Entregada</span>',devuelta:'<span class="bdg bdg-warn">Devuelta</span>'};
+  div.innerHTML=list.map(function(r){
+    var mens=db.mensajeros.find(function(m){ return m.id===r.mensajero; });
+    var cls=r.estado==='entregada'?'done':(r.estado==='en_camino'?'transit':'pend');
+    return '<div class="item '+cls+'">'
+      +'<div class="item-hdr"><div class="item-name">'+r.cliente+'</div>'+(estadoMap[r.estado]||'')+'</div>'
+      +'<div class="item-detail">'
+      +(r.clienteCuba?'🇨🇺 '+r.clienteCuba+'<br>':'')
+      +'📍 '+(r.direccion||'—')+(r.municipio?' · '+r.municipio:'')+'<br>'
+      +'💰 '+fmtMoney(r.depositar)+' · Entrega: '+fmtMoney(r.entrega)+(r.costoMens?' · Mens: '+fmtMoney(r.costoMens):'')+' · 🛵 '+(mens?mens.nombre:'Sin asignar')+'<br>'
+      +(r.fecha?'📅 '+fmtDate(r.fecha)+(r.hora?' ⏰ '+r.hora:'')+'<br>':'')
+      +(r.notas?'📝 '+r.notas:'')
+      +'</div>'
+      +'<div class="item-actions">'
+      +(r.estado!=='entregada'?'<button class="btn btn-ok btn-sm" onclick="markEntregada(\''+r.id+'\')">✓ Entregada</button>':'')
+      +'<button class="btn btn-out btn-sm" onclick="editOp(\''+r.id+'\')">Editar</button>'
+      +'<button class="btn btn-err btn-sm" onclick="deleteOp(\''+r.id+'\')">Borrar</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+// ══ RENDER ENTREGAS ══
+function filterEntregas(f,btn){
+  entregaFilter=f;
+  document.querySelectorAll('#sec-entregas .tmi').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
   renderEntregas();
 }
-function renderEntregas() {
-  let list=db.envios.filter(r=>r.fecha);
-  list.sort((a,b)=>{
-    const ta=(a.fecha+(a.hora||'00:00')).replace(/\D/g,'');
-    const tb=(b.fecha+(b.hora||'00:00')).replace(/\D/g,'');
-    return ta.localeCompare(tb);
+
+function renderEntregas(){
+  var list=db.envios.filter(function(r){ return r.fecha; });
+  list.sort(function(a,b){
+    return ((a.fecha||'')+(a.hora||'00:00')).localeCompare((b.fecha||'')+(b.hora||'00:00'));
   });
-  const f=currentFilter.entregas;
-  if (f==='pendiente') list=list.filter(r=>r.estado!=='entregada'&&r.estado!=='devuelta');
-  if (f==='realizada') list=list.filter(r=>r.estado==='entregada');
-  const div=document.getElementById('list-entregas');
-  if (!list.length) { div.innerHTML=`<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No hay entregas programadas</div></div>`; return; }
-  const men = id => db.mensajeros.find(m=>m.id===id)?.nombre||'Sin asignar';
-  div.innerHTML=list.map(r=>`
-    <div class="item ${r.estado==='entregada'?'done':'pending'}">
-      <div class="item-header">
-        <div class="item-name">${r.cliente}</div>
-        <div style="font-size:0.8rem;font-weight:600;color:var(--primary)">${r.hora||'Sin hora'}</div>
-      </div>
-      <div class="item-detail">
-        📅 ${fmtDate(r.fecha)} ${r.hora?'· ⏰ '+r.hora:''}<br>
-        📍 ${r.direccion}<br>
-        🛵 ${men(r.mensajero)} · 💶 ${fmtMoney(r.importe)}
-      </div>
-      <div class="item-actions">
-        ${r.estado!=='entregada'?`<button class="btn btn-success btn-sm" onclick="markEntregada('${r.id}')">✓ Marcar entregada</button>`:`<span class="badge badge-done">✓ Completada</span>`}
-      </div>
-    </div>
-  `).join('');
+  if(entregaFilter==='pendiente') list=list.filter(function(r){ return r.estado!=='entregada'&&r.estado!=='devuelta'; });
+  if(entregaFilter==='realizada') list=list.filter(function(r){ return r.estado==='entregada'; });
+  var div=document.getElementById('list-entregas');
+  if(!list.length){ div.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div>No hay entregas programadas</div></div>'; return; }
+  div.innerHTML=list.map(function(r){
+    var mens=db.mensajeros.find(function(m){ return m.id===r.mensajero; });
+    var cls=r.estado==='entregada'?'done':'pend';
+    return '<div class="item '+cls+'">'
+      +'<div class="item-hdr"><div class="item-name">'+r.cliente+'</div><span style="font-size:.85rem;font-weight:700;color:var(--pri)">'+(r.hora||'Sin hora')+'</span></div>'
+      +'<div class="item-detail">'
+      +'📅 '+fmtDate(r.fecha)+(r.hora?' ⏰ '+r.hora:'')+'<br>'
+      +'📍 '+(r.direccion||'—')+(r.municipio?' · '+r.municipio:'')+'<br>'
+      +'💰 '+fmtMoney(r.entrega)+' · 🛵 '+(mens?mens.nombre:'Sin asignar')
+      +'</div>'
+      +'<div class="item-actions">'
+      +(r.estado!=='entregada'
+        ?'<button class="btn btn-ok btn-sm" onclick="markEntregada(\''+r.id+'\')">✓ Entregada</button>'
+        :'<span class="bdg bdg-ok">✓ Completada</span>')
+      +'</div></div>';
+  }).join('');
 }
 
-// MENSAJEROS
-function saveMensajero() {
-  const id=document.getElementById('mensajero-edit-id').value;
-  const obj={
-    id:id||uid(),
-    nombre:document.getElementById('m-nombre').value.trim(),
-    tel:document.getElementById('m-tel').value.trim()
-  };
-  if(!obj.nombre){alert('El nombre es obligatorio.');return;}
-  if(id){const i=db.mensajeros.findIndex(m=>m.id===id);db.mensajeros[i]=obj;}
+// ══ MENSAJEROS ══
+function saveMens(){
+  var mid=document.getElementById('mens-id').value;
+  var nombre=document.getElementById('mens-nombre').value.trim();
+  if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  var obj={id:mid||uid(), nombre:nombre, tel:document.getElementById('mens-tel').value.trim()};
+  if(mid){ var idx=db.mensajeros.findIndex(function(m){ return m.id===mid; }); db.mensajeros[idx]=obj; }
   else db.mensajeros.push(obj);
-  saveDB(); closeModal('modal-mensajero');
-  document.getElementById('m-nombre').value=''; document.getElementById('m-tel').value='';
-  document.getElementById('mensajero-edit-id').value='';
-  renderMensajeros(); populateMensajeroSelects();
+  saveDB();
+  document.getElementById('mens-nombre').value='';
+  document.getElementById('mens-tel').value='';
+  document.getElementById('mens-id').value='';
+  document.getElementById('mens-modal-ttl').textContent='Nuevo mensajero';
+  closeModal('modal-mens');
+  renderAll();
 }
-function deleteMensajero(id){
-  if(!confirm('¿Eliminar mensajero?'))return;
-  db.mensajeros=db.mensajeros.filter(m=>m.id!==id);
-  saveDB(); renderMensajeros(); populateMensajeroSelects();
+
+function editMens(id){
+  var m=db.mensajeros.find(function(x){ return x.id===id; }); if(!m) return;
+  document.getElementById('mens-id').value=m.id;
+  document.getElementById('mens-nombre').value=m.nombre;
+  document.getElementById('mens-tel').value=m.tel||'';
+  document.getElementById('mens-modal-ttl').textContent='Editar mensajero';
+  openModal('modal-mens');
 }
+
+function deleteMens(id){
+  if(!confirm('¿Eliminar este mensajero?')) return;
+  db.mensajeros=db.mensajeros.filter(function(m){ return m.id!==id; });
+  saveDB(); renderAll();
+}
+
 function openPago(id){
-  const m=db.mensajeros.find(x=>x.id===id);
-  document.getElementById('pago-mensajero-id').value=id;
-  document.getElementById('pago-mensajero-nombre').value=m.nombre;
+  var m=db.mensajeros.find(function(x){ return x.id===id; }); if(!m) return;
+  document.getElementById('pago-mens-id').value=id;
+  document.getElementById('pago-mens-nombre').value=m.nombre;
   document.getElementById('pago-importe').value='';
   document.getElementById('pago-concepto').value='';
   openModal('modal-pago');
 }
+
 function savePago(){
-  const mid=document.getElementById('pago-mensajero-id').value;
-  const imp=parseFloat(document.getElementById('pago-importe').value);
-  if(!imp||imp<=0){alert('Importe inválido.');return;}
-  const tipo=document.getElementById('pago-tipo').value;
-  db.pagos.push({id:uid(),mensajeroId:mid,tipo,importe:imp,concepto:document.getElementById('pago-concepto').value.trim(),fecha:today()});
+  var mid=document.getElementById('pago-mens-id').value;
+  var imp=parseFloat(document.getElementById('pago-importe').value);
+  if(!imp||imp<=0){ alert('Importe inválido.'); return; }
+  db.pagos.push({
+    id:uid(), mensajeroId:mid, tipo:document.getElementById('pago-tipo').value,
+    importe:imp, concepto:document.getElementById('pago-concepto').value.trim(), fecha:today()
+  });
   saveDB(); closeModal('modal-pago'); renderMensajeros();
 }
-function calcBalance(mid){
-  return db.pagos.filter(p=>p.mensajeroId===mid).reduce((s,p)=>{
-    return s + (p.tipo==='pago'? p.importe : -p.importe);
+
+function calcBalance(id){
+  return db.pagos.filter(function(p){ return p.mensajeroId===id; }).reduce(function(s,p){
+    return s+(p.tipo==='pago'?p.importe:-p.importe);
   },0);
 }
+
 function renderMensajeros(){
-  const div=document.getElementById('list-mensajeros');
-  if(!db.mensajeros.length){div.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-text">No hay mensajeros registrados</div></div>`;return;}
-  div.innerHTML=db.mensajeros.map(m=>{
-    const bal=calcBalance(m.id);
-    const remActivas=db.envios.filter(r=>r.mensajero===m.id&&r.estado!=='entregada').length;
-    const pagosHist=db.pagos.filter(p=>p.mensajeroId===m.id);
-    const histHTML=pagosHist.length?`<div style="margin-top:0.5rem;border-top:1px solid var(--gray-100);padding-top:0.5rem">
-      ${pagosHist.slice(-3).map(p=>`<div style="font-size:0.75rem;color:var(--gray-500);display:flex;justify-content:space-between"><span>${p.tipo==='pago'?'💸':'💰'} ${p.concepto||'Pago'} · ${fmtDate(p.fecha)}</span><span>${p.tipo==='pago'?'+':'-'}${fmtMoney(p.importe)}</span></div>`).join('')}
-    </div>`:'';
-    return `<div class="messenger-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <div class="messenger-name">${m.nombre}</div>
-          ${m.tel?`<div class="messenger-detail">📱 ${m.tel}</div>`:''}
-          <div class="messenger-detail">Entregas activas: <strong>${remActivas}</strong></div>
-        </div>
-        <div style="text-align:right">
-          <div class="messenger-balance ${bal>0?'owe':bal<0?'paid':''}">${bal>0?'Le debes':bal<0?'Te debe':''}</div>
-          <div class="messenger-balance ${bal>0?'owe':bal<0?'paid':''}">${Math.abs(bal).toFixed(2)} €</div>
-        </div>
-      </div>
-      ${histHTML}
-      <div class="item-actions" style="margin-top:0.75rem">
-        <button class="btn btn-primary btn-sm" onclick="openPago('${m.id}')">💰 Pago</button>
-        <button class="btn btn-outline btn-sm" onclick="editMensajero('${m.id}')">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteMensajero('${m.id}')">Borrar</button>
-      </div>
-    </div>`;
+  var div=document.getElementById('list-mensajeros');
+  if(!db.mensajeros.length){ div.innerHTML='<div class="empty"><div class="empty-ico">👤</div><div>No hay mensajeros registrados</div></div>'; return; }
+  div.innerHTML=db.mensajeros.map(function(m){
+    var bal=calcBalance(m.id);
+    var activas=db.envios.filter(function(r){ return r.mensajero===m.id&&r.estado!=='entregada'; }).length;
+    var hist=db.pagos.filter(function(p){ return p.mensajeroId===m.id; }).slice(-3).map(function(p){
+      return '<div class="mc-row"><span>'+(p.tipo==='pago'?'💸':'💰')+' '+(p.concepto||'Pago')+' · '+fmtDate(p.fecha)+'</span><span>'+(p.tipo==='pago'?'+':'-')+fmtMoney(p.importe)+'</span></div>';
+    }).join('');
+    return '<div class="mc">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      +'<div><div class="mc-name">'+m.nombre+'</div>'
+      +(m.tel?'<div style="font-size:.8rem;color:var(--g5)">📱 '+m.tel+'</div>':'')
+      +'<div style="font-size:.8rem;color:var(--g5)">Activas: '+activas+'</div></div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-size:.75rem;color:var(--g5)">'+(bal>0?'Le debes':bal<0?'Te debe':'Balance')+'</div>'
+      +'<div class="mc-bal'+(bal<=0?' ok':'')+'">'+fmtMoney(Math.abs(bal))+'</div></div></div>'
+      +(hist?'<div class="mc-hist">'+hist+'</div>':'')
+      +'<div class="item-actions" style="margin-top:.75rem">'
+      +'<button class="btn btn-ok btn-sm" onclick="openPago(\''+m.id+'\')">💰 Pago</button>'
+      +'<button class="btn btn-out btn-sm" onclick="editMens(\''+m.id+'\')">Editar</button>'
+      +'<button class="btn btn-err btn-sm" onclick="deleteMens(\''+m.id+'\')">Borrar</button>'
+      +'</div></div>';
   }).join('');
 }
-function editMensajero(id){
-  const m=db.mensajeros.find(x=>x.id===id);
-  document.getElementById('mensajero-edit-id').value=m.id;
-  document.getElementById('m-nombre').value=m.nombre;
-  document.getElementById('m-tel').value=m.tel||'';
-  document.getElementById('mensajero-modal-title').textContent='Editar Mensajero';
-  openModal('modal-mensajero');
+
+function populateMensSelects(){
+  var opts='<option value="">— Sin asignar —</option>'+db.mensajeros.map(function(m){
+    return '<option value="'+m.id+'">'+m.nombre+'</option>';
+  }).join('');
+  var opMens=document.getElementById('op-mensajero');
+  if(opMens) opMens.innerHTML=opts;
+  var resOpts='<option value="">— Todos —</option>'+db.mensajeros.map(function(m){
+    return '<option value="'+m.id+'">'+m.nombre+'</option>';
+  }).join('');
+  var resMens=document.getElementById('res-sel-mens');
+  if(resMens) resMens.innerHTML=resOpts;
 }
 
-// CLIENTES
-var SHEETS_CLIENTES = []; // Lista cargada desde Google Sheets
-var currentClienteFilter = 'todos';
-
-function loadClientesFromSheets() {
-  const url = localStorage.getItem(GS_KEY);
-  if (!url || !navigator.onLine) return;
-  const fullUrl = url + '?action=getClientes';
-  fetch(fullUrl, { method: 'GET', mode: 'cors' })
-    .then(r => r.json())
-    .then(data => {
-      if (data.clientes) {
-        SHEETS_CLIENTES = data.clientes;
-        // Merge with local clients (avoid duplicates by name)
-        const sheetsNames = new Set(SHEETS_CLIENTES.map(c => c.nombre?.toLowerCase()));
-        const localOnly = db.clientes.filter(c => !sheetsNames.has(c.nombre?.toLowerCase()));
-        // Combined list for dropdown
-        OP_CLIENTES = [...new Set([
-          ...SHEETS_CLIENTES.map(c => c.nombre).filter(Boolean),
-          ...db.clientes.map(c => c.nombre).filter(Boolean)
-        ])].sort();
-      }
-    })
-    .catch(() => {
-      // Fallback to local clients only
-      refreshOpClientes();
+// ══ RESUMEN ══
+function generarResumen(){
+  var mid=document.getElementById('res-sel-mens').value;
+  var list=db.envios.filter(function(r){ return r.estado!=='entregada'&&r.estado!=='devuelta'; });
+  if(mid) list=list.filter(function(r){ return r.mensajero===mid; });
+  list.sort(function(a,b){ return ((a.fecha||'')+(a.hora||'00:00')).localeCompare((b.fecha||'')+(b.hora||'00:00')); });
+  var mens=mid?(db.mensajeros.find(function(m){ return m.id===mid; })||{}).nombre:'Todos los mensajeros';
+  var sep='─'.repeat(28);
+  var txt='📦 ENVÍOS PENDIENTES\n👤 '+mens+'\n📅 '+fmtDate(today())+'\n'+sep+'\n\n';
+  if(!list.length){ txt+='No hay entregas pendientes.\n'; }
+  else {
+    list.forEach(function(r,i){
+      txt+=(i+1)+'. 👤 '+(r.clienteCuba||r.cliente)+'\n';
+      txt+='   📍 '+(r.direccion||'—')+(r.municipio?', '+r.municipio:'')+'\n';
+      txt+='   📱 '+(r.telefono||'—')+'\n';
+      txt+='   💰 Entregar: '+fmtMoney(r.entrega)+'\n';
+      if(r.costoMens) txt+='   🔧 Costo mensajería: '+fmtMoney(r.costoMens)+'\n';
+      if(r.fecha) txt+='   📅 '+fmtDate(r.fecha)+(r.hora?' ⏰ '+r.hora:'')+'\n';
+      txt+='\n';
     });
+    txt+=sep+'\nTotal: '+list.length+' entregas · '+fmtMoney(list.reduce(function(s,r){ return s+(r.entrega||0); },0));
+  }
+  window._lastResumen=txt;
+  document.getElementById('res-txt').textContent=txt;
+  document.getElementById('res-out').style.display='block';
 }
 
-function saveCliente() {
-  const id = document.getElementById('cliente-edit-id').value;
-  const nombre = document.getElementById('c-nombre').value.trim();
-  if (!nombre) { alert('El nombre es obligatorio.'); return; }
-  const obj = {
-    id: id || uid(),
-    nombre,
-    telefono: document.getElementById('c-telefono').value.trim(),
-    email: document.getElementById('c-email').value.trim(),
-    direccion: document.getElementById('c-direccion').value.trim(),
-    municipio: document.getElementById('c-municipio').value,
-    reside: document.getElementById('c-reside').value,
-    contacto: document.getElementById('c-contacto').value.trim(),
-    canal: document.getElementById('c-canal').value,
-    decision: document.querySelector('input[name="c-decision"]:checked')?.value || 'no',
-    nota: document.getElementById('c-nota').value.trim(),
-    creado: id ? (db.clientes.find(c => c.id === id)?.creado || today()) : today()
+function copiarResumen(){
+  var txt=window._lastResumen||'';
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ alert('¡Copiado! Pégalo en WhatsApp.'); }); }
+  else { var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('¡Copiado!'); }
+}
+
+// ══ CLIENTES ══
+function saveCliente(){
+  var cid=document.getElementById('cliente-id').value;
+  var nombre=document.getElementById('cli-nombre').value.trim();
+  if(!nombre){ alert('El nombre es obligatorio.'); return; }
+  var obj={
+    id:cid||uid(), nombre:nombre,
+    telefono:document.getElementById('cli-tel').value.trim(),
+    email:document.getElementById('cli-email').value.trim(),
+    direccion:document.getElementById('cli-dir').value.trim(),
+    municipio:document.getElementById('cli-municipio').value,
+    reside:document.getElementById('cli-reside').value,
+    contacto:document.getElementById('cli-contacto').value.trim(),
+    canal:document.getElementById('cli-canal').value,
+    decision:document.querySelector('input[name="cli-dec"]:checked').value,
+    nota:document.getElementById('cli-nota').value.trim(),
+    creado:cid?(db.clientes.find(function(c){ return c.id===cid; })||{}).creado||today():today()
   };
-  if (id) { const i = db.clientes.findIndex(c => c.id === id); db.clientes[i] = obj; }
+  if(cid){ var idx=db.clientes.findIndex(function(c){ return c.id===cid; }); db.clientes[idx]=obj; }
   else db.clientes.unshift(obj);
   saveDB();
-  refreshOpClientes();
-  closeModal('modal-cliente');
-  clearClienteForm();
-  renderClientes();
-  // Save to Google Sheets immediately
   saveClienteToSheets(obj);
+  clearClienteForm();
+  closeModal('modal-cliente');
+  renderClientes();
+  alert('✅ Cliente guardado y enviado a Google Sheets.');
 }
 
-function generarResumenMensajero(op) {
-  const mensajeroNombre = db.mensajeros.find(m => m.id === op.mensajero)?.nombre || op.mensajero || 'Sin asignar';
-  const clienteCuba = op.cliente_cuba || op.cliente || '—';
-  const tel = op.telefono || '—';
-  const dir = (op.direccion || '—') + (op.municipio ? ', ' + op.municipio : '');
-  const entrega = op.entrega ? '$' + parseFloat(op.entrega).toFixed(2) : '$' + parseFloat(op.importe||0).toFixed(2);
-  const costoMens = op.costo_mens ? '$' + parseFloat(op.costo_mens).toFixed(2) : '—';
-  const fecha = op.fecha ? fmtDate(op.fecha) : today();
-  const hora = op.hora || '—';
-
-  const txt =
-`🛵 ENTREGA PARA ${mensajeroNombre.toUpperCase()}
-${'─'.repeat(26)}
-👤 Cliente: ${clienteCuba}
-📱 Teléfono: ${tel}
-📍 Dirección: ${dir}
-💰 Entregar: ${entrega}
-🔧 Tu costo: ${costoMens}
-📅 Fecha: ${fecha}
-⏰ Hora: ${hora}
-${'─'.repeat(26)}
-Gracias 🙏`;
-
-  // Show the summary in the modal before it closes
-  const resDiv = document.getElementById('mensajero-resumen');
-  const resTxt = document.getElementById('mensajero-resumen-texto');
-  if (resDiv && resTxt) {
-    resTxt.textContent = txt;
-    resDiv.style.display = 'block';
-    // Store for copy button
-    window._lastMensajeroMsg = txt;
-  }
+function clearClienteForm(){
+  ['cli-nombre','cli-tel','cli-email','cli-dir','cli-contacto','cli-nota'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('cli-municipio').value='';
+  document.getElementById('cli-reside').value='Cuba';
+  document.getElementById('cli-canal').value='';
+  document.getElementById('cli-dec-no').checked=true;
+  document.getElementById('cliente-id').value='';
+  document.getElementById('cliente-modal-ttl').textContent='Nuevo cliente';
 }
 
-function copiarMensajeroResumen() {
-  const txt = window._lastMensajeroMsg || '';
-  navigator.clipboard.writeText(txt).then(() => alert('¡Copiado! Pégalo en WhatsApp.')).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = txt; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); ta.remove();
-    alert('¡Copiado!');
-  });
-}
-
-function mostrarUltimoResumen(txt) {
-  if (!txt) return;
-  const div = document.getElementById('ultimo-resumen');
-  const pre = document.getElementById('ultimo-resumen-texto');
-  if (div && pre) {
-    pre.textContent = txt;
-    div.style.display = 'block';
-    // Scroll to top of content
-    div.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-}
-
-function copiarUltimoResumen() {
-  const txt = window._lastMensajeroMsg || '';
-  navigator.clipboard.writeText(txt).then(() => {
-    alert('¡Copiado! Pégalo en WhatsApp.');
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = txt; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); ta.remove();
-    alert('¡Copiado!');
-  });
-}
-
-function saveOperacionToSheets(op) {
-  const url = localStorage.getItem(GS_KEY);
-  if (!url || !navigator.onLine) return;
-  const mensajeroNombre = db.mensajeros.find(m => m.id === op.mensajero)?.nombre || op.mensajero || '';
-  const payload = encodeURIComponent(JSON.stringify({
-    action: 'saveOperacion',
-    operacion: {
-      revisado_r: false,
-      revisado_daniela: op.revisado || false,
-      dia: op.dia || new Date().getDate(),
-      tipo: op.tipo || 'EeUu->Cuba',
-      cobro: op.cobro || 'EeUu',
-      cliente_eeuu: op.cliente || '',
-      cliente_cuba: op.cliente_cuba || '',
-      depositar: op.importe || 0,
-      entrega: op.entrega || 0,
-      costo_mens: op.costo_mens || 0,
-      mensajero: mensajeroNombre
-    }
-  }));
-  fetch(url + '?data=' + payload, { method: 'GET', mode: 'no-cors' }).catch(() => {});
-}
-
-function saveClienteToSheets(cliente) {
-  const url = localStorage.getItem(GS_KEY);
-  if (!url || !navigator.onLine) return;
-  const payload = encodeURIComponent(JSON.stringify({ action: 'saveCliente', cliente }));
-  fetch(url + '?data=' + payload, { method: 'GET', mode: 'no-cors' })
-    .catch(() => {});
-}
-
-function clearClienteForm() {
-  ['c-nombre','c-telefono','c-email','c-direccion','c-contacto','c-nota'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('c-municipio').value = '';
-  document.getElementById('c-reside').value = 'Cuba';
-  document.getElementById('c-canal').value = '';
-  document.getElementById('c-decision-no').checked = true;
-  document.getElementById('cliente-edit-id').value = '';
-  document.getElementById('cliente-modal-title').textContent = 'Nuevo Cliente';
-}
-
-function editCliente(id) {
-  const c = db.clientes.find(x => x.id === id); if (!c) return;
-  document.getElementById('cliente-edit-id').value = c.id;
-  document.getElementById('c-nombre').value = c.nombre || '';
-  document.getElementById('c-telefono').value = c.telefono || '';
-  document.getElementById('c-email').value = c.email || '';
-  document.getElementById('c-direccion').value = c.direccion || '';
-  document.getElementById('c-municipio').value = c.municipio || '';
-  document.getElementById('c-reside').value = c.reside || 'Cuba';
-  document.getElementById('c-contacto').value = c.contacto || '';
-  document.getElementById('c-canal').value = c.canal || '';
-  if (c.decision === 'si') document.getElementById('c-decision-si').checked = true;
-  else document.getElementById('c-decision-no').checked = true;
-  document.getElementById('c-nota').value = c.nota || '';
-  document.getElementById('cliente-modal-title').textContent = 'Editar Cliente';
+function editCliente(id){
+  var c=db.clientes.find(function(x){ return x.id===id; }); if(!c) return;
+  document.getElementById('cliente-id').value=c.id;
+  document.getElementById('cli-nombre').value=c.nombre||'';
+  document.getElementById('cli-tel').value=c.telefono||'';
+  document.getElementById('cli-email').value=c.email||'';
+  document.getElementById('cli-dir').value=c.direccion||'';
+  document.getElementById('cli-municipio').value=c.municipio||'';
+  document.getElementById('cli-reside').value=c.reside||'Cuba';
+  document.getElementById('cli-contacto').value=c.contacto||'';
+  document.getElementById('cli-canal').value=c.canal||'';
+  if(c.decision==='si') document.getElementById('cli-dec-si').checked=true;
+  else document.getElementById('cli-dec-no').checked=true;
+  document.getElementById('cli-nota').value=c.nota||'';
+  document.getElementById('cliente-modal-ttl').textContent='Editar cliente';
   openModal('modal-cliente');
 }
 
-function deleteCliente(id) {
-  if (!confirm('¿Eliminar este cliente?')) return;
-  db.clientes = db.clientes.filter(c => c.id !== id);
-  saveDB(); refreshOpClientes(); renderClientes();
+function deleteCliente(id){
+  if(!confirm('¿Eliminar este cliente?')) return;
+  db.clientes=db.clientes.filter(function(c){ return c.id!==id; });
+  saveDB(); renderClientes();
 }
 
-function filterClientes(f, btn) {
-  currentClienteFilter = f;
-  document.querySelectorAll('#sec-clientes .tab-mini').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function filterClientes(f,btn){
+  clienteFilter=f;
+  document.querySelectorAll('#sec-clientes .tmi').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
   renderClientes();
 }
 
-function renderClientes() {
-  // Combine Sheets clients + local clients, deduplicate by name
-  const sheetsSet = new Set(SHEETS_CLIENTES.map(c => c.nombre?.toLowerCase().trim()));
-  // Local clients not in Sheets
-  const localExtra = db.clientes.filter(c => !sheetsSet.has(c.nombre?.toLowerCase().trim()));
-  // All for display: Sheets first, then local-only
-  let all = [
-    ...SHEETS_CLIENTES.map(c => ({ ...c, fromSheets: true })),
-    ...localExtra.map(c => ({ ...c, fromSheets: false }))
-  ];
-  const q = (document.getElementById('clientes-search')?.value || '').toLowerCase();
-  if (q) all = all.filter(c =>
-    (c.nombre||'').toLowerCase().includes(q) ||
-    (c.telefono||'').toLowerCase().includes(q) ||
-    (c.municipio||'').toLowerCase().includes(q) ||
-    (c.contacto||'').toLowerCase().includes(q)
-  );
-  if (currentClienteFilter === 'Cuba') all = all.filter(c => (c.reside||'').toLowerCase().includes('cuba'));
-  if (currentClienteFilter === 'EeUu') all = all.filter(c => (c.reside||'').toLowerCase().includes('eeuu') || (c.reside||'').toLowerCase().includes('usa'));
-  const div = document.getElementById('list-clientes');
-  if (!all.length) {
-    div.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No hay clientes que coincidan</div></div>`;
-    return;
-  }
-  div.innerHTML = all.map(c => `
-    <div class="item" style="border-left-color:${c.fromSheets?'var(--primary)':'var(--success)'}">
-      <div class="item-header">
-        <div class="item-name">${c.nombre}</div>
-        <span class="badge ${c.reside==='Cuba'||c.reside==='cuba'?'badge-pending':'badge-info'}">${c.reside||'—'}</span>
-      </div>
-      <div class="item-detail">
-        ${c.telefono?'📱 '+c.telefono+'<br>':''}
-        ${c.municipio?'📍 '+c.municipio+(c.direccion?' · '+c.direccion:'')+'<br>':''}
-        ${c.contacto?'🤝 '+c.contacto:''}
-        ${c.canal?'<span class="badge badge-info" style="font-size:0.65rem;margin-left:4px">'+c.canal+'</span>':''}
-        ${c.nota?'<br>📝 '+c.nota:''}
-        ${c.fromSheets?'':'<br><span style="font-size:0.7rem;color:var(--success)">✓ Guardado localmente</span>'}
-      </div>
-      ${!c.fromSheets?`<div class="item-actions">
-        <button class="btn btn-outline btn-sm" onclick="editCliente('${c.id}')">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCliente('${c.id}')">Borrar</button>
-      </div>`:''}
-    </div>
-  `).join('');
-}
-
-// OP FORM HELPERS
-function toggleOpChk() {
-  const box=document.getElementById('op-chk');
-  const lbl=document.getElementById('op-chk-lbl');
-  box.classList.toggle('on');
-  lbl.textContent=box.classList.contains('on')?'Revisado':'No revisado';
-}
-function calcularOp() {
-  const dep=parseFloat(document.getElementById('op-depositar').value)||0;
-  const ent=parseFloat(document.getElementById('op-entrega').value)||0;
-  const men=parseFloat(document.getElementById('op-mensajeria').value)||0;
-  const gan=dep-ent-men;
-  document.getElementById('op-r-ganancia').textContent='$'+gan.toFixed(2);
-  document.getElementById('op-r-ganado').textContent='$'+(gan/2).toFixed(2);
-}
-var OP_CLIENTES = [];
-function buildOpDD(id) {
-  const dd=document.getElementById('op-dd-'+id);
-  dd.innerHTML='';
-  // Always show full combined list: Sheets clients + local clients, sorted
-  const allNames = getAllClientNames();
-  allNames.forEach(c=>{
-    const d=document.createElement('div');
-    d.className='op-dd-item';
-    d.textContent=c;
-    d.onmousedown=e=>{e.preventDefault();selectOpItem(id,c);};
-    dd.appendChild(d);
-  });
-  if(!allNames.length){
-    const emp=document.createElement('div');
-    emp.className='op-dd-empty';
-    emp.textContent='Sin conexión — los clientes cargarán al sincronizar';
-    dd.appendChild(emp);
+function renderClientes(){
+  var sheetsSet=new Set(sheetsClientes.map(function(c){ return (c.nombre||'').toLowerCase().trim(); }));
+  var localExtra=db.clientes.filter(function(c){ return !sheetsSet.has((c.nombre||'').toLowerCase().trim()); });
+  var all=sheetsClientes.map(function(c){ return Object.assign({},c,{fromSheets:true}); })
+    .concat(localExtra.map(function(c){ return Object.assign({},c,{fromSheets:false}); }));
+  var q=(document.getElementById('srch-clientes').value||'').toLowerCase();
+  if(q) all=all.filter(function(c){ return (c.nombre||'').toLowerCase().indexOf(q)>=0||(c.telefono||'').indexOf(q)>=0||(c.municipio||'').toLowerCase().indexOf(q)>=0; });
+  if(clienteFilter==='Cuba') all=all.filter(function(c){ return (c.reside||'').toLowerCase().indexOf('cuba')>=0; });
+  if(clienteFilter==='EeUu') all=all.filter(function(c){ return (c.reside||'').toLowerCase().indexOf('eeu')>=0||(c.reside||'').toLowerCase().indexOf('usa')>=0; });
+  var div=document.getElementById('list-clientes');
+  if(!all.length){ div.innerHTML='<div class="empty"><div class="empty-ico">👥</div><div>No hay clientes que coincidan</div></div>'; return; }
+  div.innerHTML=all.map(function(c){
+    var cls=c.fromSheets?'citm':'citm local';
+    var rBdg=c.reside==='Cuba'||c.reside==='cuba'?'<span class="bdg bdg-warn">Cuba</span>':'<span class="bdg bdg-pri">EeUu</span>';
+    return '<div class="'+cls+'">'
+      +'<div class="item-hdr"><div class="item-name">'+c.nombre+'</div>'+rBdg+'</div>'
+      +'<div class="item-detail">'
+      +(c.telefono?'📱 '+c.telefono+'<br>':'')
+      +(c.municipio?'📍 '+c.municipio+(c.direccion?' · '+c.direccion:'')+'<br>':'')
+      +(c.contacto?'🤝 '+c.contacto:(''  ))
+      +(c.canal?'<span class="bdg bdg-pri" style="font-size:.65rem;margin-left:.25rem">'+c.canal+'</span>':'')
+      +(c.nota?'<br>📝 '+c.nota:'')
+      +(!c.fromSheets?'<br><span style="font-size:.7rem;color:var(--ok)">✓ Guardado localmente</span>':'')
+      +'</div>'
+      +(!c.fromSheets?'<div class="item-actions">'
+        +'<button class="btn btn-out btn-sm" onclick="editCliente(\''+c.id+'\')">Editar</button>'
+        +'<button class="btn btn-err btn-sm" onclick="deleteCliente(\''+c.id+'\')">Borrar</button>'
+        +'</div>':'')
+      +'</div>';
+  }).join('');
+  if(!q&&clienteFilter==='todos'&&sheetsClientes.length){
+    div.insertAdjacentHTML('afterbegin','<div class="notice">✓ '+sheetsClientes.length+' clientes cargados desde Google Sheets</div>');
   }
 }
 
-function getAllClientNames() {
-  const fromSheets = SHEETS_CLIENTES.map(c=>c.nombre).filter(Boolean);
-  const fromLocal = db.clientes.map(c=>c.nombre).filter(Boolean);
-  return [...new Set([...fromSheets, ...fromLocal])].sort((a,b)=>a.localeCompare(b,'es'));
-}
-function filterOpDD(id) {
-  const q=document.getElementById('op-search-'+id).value.toLowerCase().trim();
-  const dd=document.getElementById('op-dd-'+id);
-  dd.classList.add('open');
-  // Rebuild filtered list from source (not from DOM) for accuracy
-  const allNames = getAllClientNames();
-  const filtered = q ? allNames.filter(n=>n.toLowerCase().includes(q)) : allNames;
-  dd.innerHTML='';
-  if(filtered.length===0){
-    const emp=document.createElement('div');
-    emp.className='op-dd-empty';
-    emp.textContent=q?'Sin resultados — puedes escribir el nombre directamente':'No hay clientes';
-    dd.appendChild(emp);
-    return;
-  }
-  filtered.forEach(c=>{
-    const d=document.createElement('div');
-    d.className='op-dd-item';
-    // Bold the matching part
-    if(q){
-      const idx=c.toLowerCase().indexOf(q);
-      d.innerHTML=c.slice(0,idx)+'<strong>'+c.slice(idx,idx+q.length)+'</strong>'+c.slice(idx+q.length);
-    } else {
-      d.textContent=c;
-    }
-    d.onmousedown=e=>{e.preventDefault();selectOpItem(id,c);};
-    dd.appendChild(d);
-  });
-}
-function openOpDD(id){buildOpDD(id);filterOpDD(id);}
-function closeOpDD(id){setTimeout(()=>document.getElementById('op-dd-'+id).classList.remove('open'),160);}
-function selectOpItem(id,val){
-  document.getElementById('op-search-'+id).value=val;
-  document.getElementById('op-val-'+id).value=val;
-  document.getElementById('op-dd-'+id).classList.remove('open');
-}
-function refreshOpClientes(){
-  // OP_CLIENTES is now always built from getAllClientNames() dynamically
-  // This function kept for compatibility — just combine local sources
-  const names=new Set();
-  db.clientes.forEach(c=>{if(c.nombre)names.add(c.nombre);});
-  db.envios.forEach(r=>{if(r.cliente)names.add(r.cliente);if(r.cliente_cuba)names.add(r.cliente_cuba);});
-  OP_CLIENTES=Array.from(names).sort((a,b)=>a.localeCompare(b,'es'));
-}
-
-// SELECTS
-function populateMensajeroSelects(){
-  const opts=db.mensajeros.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
-  const opMens=document.getElementById('op-mensajero');
-  if(opMens) opMens.innerHTML='<option value="">— Sin asignar —</option>'+opts;
-  const rMens=document.getElementById('r-mensajero');
-  if(rMens) rMens.innerHTML='<option value="">— Sin asignar —</option>'+opts;
-  const resMens=document.getElementById('resumen-mensajero');
-  if(resMens) resMens.innerHTML='<option value="">— Todos —</option>'+opts;
-}
-function populateResumenSelect(){ populateMensajeroSelects(); }
-
-// RESUMEN MENSAJERO
-function generarResumen(){
-  const mid=document.getElementById('resumen-mensajero').value;
-  let list=db.envios.filter(r=>r.estado!=='entregada'&&r.estado!=='devuelta');
-  if(mid) list=list.filter(r=>r.mensajero===mid);
-  list.sort((a,b)=>{
-    const ta=(a.fecha+''+(a.hora||'00:00')).replace(/\D/g,'');
-    const tb=(b.fecha+''+(b.hora||'00:00')).replace(/\D/g,'');
-    return ta.localeCompare(tb);
-  });
-  const men=mid?db.mensajeros.find(m=>m.id===mid)?.nombre:'Todos los mensajeros';
-  let txt=`📦 REMESAS PENDIENTES\n`;
-  txt+=`👤 ${men}\n`;
-  txt+=`📅 ${new Date().toLocaleDateString('es-ES')}\n`;
-  txt+=`${'─'.repeat(28)}\n\n`;
-  if(!list.length){txt+='No hay entregas pendientes.\n';}
-  else{
-    list.forEach((r,i)=>{
-      txt+=`${i+1}. 👤 ${r.cliente}\n`;
-      txt+=`   📍 ${r.direccion}\n`;
-      txt+=`   💶 ${fmtMoney(r.importe)}\n`;
-      if(r.fecha) txt+=`   📅 ${fmtDate(r.fecha)}${r.hora?' ⏰ '+r.hora:''}\n`;
-      if(r.telefono) txt+=`   📱 ${r.telefono}\n`;
-      if(r.notas) txt+=`   📝 ${r.notas}\n`;
-      txt+=`\n`;
-    });
-    txt+=`${'─'.repeat(28)}\n`;
-    txt+=`Total: ${list.length} entregas · ${fmtMoney(list.reduce((s,r)=>s+r.importe,0))}`;
-  }
-  document.getElementById('resumen-texto').textContent=txt;
-  document.getElementById('resumen-output').style.display='block';
-}
-function copiarResumen(){
-  const txt=document.getElementById('resumen-texto').textContent;
-  navigator.clipboard.writeText(txt).then(()=>alert('¡Copiado! Pégalo en WhatsApp.')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('¡Copiado!');
-  });
-}
-
-// GOOGLE SHEETS SYNC
+// ══ GOOGLE SHEETS ══
 function saveGsUrl(){
-  const url=document.getElementById('gs-url').value.trim();
+  var url=document.getElementById('gs-url').value.trim();
+  if(!url){ alert('La URL no puede estar vacía.'); return; }
   localStorage.setItem(GS_KEY,url);
-  alert('URL guardada. Ya puedes sincronizar.');
-}
-function updateSyncDot(synced){ document.getElementById('sync-dot').className='sync-dot'+(synced?' synced':''); }
-async function syncToSheets(){
-  const url=localStorage.getItem(GS_KEY);
-  if(!url){alert('Primero configura la URL de Google Sheets en Configuración.');return;}
-  if(!navigator.onLine){alert('Sin conexión. Los datos están guardados localmente.');return;}
-  document.getElementById('sync-btn').textContent='Sincronizando...';
-  try{
-    const enriched = {
-      ...db,
-      envios: db.envios.map(r=>({...r, mensajero_nombre: db.mensajeros.find(m=>m.id===r.mensajero)?.nombre||r.mensajero})),
-      pagos: db.pagos.map(p=>({...p, mensajeroNombre: db.mensajeros.find(m=>m.id===p.mensajeroId)?.nombre||''}))
-    };
-    const payload = encodeURIComponent(JSON.stringify({action:'sync',data:enriched}));
-    const fullUrl = url + '?data=' + payload;
-    await fetch(fullUrl, { method:'GET', mode:'no-cors' });
-    updateSyncDot(true);
-    alert('✅ Datos enviados a Google Sheets.');
-  }catch(e){
-    alert('Error al sincronizar. Verifica la URL del script.');
-  }
-  document.getElementById('sync-btn').textContent='Sincronizar';
+  alert('URL guardada correctamente.');
 }
 
-// EXPORT/IMPORT
-function exportarDatos(){
-  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`envios-backup-${today()}.json`;a.click();
+function gsUrl(){ return localStorage.getItem(GS_KEY)||''; }
+
+function updateDot(synced){ document.getElementById('sync-dot').className='sync-dot'+(synced?' ok':''); }
+
+function doSync(){
+  var url=gsUrl();
+  if(!url){ alert('Primero configura la URL del script en Configuración.'); return; }
+  if(!navigator.onLine){ alert('Sin conexión. Los datos están guardados localmente.'); return; }
+  var btn=document.querySelector('.tbtn');
+  var enriched={
+    envios:db.envios.map(function(r){
+      var m=db.mensajeros.find(function(x){ return x.id===r.mensajero; });
+      return Object.assign({},r,{mensajeroNombre:m?m.nombre:''});
+    }),
+    mensajeros:db.mensajeros,
+    pagos:db.pagos.map(function(p){
+      var m=db.mensajeros.find(function(x){ return x.id===p.mensajeroId; });
+      return Object.assign({},p,{mensajeroNombre:m?m.nombre:''});
+    })
+  };
+  var payload=encodeURIComponent(JSON.stringify({action:'sync',data:enriched}));
+  fetch(url+'?data='+payload,{method:'GET',mode:'no-cors'})
+    .then(function(){ updateDot(true); alert('✅ Sincronizado con Google Sheets.'); })
+    .catch(function(){ alert('Error al sincronizar. Verifica la URL del script.'); });
 }
-function importarDatos(){ document.getElementById('import-file').click(); }
+
+function loadSheetsClientes(){
+  var url=gsUrl();
+  if(!url||!navigator.onLine) return;
+  fetch(url+'?action=getClientes',{method:'GET',mode:'cors'})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.clientes){ sheetsClientes=data.clientes; renderClientes(); }
+    }).catch(function(){});
+}
+
+function saveClienteToSheets(c){
+  var url=gsUrl();
+  if(!url||!navigator.onLine) return;
+  var payload=encodeURIComponent(JSON.stringify({action:'saveCliente',cliente:c}));
+  fetch(url+'?data='+payload,{method:'GET',mode:'no-cors'}).catch(function(){});
+}
+
+function saveOpToSheets(op){
+  var url=gsUrl();
+  if(!url||!navigator.onLine) return;
+  var m=db.mensajeros.find(function(x){ return x.id===op.mensajero; });
+  var payload=encodeURIComponent(JSON.stringify({
+    action:'saveOperacion',
+    operacion:{
+      revisado_daniela:op.revisado||false,
+      dia:op.dia||new Date().getDate(),
+      tipo:op.tipo||'EeUu \u2192 Cuba',
+      cobro:op.cobro||'EeUu',
+      cliente_eeuu:op.cliente||'',
+      cliente_cuba:op.clienteCuba||'',
+      depositar:op.depositar||0,
+      entrega:op.entrega||0,
+      costo_mens:op.costoMens||0,
+      mensajero:m?m.nombre:''
+    }
+  }));
+  fetch(url+'?data='+payload,{method:'GET',mode:'no-cors'}).catch(function(){});
+}
+
+// ══ CONFIG ══
+function exportar(){
+  var blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='negocio-backup-'+today()+'.json'; a.click();
+}
+
+function importar(){ document.getElementById('import-file').click(); }
+
 function handleImport(e){
-  const file=e.target.files[0]; if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
+  var file=e.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
     try{
-      const imported=JSON.parse(ev.target.result);
-      if(!imported.envios||!imported.mensajeros){alert('Archivo inválido.');return;}
-      if(!confirm('¿Importar datos? Esto reemplazará los datos actuales.'))return;
-      db=imported; saveDB();
-      renderEnvíos(); renderEntregas(); renderMensajeros(); populateMensajeroSelects();
+      var imp=JSON.parse(ev.target.result);
+      if(!imp.envios&&!imp.mensajeros){ alert('Archivo inválido.'); return; }
+      if(!confirm('¿Importar datos? Esto reemplazará los datos actuales.')) return;
+      db=imp; if(!db.clientes) db.clientes=[];
+      saveDB(); renderAll();
       alert('✅ Datos importados correctamente.');
-    }catch(err){alert('Error al importar el archivo.');}
+    }catch(err){ alert('Error al leer el archivo.'); }
   };
   reader.readAsText(file);
 }
 
-// APPS SCRIPT CODE
-function showScript(){
-  const code=`// =====================================================================
+function buildScriptText(){
+  var s=`// =====================================================================
 // SCRIPT PARA MI NEGOCIO - Google Apps Script
-// Abrir desde tu hoja "Remesas" → Extensiones → Apps Script
+// Abre tu hoja "Remesas" → Extensiones → Apps Script → pega esto
 // =====================================================================
 
 function doGet(e) {
@@ -1560,305 +1349,116 @@ function doGet(e) {
     var action = e.parameter.action || '';
     var raw = decodeURIComponent(e.parameter.data || '');
 
-    // ── Devolver lista de clientes desde hoja Clientes ──────────────
     if (action === 'getClientes') {
-      var clientes = getClientesFromSheet(ss);
-      return jsonResponse({ ok: true, clientes: clientes });
+      return jsonResponse({ ok: true, clientes: getClientes(ss) });
     }
-
-    // ── Procesar data ───────────────────────────────────────────────
     if (raw) {
       var data = JSON.parse(raw);
-
-      // Guardar cliente nuevo en hoja Clientes
-      if (data.action === 'saveCliente') {
-        appendCliente(ss, data.cliente);
-        return jsonResponse({ ok: true });
-      }
-
-      // Guardar operación nueva en hoja del mes actual (Junio 2026, etc.)
-      if (data.action === 'saveOperacion') {
-        appendOperacion(ss, data.operacion);
-        return jsonResponse({ ok: true });
-      }
-
-      // Sincronización completa
-      if (data.action === 'sync') {
-        syncEnvios(ss, data.data.envios || []);
-        syncMensajeros(ss, data.data.mensajeros || []);
-        syncPagos(ss, data.data.pagos || []);
-        return jsonResponse({ ok: true });
-      }
+      if (data.action === 'saveCliente') { appendCliente(ss, data.cliente); return jsonResponse({ ok: true }); }
+      if (data.action === 'saveOperacion') { appendOp(ss, data.operacion); return jsonResponse({ ok: true }); }
+      if (data.action === 'sync') { syncAll(ss, data.data); return jsonResponse({ ok: true }); }
     }
-
     return jsonResponse({ ok: true, message: 'Script activo' });
-
-  } catch (err) {
-    return jsonResponse({ ok: false, error: err.toString() });
-  }
+  } catch(err) { return jsonResponse({ ok: false, error: err.toString() }); }
 }
 
-function doPost(e) {
-  return doGet(e);
-}
+function doPost(e) { return doGet(e); }
 
-// ── Leer hoja Clientes ─────────────────────────────────────────────
-function getClientesFromSheet(ss) {
-  var sh = ss.getSheetByName('Clientes');
-  if (!sh) return [];
-  var data = sh.getDataRange().getValues();
-  if (data.length < 2) return [];
-
-  // Buscar fila de cabecera (la que contiene "Nombre completo")
-  var headerRow = 0;
-  for (var i = 0; i < Math.min(5, data.length); i++) {
+function getClientes(ss) {
+  var sh = ss.getSheetByName('Clientes'); if (!sh) return [];
+  var data = sh.getDataRange().getValues(); if (data.length < 2) return [];
+  var hi = 0;
+  for (var i = 0; i < Math.min(5,data.length); i++) {
     for (var j = 0; j < data[i].length; j++) {
-      if ((data[i][j] + '').toLowerCase().includes('nombre')) {
-        headerRow = i;
-        break;
-      }
+      if ((data[i][j]+'').toLowerCase().includes('nombre')) { hi=i; break; }
     }
   }
-
-  var headers = data[headerRow].map(function(h) { return (h + '').toLowerCase().trim(); });
-  var iNombre   = findCol(headers, ['nombre completo', 'nombre']);
-  var iTel      = findCol(headers, ['telefono', 'teléfono', 'tel']);
-  var iEmail    = findCol(headers, ['email', 'correo']);
-  var iDir      = findCol(headers, ['direccion', 'dirección']);
-  var iMun      = findCol(headers, ['municipio']);
-  var iReside   = findCol(headers, ['reside']);
-  var iContacto = findCol(headers, ['con quien', 'contacto']);
-  var iDecision = findCol(headers, ['decision', 'decisión']);
-  var iCanal    = findCol(headers, ['canal']);
-  var iNota     = findCol(headers, ['nota']);
-
-  var clientes = [];
-  for (var r = headerRow + 1; r < data.length; r++) {
-    var row = data[r];
-    var nombre = iNombre >= 0 ? (row[iNombre] + '').trim() : '';
-    if (!nombre) continue;
-    clientes.push({
-      nombre:    nombre,
-      telefono:  iTel >= 0      ? (row[iTel] + '').trim()      : '',
-      email:     iEmail >= 0    ? (row[iEmail] + '').trim()     : '',
-      direccion: iDir >= 0      ? (row[iDir] + '').trim()       : '',
-      municipio: iMun >= 0      ? (row[iMun] + '').trim()       : '',
-      reside:    iReside >= 0   ? (row[iReside] + '').trim()    : '',
-      contacto:  iContacto >= 0 ? (row[iContacto] + '').trim()  : '',
-      decision:  iDecision >= 0 ? (row[iDecision] + '').trim()  : '',
-      canal:     iCanal >= 0    ? (row[iCanal] + '').trim()     : '',
-      nota:      iNota >= 0     ? (row[iNota] + '').trim()      : '',
-      fromSheets: true
-    });
+  var h = data[hi].map(function(x){ return (x+'').toLowerCase().trim(); });
+  function fc(names){ for(var i=0;i<names.length;i++){ var idx=h.findIndex(function(x){return x.includes(names[i]);}); if(idx>=0) return idx; } return -1; }
+  var iN=fc(['nombre completo','nombre']),iT=fc(['telefono','tel']),iE=fc(['email']),
+      iD=fc(['direccion']),iM=fc(['municipio']),iR=fc(['reside']),
+      iC=fc(['con quien','contacto']),iDec=fc(['decision']),iCan=fc(['canal']),iNo=fc(['nota']);
+  var out=[];
+  for (var r=hi+1;r<data.length;r++) {
+    var row=data[r], nombre=(iN>=0?(row[iN]+'').trim():''); if(!nombre) continue;
+    out.push({nombre:nombre,telefono:iT>=0?(row[iT]+'').trim():'',email:iE>=0?(row[iE]+'').trim():'',
+      direccion:iD>=0?(row[iD]+'').trim():'',municipio:iM>=0?(row[iM]+'').trim():'',
+      reside:iR>=0?(row[iR]+'').trim():'',contacto:iC>=0?(row[iC]+'').trim():'',
+      decision:iDec>=0?(row[iDec]+'').trim():'',canal:iCan>=0?(row[iCan]+'').trim():'',
+      nota:iNo>=0?(row[iNo]+'').trim():''});
   }
-  return clientes;
+  return out;
 }
 
-// ── Añadir cliente nuevo a hoja Clientes ──────────────────────────
 function appendCliente(ss, c) {
   var sh = ss.getSheetByName('Clientes');
-  if (!sh) sh = ss.insertSheet('Clientes');
-
-  // Si la hoja está vacía, crear cabecera igual a la tuya
-  if (sh.getLastRow() === 0) {
-    sh.appendRow(['N°', 'Nombre completo', 'Telefono', 'Email',
-      'Direccion', 'Municipio', 'Reside', 'Con quien tiene contacto',
-      'Decision de compra', 'Canal', 'Nota', '']);
-    formatearCabecera(sh);
-  }
-
-  var nextN = sh.getLastRow(); // Número correlativo
-  sh.appendRow([
-    nextN,
-    c.nombre    || '',
-    c.telefono  || '',
-    c.email     || '',
-    c.direccion || '',
-    c.municipio || '',
-    c.reside    || '',
-    c.contacto  || '',
-    c.decision  || 'no',
-    c.canal     || '',
-    c.nota      || '',
-    ''
-  ]);
+  if (!sh) { sh=ss.insertSheet('Clientes'); sh.appendRow(['N°','Nombre completo','Telefono','Email','Direccion','Municipio','Reside','Con quien tiene contacto','Decision de compra','Canal','Nota']); fmt(sh); }
+  sh.appendRow([sh.getLastRow(),c.nombre||'',c.telefono||'',c.email||'',c.direccion||'',c.municipio||'',c.reside||'',c.contacto||'',c.decision||'',c.canal||'',c.nota||'']);
 }
 
-// ── Añadir operación nueva a hoja del mes activo ──────────────────
-// Escribe en el formato EXACTO de tus hojas mensuales:
-// R | Daniela | OpeNumero | Dia | Tipo | Donde se cobra la ganancia |
-// Cliente reside en EeUu | Cliente en Cuba | Cantidad a Depositar |
-// Entrega | Costo Mens | Ganancia | Total de Alberto-Dani |
-// Ganado por cada uno | AcumMens | Mensajerias Rosy
-function appendOperacion(ss, op) {
-  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var hoy = new Date();
-  var nombreMes = meses[hoy.getMonth()] + ' ' + hoy.getFullYear();
-
-  // Buscar hoja del mes — si no existe, la crea
-  var sh = ss.getSheetByName(nombreMes);
-  if (!sh) {
-    sh = ss.insertSheet(nombreMes);
-    // Cabecera exacta de tus hojas
-    sh.appendRow([
-      'R', 'Daniela', 'OpeNumero', 'Dia', 'Tipo',
-      'Donde se cobra la ganancia', 'Cliente reside en EeUu',
-      'Cliente en Cuba', 'Cantidad a Depositar', 'Entrega',
-      'Costo Mens', 'Ganancia', 'Total de Alberto-Dani',
-      'Gananado por cada uno', 'AcumMens', 'Mensajerias Rosy'
-    ]);
-    // Fila 0 vacía igual que en tus hojas
-    sh.appendRow([false, false, 0, 0, '', '', '', '', '', '', '', 0, 0, 0, 0, '']);
-    formatearCabecera(sh);
-  }
-
-  // Calcular siguiente OpeNumero
-  var lastRow = sh.getLastRow();
-  var nextOpe = lastRow - 1; // -1 por la fila de cabecera, igual que tus hojas
-
-  // Calcular Ganancia = Depositar - Entrega - CostoMens
-  var depositar  = parseFloat(op.depositar)  || 0;
-  var entrega    = parseFloat(op.entrega)    || 0;
-  var costoMens  = parseFloat(op.costo_mens) || 0;
-  var ganancia   = depositar - entrega - costoMens;
-  var ganadoCu   = ganancia / 2;
-
-  sh.appendRow([
-    op.revisado_r       ? true : false,   // R
-    op.revisado_daniela ? true : false,   // Daniela
-    nextOpe,                              // OpeNumero
-    op.dia || hoy.getDate(),             // Dia
-    op.tipo || 'EeUu-\\u003eCuba',       // Tipo
-    op.cobro || 'EeUu',                  // Donde se cobra la ganancia
-    op.cliente_eeuu || '',               // Cliente reside en EeUu
-    op.cliente_cuba || '',               // Cliente en Cuba
-    depositar,                            // Cantidad a Depositar
-    entrega,                              // Entrega
-    costoMens || '',                      // Costo Mens
-    ganancia,                             // Ganancia
-    '',                                   // Total de Alberto-Dani (fórmula en Sheets)
-    ganadoCu,                             // Ganado por cada uno
-    costoMens || '',                      // AcumMens
-    op.mensajero || ''                    // Mensajerias Rosy
-  ]);
+function appendOp(ss, op) {
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var hoy=new Date(), nombre=meses[hoy.getMonth()]+' '+hoy.getFullYear();
+  var sh=ss.getSheetByName(nombre);
+  if (!sh) { sh=ss.insertSheet(nombre); sh.appendRow(['R','Daniela','OpeNumero','Dia','Tipo','Donde se cobra la ganancia','Cliente reside en EeUu','Cliente en Cuba','Cantidad a Depositar','Entrega','Costo Mens','Ganancia','Total de Alberto-Dani','Ganado por cada uno','AcumMens','Mensajerias Rosy']); fmt(sh); }
+  var n=sh.getLastRow()-1;
+  var dep=parseFloat(op.depositar)||0, ent=parseFloat(op.entrega)||0, cm=parseFloat(op.costo_mens)||0;
+  sh.appendRow([false,op.revisado_daniela||false,n,op.dia||hoy.getDate(),op.tipo||'EeUu-Cuba',op.cobro||'EeUu',op.cliente_eeuu||'',op.cliente_cuba||'',dep,ent,cm||'',dep-ent-cm,'',( dep-ent-cm)/2,cm||'',op.mensajero||'']);
 }
 
-// ── Sincronización completa a hojas App_ ──────────────────────────
-function syncEnvios(ss, envios) {
-  var sh = ss.getSheetByName('App_Envios');
-  if (!sh) sh = ss.insertSheet('App_Envios');
-  sh.clearContents();
-  sh.appendRow([
-    'ID','Cliente EEUU','Cliente Cuba','Teléfono','Dirección','Municipio',
-    'Depositar','Entrega','Costo Mens','Tipo','Cobro',
-    'Dia','Fecha','Hora','Mensajero','Ganancia','Ganado c/u',
-    'Notas','Estado','Revisado','Creado'
-  ]);
-  envios.forEach(function(r) {
-    sh.appendRow([
-      r.id||'', r.cliente||'', r.cliente_cuba||'', r.telefono||'',
-      r.direccion||'', r.municipio||'',
-      r.importe||0, r.entrega||0, r.costo_mens||0,
-      r.tipo||'EeUu → Cuba', r.cobro||'EeUu',
-      r.dia||'', r.fecha||'', r.hora||'',
-      r.mensajero_nombre||r.mensajero||'',
-      r.ganancia||0, r.ganado_cu||0,
-      r.notas||'', r.estado||'pendiente',
-      r.revisado?'TRUE':'FALSE', r.creado||''
-    ]);
-  });
-  formatearCabecera(sh);
+function syncAll(ss, data) {
+  syncSheet(ss,'App_Envios',['ID','Cliente EEUU','Cliente Cuba','Telefono','Direccion','Municipio','Depositar','Entrega','Costo Mens','Tipo','Cobro','Dia','Fecha','Hora','Mensajero','Ganancia','Estado','Creado'],
+    (data.envios||[]).map(function(r){return[r.id,r.cliente,r.clienteCuba,r.telefono,r.direccion,r.municipio,r.depositar,r.entrega,r.costoMens,r.tipo,r.cobro,r.dia,r.fecha,r.hora,r.mensajeroNombre||r.mensajero,r.ganancia,r.estado,r.creado];}));
+  syncSheet(ss,'App_Mensajeros',['ID','Nombre','Telefono'],(data.mensajeros||[]).map(function(m){return[m.id,m.nombre,m.tel];}));
+  syncSheet(ss,'App_Pagos',['ID','Mensajero','Tipo','Importe','Concepto','Fecha'],(data.pagos||[]).map(function(p){return[p.id,p.mensajeroNombre,p.tipo,p.importe,p.concepto,p.fecha];}));
 }
 
-function syncMensajeros(ss, mensajeros) {
-  var sh = ss.getSheetByName('App_Mensajeros');
-  if (!sh) sh = ss.insertSheet('App_Mensajeros');
-  sh.clearContents();
-  sh.appendRow(['ID','Nombre','Teléfono']);
-  mensajeros.forEach(function(m) {
-    sh.appendRow([m.id, m.nombre, m.tel||'']);
-  });
-  formatearCabecera(sh);
+function syncSheet(ss,name,headers,rows){
+  var sh=ss.getSheetByName(name)||ss.insertSheet(name);
+  sh.clearContents(); sh.appendRow(headers); fmt(sh);
+  rows.forEach(function(r){ sh.appendRow(r); });
 }
 
-function syncPagos(ss, pagos) {
-  var sh = ss.getSheetByName('App_Pagos_Mens');
-  if (!sh) sh = ss.insertSheet('App_Pagos_Mens');
-  sh.clearContents();
-  sh.appendRow(['ID','Mensajero','Tipo','Importe','Concepto','Fecha']);
-  pagos.forEach(function(p) {
-    sh.appendRow([p.id, p.mensajeroNombre||p.mensajeroId||'', p.tipo, p.importe, p.concepto||'', p.fecha]);
-  });
-  formatearCabecera(sh);
+function fmt(sh){
+  try{ var r=sh.getRange(1,1,1,sh.getLastColumn()); r.setBackground('#1a1a2e'); r.setFontColor('#fff'); r.setFontWeight('bold'); sh.setFrozenRows(1); sh.autoResizeColumns(1,sh.getLastColumn()); }catch(e){}
 }
 
-// ── Helpers ────────────────────────────────────────────────────────
-function findCol(headers, names) {
-  for (var i = 0; i < names.length; i++) {
-    for (var j = 0; j < headers.length; j++) {
-      if (headers[j].includes(names[i])) return j;
-    }
-  }
-  return -1;
+function jsonResponse(obj){
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function formatearCabecera(sh) {
-  try {
-    var r = sh.getRange(1, 1, 1, sh.getLastColumn());
-    r.setBackground('#1a1a2e');
-    r.setFontColor('#ffffff');
-    r.setFontWeight('bold');
-    sh.setFrozenRows(1);
-    sh.autoResizeColumns(1, sh.getLastColumn());
-  } catch(e) {}
+function testScript(){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var c=getClientes(ss);
+  Logger.log('Clientes: '+c.length+' | Script OK ✓');
+}`;
+  document.getElementById('script-txt').value=s;
 }
 
-function jsonResponse(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-// ── Función de prueba ──────────────────────────────────────────────
-function testScript() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var clientes = getClientesFromSheet(ss);
-  Logger.log('Clientes encontrados: ' + clientes.length);
-  if (clientes.length > 0) Logger.log('Primer cliente: ' + clientes[0].nombre);
-  
-  // Prueba escribir una operación de ejemplo
-  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var hoy = new Date();
-  Logger.log('Hoja del mes: ' + meses[hoy.getMonth()] + ' ' + hoy.getFullYear());
-  Logger.log('Script funcionando correctamente ✓');
-}
-`;
-  document.getElementById('script-code').value=code;
+function showScript(){
+  buildScriptText();
   openModal('modal-script');
 }
+
 function copiarScript(){
-  const code=document.getElementById('script-code').value;
-  navigator.clipboard.writeText(code).then(()=>alert('Script copiado.')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Script copiado.');
-  });
+  var txt=document.getElementById('script-txt').value;
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ alert('Script copiado.'); }); }
+  else { document.getElementById('script-txt').select(); document.execCommand('copy'); alert('Script copiado.'); }
 }
 
-// INIT
-window.addEventListener('DOMContentLoaded', () => {
-  if (isLoggedIn()) {
-    document.getElementById('auth-screen').style.display='none';
+// ══ BOOT ══
+window.addEventListener('DOMContentLoaded', function(){
+  var hasAuth=getAuth();
+  if(isLogged()){
+    document.getElementById('auth').style.display='none';
     document.getElementById('app').style.display='flex';
     initApp();
-  } else if (!getAuth()) {
-    document.getElementById('auth-setup-box').style.display='block';
-    document.getElementById('auth-login-box').style.display='none';
-    document.getElementById('setup-toggle').textContent='Ya tengo cuenta';
+  } else if(!hasAuth){
+    document.getElementById('box-setup').style.display='block';
+    document.getElementById('box-login').style.display='none';
+    document.getElementById('auth-toggle').textContent='Ya tengo cuenta';
   }
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 });
 </script>
 </body>
