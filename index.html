@@ -186,7 +186,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 <div id="auth">
   <div class="auth-ico">💼</div>
   <div class="auth-ttl">Mi Negocio</div>
-  <div class="auth-sub">Gestión privada de operaciones</div>
+  <div class="auth-sub">Acceso privado</div>
 
   <div class="auth-box" id="box-login">
     <h2>Iniciar sesión</h2>
@@ -197,15 +197,17 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
   </div>
 
   <div class="auth-box" id="box-setup" style="display:none">
-    <h2>Crear cuenta nueva</h2>
+    <h2>Configurar acceso</h2>
+    <p style="font-size:.8rem;color:var(--g5);margin-bottom:1rem">Solo se permiten 2 usuarios. Introduce el código de administrador para continuar.</p>
+    <input type="password" id="setup-admin" placeholder="Código de administrador">
     <input type="text" id="setup-user" placeholder="Nombre de usuario">
     <input type="password" id="setup-pass" placeholder="Contraseña (mín. 4 caracteres)">
     <input type="password" id="setup-pass2" placeholder="Repetir contraseña">
-    <button onclick="doSetup()">Crear cuenta</button>
+    <button onclick="doSetup()">Crear usuario</button>
     <div class="auth-err" id="setup-err"></div>
   </div>
 
-  <div class="auth-lnk" id="auth-toggle" onclick="toggleAuth()">Crear cuenta nueva</div>
+  <div class="auth-lnk" id="auth-toggle" onclick="toggleAuth()">Configurar acceso</div>
 </div>
 
 <!-- ══ APP ══ -->
@@ -309,7 +311,8 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
       </div>
       <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">Cuenta</div>
-        <button class="cfg-btn" onclick="cambiarPass()">🔐 Cambiar contraseña</button>
+        <button class="cfg-btn" onclick="cambiarPass()">🔐 Cambiar mi contraseña</button>
+        <button class="cfg-btn" onclick="gestionarUsuarios()">👥 Gestionar usuarios</button>
         <button class="cfg-btn" onclick="exportar()">📤 Exportar copia de seguridad</button>
         <button class="cfg-btn" onclick="importar()">📥 Importar copia de seguridad</button>
       </div>
@@ -613,17 +616,24 @@ function fmtDate(d){ if(!d) return ''; var p=d.split('-'); return p[2]+'/'+p[1]+
 function fmtMoney(n){ return '$'+parseFloat(n||0).toFixed(2); }
 
 // ══ AUTH ══
-function getAuth(){ return JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }
-function saveAuth(u,p){ localStorage.setItem(AUTH_KEY, JSON.stringify({u:u,p:btoa(p)})); }
-function checkAuth(u,p){ var a=getAuth(); return a&&a.u===u&&a.p===btoa(p); }
-function isLogged(){ return sessionStorage.getItem('logged')===((getAuth()||{}).u||''); }
+// Código de administrador — cámbialo por uno que solo tú conozcas
+var ADMIN_CODE = 'negocio2024admin';
+// Máximo de usuarios permitidos
+var MAX_USERS = 2;
+
+function getUsers(){ return JSON.parse(localStorage.getItem(AUTH_KEY)||'[]'); }
+function saveUsers(users){ localStorage.setItem(AUTH_KEY, JSON.stringify(users)); }
+function findUser(u){ return getUsers().find(function(x){ return x.u===u; }); }
+function checkAuth(u,p){ var usr=findUser(u); return usr&&usr.p===btoa(p); }
+function isLogged(){ return sessionStorage.getItem('logged')!==null&&findUser(sessionStorage.getItem('logged')); }
+function currentUser(){ return sessionStorage.getItem('logged')||''; }
 
 function doLogin(){
   var u=document.getElementById('login-user').value.trim();
   var p=document.getElementById('login-pass').value;
   var err=document.getElementById('login-err');
-  if(!getAuth()){ err.textContent='Primero crea una cuenta.'; return; }
   if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
+  if(getUsers().length===0){ err.textContent='No hay usuarios configurados. Usa "Configurar acceso".'; return; }
   if(checkAuth(u,p)){
     sessionStorage.setItem('logged',u);
     document.getElementById('auth').style.display='none';
@@ -635,20 +645,27 @@ function doLogin(){
 }
 
 function doSetup(){
+  var admin=document.getElementById('setup-admin').value;
   var u=document.getElementById('setup-user').value.trim();
   var p=document.getElementById('setup-pass').value;
   var p2=document.getElementById('setup-pass2').value;
   var err=document.getElementById('setup-err');
+  if(admin!==ADMIN_CODE){ err.textContent='Código de administrador incorrecto.'; return; }
   if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
   if(p.length<4){ err.textContent='La contraseña debe tener al menos 4 caracteres.'; return; }
   if(p!==p2){ err.textContent='Las contraseñas no coinciden.'; return; }
-  saveAuth(u,p);
+  var users=getUsers();
+  if(users.length>=MAX_USERS){ err.textContent='Ya hay '+MAX_USERS+' usuarios registrados. Elimina uno antes de añadir otro.'; return; }
+  if(findUser(u)){ err.textContent='Ese nombre de usuario ya existe.'; return; }
+  users.push({u:u,p:btoa(p)});
+  saveUsers(users);
   err.style.color='var(--ok)';
-  err.textContent='¡Cuenta creada! Inicia sesión.';
+  err.textContent='¡Usuario "'+u+'" creado! Ahora inicia sesión.';
   setTimeout(function(){
     document.getElementById('box-setup').style.display='none';
     document.getElementById('box-login').style.display='block';
-    document.getElementById('auth-toggle').textContent='Crear cuenta nueva';
+    document.getElementById('auth-toggle').textContent='Configurar acceso';
+    document.getElementById('login-user').value=u;
     err.textContent='';
   },1500);
 }
@@ -667,15 +684,39 @@ function toggleAuth(){
     tog.textContent='Ya tengo cuenta';
   } else {
     setup.style.display='none'; login.style.display='block';
-    tog.textContent='Crear cuenta nueva';
+    tog.textContent='Configurar acceso';
   }
 }
 
 function cambiarPass(){
   var np=prompt('Nueva contraseña (mín. 4 caracteres):');
   if(!np||np.length<4){ alert('Contraseña demasiado corta.'); return; }
-  var a=getAuth(); saveAuth(a.u,np);
+  var users=getUsers();
+  var idx=users.findIndex(function(x){ return x.u===currentUser(); });
+  if(idx<0){ alert('Error: usuario no encontrado.'); return; }
+  users[idx].p=btoa(np);
+  saveUsers(users);
   alert('Contraseña actualizada correctamente.');
+}
+
+function gestionarUsuarios(){
+  var users=getUsers();
+  if(!users.length){ alert('No hay usuarios registrados.'); return; }
+  var lista=users.map(function(u,i){ return (i+1)+'. '+u.u; }).join('
+');
+  var resp=prompt('Usuarios registrados ('+users.length+'/'+MAX_USERS+'):
+
+'+lista+'
+
+Escribe el nombre del usuario a ELIMINAR (o cancela):');
+  if(!resp) return;
+  var target=resp.trim();
+  if(target===currentUser()){ alert('No puedes eliminar tu propio usuario mientras estás conectado.'); return; }
+  var found=findUser(target);
+  if(!found){ alert('Usuario "'+target+'" no encontrado.'); return; }
+  if(!confirm('¿Eliminar al usuario "'+target+'"? Esta acción no se puede deshacer.')){ return; }
+  saveUsers(users.filter(function(u){ return u.u!==target; }));
+  alert('Usuario "'+target+'" eliminado.');
 }
 
 // ══ INIT ══
@@ -1448,12 +1489,11 @@ function copiarScript(){
 
 // ══ BOOT ══
 window.addEventListener('DOMContentLoaded', function(){
-  var hasAuth=getAuth();
   if(isLogged()){
     document.getElementById('auth').style.display='none';
     document.getElementById('app').style.display='flex';
     initApp();
-  } else if(!hasAuth){
+  } else if(getUsers().length===0){
     document.getElementById('box-setup').style.display='block';
     document.getElementById('box-login').style.display='none';
     document.getElementById('auth-toggle').textContent='Ya tengo cuenta';
