@@ -621,7 +621,14 @@ var ADMIN_CODE = 'negocio2024admin';
 // Máximo de usuarios permitidos
 var MAX_USERS = 2;
 
-function getUsers(){ return JSON.parse(localStorage.getItem(AUTH_KEY)||'[]'); }
+function getUsers(){
+  var raw = JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
+  if(raw && !Array.isArray(raw) && raw.u && raw.p){
+    raw = [{u:raw.u, p:raw.p}];
+    localStorage.setItem(AUTH_KEY, JSON.stringify(raw));
+  }
+  return raw;
+}
 function saveUsers(users){ localStorage.setItem(AUTH_KEY, JSON.stringify(users)); }
 function findUser(u){ return getUsers().find(function(x){ return x.u===u; }); }
 function checkAuth(u,p){ var usr=findUser(u); return usr&&usr.p===btoa(p); }
