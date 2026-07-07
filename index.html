@@ -781,6 +781,18 @@ function getAllClientNames(){
   return unique.sort(function(a,b){ return a.localeCompare(b,'es'); });
 }
 
+function findClientByName(nombre){
+  if(!nombre) return null;
+  var n = nombre.toLowerCase().trim();
+  // Buscar primero en clientes locales (más recientes/editados)
+  var local = db.clientes.find(function(c){ return (c.nombre||'').toLowerCase().trim()===n; });
+  if(local) return local;
+  // Luego en los de Google Sheets
+  var sheet = sheetsClientes.find(function(c){ return (c.nombre||'').toLowerCase().trim()===n; });
+  if(sheet) return sheet;
+  return null;
+}
+
 function openDD(id){ filterDD(id); }
 function closeDD(id){ document.getElementById('ddl-'+id).classList.remove('open'); }
 
@@ -802,10 +814,51 @@ function filterDD(id){
       var idx=c.toLowerCase().indexOf(q);
       d.innerHTML=c.slice(0,idx)+'<strong>'+c.slice(idx,idx+q.length)+'</strong>'+c.slice(idx+q.length);
     } else { d.textContent=c; }
-    d.onmousedown=function(e){ e.preventDefault(); document.getElementById('dd-'+id).value=c; closeDD(id); };
+    d.onmousedown=function(e){ e.preventDefault(); document.getElementById('dd-'+id).value=c; closeDD(id); seleccionarClienteOp(id,c); };
     list.appendChild(d);
   });
   list.classList.add('open');
+}
+
+// Cuando se selecciona un cliente de la lista, autocompletar dirección/municipio/teléfono
+// Si el cliente está en Cuba, esos datos son obligatorios para continuar
+function seleccionarClienteOp(id, nombre){
+  var cliente = findClientByName(nombre);
+  if(id==='cuba'){
+    var dirField = document.getElementById('op-direccion');
+    var munField = document.getElementById('op-municipio');
+    var telField = document.getElementById('op-telefono');
+    if(cliente){
+      dirField.value = cliente.direccion || '';
+      munField.value = cliente.municipio || '';
+      telField.value = cliente.telefono || '';
+      // Si falta dirección o municipio en la ficha del cliente, exigir que se complete ahora
+      if(!cliente.direccion || !cliente.municipio){
+        marcarCamposObligatorios(!cliente.direccion, !cliente.municipio);
+        alert('Este cliente no tiene '+(!cliente.direccion&&!cliente.municipio?'dirección ni municipio guardados':(!cliente.direccion?'dirección guardada':'municipio guardado'))+'. Complétalo para poder continuar.');
+      } else {
+        limpiarCamposObligatorios();
+      }
+    } else {
+      // Cliente nuevo escrito a mano — exigir dirección y municipio, limpiar teléfono
+      dirField.value=''; munField.value=''; telField.value='';
+      marcarCamposObligatorios(true,true);
+    }
+  }
+  // Cliente en EEUU: no se autocompleta teléfono, ese dato no se recoge siempre
+}
+
+function marcarCamposObligatorios(dir, mun){
+  var dirField=document.getElementById('op-direccion');
+  var munField=document.getElementById('op-municipio');
+  if(dir){ dirField.style.borderColor='var(--err)'; dirField.placeholder='⚠️ Obligatorio — introduce la dirección'; }
+  if(mun){ munField.style.borderColor='var(--err)'; }
+}
+
+function limpiarCamposObligatorios(){
+  document.getElementById('op-direccion').style.borderColor='';
+  document.getElementById('op-direccion').placeholder='Calle, número...';
+  document.getElementById('op-municipio').style.borderColor='';
 }
 
 // ══ MINI CLIENT FORM ══
@@ -822,14 +875,24 @@ function saveMiniCliente(id){
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
   var tel = document.getElementById('m'+id+'-tel').value.trim();
   var dir = document.getElementById('m'+id+'-dir').value.trim();
+  if(id==='cuba' && !dir){ alert('La dirección es obligatoria para clientes en Cuba.'); document.getElementById('mcuba-dir').focus(); return; }
+  var mun = id==='cuba' ? document.getElementById('mcuba-mun').value : '';
+  if(id==='cuba' && !mun){ alert('El municipio es obligatorio para clientes en Cuba.'); document.getElementById('mcuba-mun').focus(); return; }
   var extra = id==='cuba'
-    ? {municipio: document.getElementById('mcuba-mun').value, reside:'Cuba'}
+    ? {municipio: mun, reside:'Cuba'}
     : {canal: document.getElementById('musa-canal').value, reside:'EeUu'};
   var nuevo = Object.assign({id:uid(), nombre:nombre, telefono:tel, direccion:dir, creado:today()}, extra);
   db.clientes.unshift(nuevo);
   saveDB();
   saveClienteToSheets(nuevo);
   document.getElementById('dd-'+id).value = nombre;
+  // Autocompletar el formulario principal con los datos recién creados
+  if(id==='cuba'){
+    document.getElementById('op-direccion').value = dir;
+    document.getElementById('op-municipio').value = mun;
+    if(tel) document.getElementById('op-telefono').value = tel;
+    limpiarCamposObligatorios();
+  }
   toggleMini(id);
   document.getElementById('m'+id+'-nombre').value='';
   document.getElementById('m'+id+'-tel').value='';
@@ -868,6 +931,19 @@ function saveOp(){
   };
   if(!obj.cliente && !obj.clienteCuba){ alert('Introduce al menos un cliente.'); return; }
   if(!obj.depositar){ alert('La cantidad a depositar es obligatoria.'); return; }
+  if(obj.clienteCuba && !obj.direccion){
+    alert('Falta la dirección del cliente en Cuba. No se puede continuar sin ella.');
+    document.getElementById('op-direccion').focus();
+    document.getElementById('op-direccion').style.borderColor='var(--err)';
+    return;
+  }
+  if(obj.clienteCuba && !obj.municipio){
+    alert('Falta el municipio del cliente en Cuba. No se puede continuar sin él.');
+    document.getElementById('op-municipio').focus();
+    document.getElementById('op-municipio').style.borderColor='var(--err)';
+    return;
+  }
+  limpiarCamposObligatorios();
   if(eid){ var idx=db.envios.findIndex(function(r){ return r.id===eid; }); db.envios[idx]=obj; }
   else db.envios.unshift(obj);
   saveDB();
@@ -892,6 +968,7 @@ function clearOpForm(){
   document.getElementById('op-r-gan').textContent='—';
   document.getElementById('op-r-gcu').textContent='—';
   document.getElementById('op-modal-ttl').textContent='Nueva operación';
+  limpiarCamposObligatorios();
 }
 
 function editOp(id){
@@ -916,6 +993,7 @@ function editOp(id){
   if(r.revisado) document.getElementById('op-chk').classList.add('on');
   document.getElementById('op-chk-lbl').textContent=r.revisado?'Revisado':'No revisado';
   document.getElementById('op-modal-ttl').textContent='Editar operación';
+  limpiarCamposObligatorios();
   calcOp();
   openModal('modal-op');
 }
@@ -932,7 +1010,7 @@ function markEntregada(id){
 }
 
 // ══ RESUMEN MENSAJERO ══
-function mostrarResumenMensajero(op){
+function generarTextoMensajero(op){
   var mNombre=db.mensajeros.find(function(m){ return m.id===op.mensajero; });
   var mens = mNombre ? mNombre.nombre.toUpperCase() : 'MENSAJERO';
   var cliente = op.clienteCuba || op.cliente || '—';
@@ -941,7 +1019,7 @@ function mostrarResumenMensajero(op){
   var fecha = op.fecha ? fmtDate(op.fecha) : fmtDate(today());
   var hora = op.hora || '—';
   var sep = '─'.repeat(26);
-  var txt = '🛵 ENTREGA PARA '+mens+'\n'+sep+'\n'
+  return '🛵 ENTREGA PARA '+mens+'\n'+sep+'\n'
     +'👤 Cliente: '+cliente+'\n'
     +'📱 Teléfono: '+tel+'\n'
     +'📍 Dirección: '+dir+'\n'
@@ -950,6 +1028,15 @@ function mostrarResumenMensajero(op){
     +'📅 Fecha: '+fecha+'\n'
     +'⏰ Hora: '+hora+'\n'
     +sep+'\nGracias 🙏';
+}
+
+function copiarTexto(txt){
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ alert('¡Copiado! Pégalo en WhatsApp.'); }); }
+  else { var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('¡Copiado!'); }
+}
+
+function mostrarResumenMensajero(op){
+  var txt = generarTextoMensajero(op);
   window._lastMensMsg = txt;
   var area = document.getElementById('op-result-area');
   area.innerHTML = '<div class="op-result-box">'
@@ -961,10 +1048,12 @@ function mostrarResumenMensajero(op){
   area.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function copiarUltimoMsg(){
-  var txt=window._lastMensMsg||'';
-  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ alert('¡Copiado!'); }); }
-  else { var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('¡Copiado!'); }
+function copiarUltimoMsg(){ copiarTexto(window._lastMensMsg||''); }
+
+function copiarMensajeEnvio(id){
+  var op = db.envios.find(function(r){ return r.id===id; });
+  if(!op){ alert('No se encontró esta entrega.'); return; }
+  copiarTexto(generarTextoMensajero(op));
 }
 
 // ══ RENDER ENVÍOS ══
@@ -1004,6 +1093,7 @@ function renderEnvios(){
       +(r.notas?'📝 '+r.notas:'')
       +'</div>'
       +'<div class="item-actions">'
+      +'<button class="btn btn-pri btn-sm" onclick="copiarMensajeEnvio(\''+r.id+'\')">📲 Copiar mensaje</button>'
       +(r.estado!=='entregada'?'<button class="btn btn-ok btn-sm" onclick="markEntregada(\''+r.id+'\')">✓ Entregada</button>':'')
       +'<button class="btn btn-out btn-sm" onclick="editOp(\''+r.id+'\')">Editar</button>'
       +'<button class="btn btn-err btn-sm" onclick="deleteOp(\''+r.id+'\')">Borrar</button>'
@@ -1039,6 +1129,7 @@ function renderEntregas(){
       +'💰 '+fmtMoney(r.entrega)+' · 🛵 '+(mens?mens.nombre:'Sin asignar')
       +'</div>'
       +'<div class="item-actions">'
+      +'<button class="btn btn-pri btn-sm" onclick="copiarMensajeEnvio(\''+r.id+'\')">📲 Copiar mensaje</button>'
       +(r.estado!=='entregada'
         ?'<button class="btn btn-ok btn-sm" onclick="markEntregada(\''+r.id+'\')">✓ Entregada</button>'
         :'<span class="bdg bdg-ok">✓ Completada</span>')
