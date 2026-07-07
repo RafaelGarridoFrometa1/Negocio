@@ -702,13 +702,8 @@ function cambiarPass(){
 function gestionarUsuarios(){
   var users=getUsers();
   if(!users.length){ alert('No hay usuarios registrados.'); return; }
-  var lista=users.map(function(u,i){ return (i+1)+'. '+u.u; }).join('
-');
-  var resp=prompt('Usuarios registrados ('+users.length+'/'+MAX_USERS+'):
-
-'+lista+'
-
-Escribe el nombre del usuario a ELIMINAR (o cancela):');
+  var lista=users.map(function(u,i){ return (i+1)+'. '+u.u; }).join('\n');
+  var resp=prompt('Usuarios registrados ('+users.length+'/'+MAX_USERS+'):\n\n'+lista+'\n\nEscribe el nombre del usuario a ELIMINAR (o cancela):');
   if(!resp) return;
   var target=resp.trim();
   if(target===currentUser()){ alert('No puedes eliminar tu propio usuario mientras estás conectado.'); return; }
