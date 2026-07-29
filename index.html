@@ -346,6 +346,10 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
           <div class="chk-box" id="op-chk"></div>
           <span id="op-chk-lbl">No revisado</span>
         </div>
+        <div class="chk-wrap" onclick="toggleChk('op-chk-pago','op-chk-pago-lbl')">
+          <div class="chk-box" id="op-chk-pago"></div>
+          <span id="op-chk-pago-lbl">Mensajero SIN pagar</span>
+        </div>
       </div>
       <div class="fgroup">
         <label class="flabel">Día del mes</label>
@@ -757,11 +761,22 @@ document.querySelectorAll('.modal-bg').forEach(function(m){
 });
 
 // ══ CHECKBOX ══
+var CHK_TXT={
+  'op-chk':      ['Revisado','No revisado'],
+  'op-chk-pago': ['Mensajero PAGADO','Mensajero SIN pagar']
+};
 function toggleChk(boxId, lblId){
   var box=document.getElementById(boxId);
   var lbl=document.getElementById(lblId);
   box.classList.toggle('on');
-  lbl.textContent = box.classList.contains('on') ? 'Revisado' : 'No revisado';
+  var t=CHK_TXT[boxId]||['Revisado','No revisado'];
+  lbl.textContent = box.classList.contains('on') ? t[0] : t[1];
+}
+function setChk(boxId, lblId, valor){
+  var box=document.getElementById(boxId);
+  var t=CHK_TXT[boxId]||['Revisado','No revisado'];
+  if(valor) box.classList.add('on'); else box.classList.remove('on');
+  document.getElementById(lblId).textContent = valor ? t[0] : t[1];
 }
 
 // ══ CALC ══
@@ -929,6 +944,7 @@ function saveOp(){
     notas:      document.getElementById('op-notas').value.trim(),
     estado:     document.getElementById('op-estado').value,
     revisado:   document.getElementById('op-chk').classList.contains('on'),
+    pagadoMens: document.getElementById('op-chk-pago').classList.contains('on'),
     creado:     eid ? (db.envios.find(function(r){ return r.id===eid; })||{}).creado||today() : today()
   };
   if(!obj.cliente && !obj.clienteCuba){ alert('Introduce al menos un cliente.'); return; }
@@ -965,8 +981,8 @@ function clearOpForm(){
   document.getElementById('op-municipio').value='';
   document.getElementById('op-mensajero').value='';
   document.getElementById('op-estado').value='pendiente';
-  document.getElementById('op-chk').classList.remove('on');
-  document.getElementById('op-chk-lbl').textContent='No revisado';
+  setChk('op-chk','op-chk-lbl',false);
+  setChk('op-chk-pago','op-chk-pago-lbl',false);
   document.getElementById('op-r-gan').textContent='—';
   document.getElementById('op-r-gcu').textContent='—';
   document.getElementById('op-modal-ttl').textContent='Nueva operación';
@@ -992,8 +1008,8 @@ function editOp(id){
   document.getElementById('op-mens').value=r.costoMens||'';
   document.getElementById('op-notas').value=r.notas||'';
   document.getElementById('op-estado').value=r.estado||'pendiente';
-  if(r.revisado) document.getElementById('op-chk').classList.add('on');
-  document.getElementById('op-chk-lbl').textContent=r.revisado?'Revisado':'No revisado';
+  setChk('op-chk','op-chk-lbl',!!r.revisado);
+  setChk('op-chk-pago','op-chk-pago-lbl',!!r.pagadoMens);
   document.getElementById('op-modal-ttl').textContent='Editar operación';
   limpiarCamposObligatorios();
   calcOp();
@@ -1428,11 +1444,16 @@ function saveOpToSheets(op){
   var url=gsUrl();
   if(!url||!navigator.onLine) return;
   var m=db.mensajeros.find(function(x){ return x.id===op.mensajero; });
+  // Fecha completa: el libro nuevo es una sola hoja, ya no hay pestanas por mes.
+  var hoy=new Date();
+  var dd=parseInt(op.dia,10);
+  if(!(dd>=1&&dd<=31)) dd=hoy.getDate();
+  var iso=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+dd).slice(-2);
   var payload=encodeURIComponent(JSON.stringify({
     action:'saveOperacion',
     operacion:{
-      revisado_daniela:op.revisado||false,
-      dia:op.dia||new Date().getDate(),
+      dia_iso:iso,
+      dia:dd,
       tipo:op.tipo||'EeUu \u2192 Cuba',
       cobro:op.cobro||'EeUu',
       cliente_eeuu:op.cliente||'',
@@ -1440,7 +1461,16 @@ function saveOpToSheets(op){
       depositar:op.depositar||0,
       entrega:op.entrega||0,
       costo_mens:op.costoMens||0,
-      mensajero:m?m.nombre:''
+      mensajero:m?m.nombre:'',
+      pagado_mensajero:op.pagadoMens||false,
+      estado:op.estado||'pendiente',
+      revisado_rafael:false,
+      revisado_daniela:op.revisado||false,
+      ref_banco:op.refBanco||'',
+      notas:op.notas||'',
+      municipio:op.municipio||'',
+      fecha:op.fecha||'',
+      hora:op.hora||''
     }
   }));
   fetch(url+'?data='+payload,{method:'GET',mode:'no-cors'}).catch(function(){});
@@ -1530,15 +1560,10 @@ function appendCliente(ss, c) {
   sh.appendRow([sh.getLastRow(),c.nombre||'',c.telefono||'',c.email||'',c.direccion||'',c.municipio||'',c.reside||'',c.contacto||'',c.decision||'',c.canal||'',c.nota||'']);
 }
 
-function appendOp(ss, op) {
-  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var hoy=new Date(), nombre=meses[hoy.getMonth()]+' '+hoy.getFullYear();
-  var sh=ss.getSheetByName(nombre);
-  if (!sh) { sh=ss.insertSheet(nombre); sh.appendRow(['R','Daniela','OpeNumero','Dia','Tipo','Donde se cobra la ganancia','Cliente reside en EeUu','Cliente en Cuba','Cantidad a Depositar','Entrega','Costo Mens','Ganancia','Total de Alberto-Dani','Ganado por cada uno','AcumMens','Mensajerias Rosy']); fmt(sh); }
-  var n=sh.getLastRow()-1;
-  var dep=parseFloat(op.depositar)||0, ent=parseFloat(op.entrega)||0, cm=parseFloat(op.costo_mens)||0;
-  sh.appendRow([false,op.revisado_daniela||false,n,op.dia||hoy.getDate(),op.tipo||'EeUu-Cuba',op.cobro||'EeUu',op.cliente_eeuu||'',op.cliente_cuba||'',dep,ent,cm||'',dep-ent-cm,'',( dep-ent-cm)/2,cm||'',op.mensajero||'']);
-}
+// ATENCION: este script incrustado quedo OBSOLETO.
+// El backend ahora es el archivo "negocio-contabilidad" que escribe en el libro
+// Contabilidad_Remesas (hoja Operaciones, una sola hoja, sin pestanas mensuales).
+// No copies el script desde aqui: usa el archivo que te dieron.
 
 function syncAll(ss, data) {
   syncSheet(ss,'App_Envios',['ID','Cliente EEUU','Cliente Cuba','Telefono','Direccion','Municipio','Depositar','Entrega','Costo Mens','Tipo','Cobro','Dia','Fecha','Hora','Mensajero','Ganancia','Estado','Creado'],
