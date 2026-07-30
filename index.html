@@ -1427,30 +1427,37 @@ function doSync(){
 
   var LOTE=40;                      // operaciones por envio
   var total=envios.length;
-  var nuevas=0, actualizadas=0, i=0;
+  var nuevas=0, actualizadas=0, cliNuevos=0, cliActual=0, i=0;
 
   function paso(){
     var trozo=envios.slice(i,i+LOTE);
     var cuerpo={action:'sync', data:{
       envios:trozo,
       mensajeros: i===0 ? db.mensajeros : [],
+      clientes:   i===0 ? (db.clientes||[]) : [],
       pagos:      i===0 ? pagos : []
     }};
     setSyncTexto('Sincronizando '+Math.min(i+trozo.length,total)+' de '+total+'...');
     return enviarAlScript(url,cuerpo).then(function(res){
       if(!res||!res.ok) throw new Error(res&&res.error?res.error:'respuesta inesperada');
       if(res.operaciones){ nuevas+=res.operaciones.nuevas||0; actualizadas+=res.operaciones.actualizadas||0; }
+      if(res.clientes){ cliNuevos+=res.clientes.nuevos||0; cliActual+=res.clientes.actualizados||0; }
       i+=LOTE;
       if(i<total) return paso();
     });
   }
 
   setSyncTexto('Sincronizando...');
-  var p = total ? paso() : enviarAlScript(url,{action:'sync',data:{envios:[],mensajeros:db.mensajeros,pagos:pagos}});
+  var p = total ? paso() : enviarAlScript(url,{action:'sync',data:{
+    envios:[], mensajeros:db.mensajeros, clientes:(db.clientes||[]), pagos:pagos}});
   p.then(function(){
     setSyncTexto('Sincronizar');
     updateDot(true);
-    alert('✅ Sincronizado.\n\nOperaciones nuevas: '+nuevas+'\nActualizadas: '+actualizadas);
+    alert('✅ Sincronizado.\n\n'+
+          'Operaciones nuevas: '+nuevas+'\n'+
+          'Operaciones actualizadas: '+actualizadas+'\n'+
+          'Clientes nuevos: '+cliNuevos+'\n'+
+          'Clientes actualizados: '+cliActual);
   }).catch(function(err){
     setSyncTexto('Sincronizar');
     updateDot(false);
