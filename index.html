@@ -1440,6 +1440,10 @@ function doSync(){
     setSyncTexto('Sincronizando '+Math.min(i+trozo.length,total)+' de '+total+'...');
     return enviarAlScript(url,cuerpo).then(function(res){
       if(!res||!res.ok) throw new Error(res&&res.error?res.error:'respuesta inesperada');
+      if(!res.operaciones && !res.clientes)
+        throw new Error('El script respondio pero no proceso nada.\n'+
+                        'Casi seguro tienes una version antigua del script: '+
+                        'actualizalo y vuelve a implementarlo.');
       if(res.operaciones){ nuevas+=res.operaciones.nuevas||0; actualizadas+=res.operaciones.actualizadas||0; }
       if(res.clientes){ cliNuevos+=res.clientes.nuevos||0; cliActual+=res.clientes.actualizados||0; }
       i+=LOTE;
