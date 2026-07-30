@@ -307,6 +307,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
           <input type="url" class="finput" id="gs-url" placeholder="https://script.google.com/macros/s/...">
         </div>
         <button class="btn btn-pri" onclick="saveGsUrl()">Guardar URL</button>
+        <button class="cfg-btn" style="margin-top:.75rem" onclick="probarConexion()">🔎 Probar conexión</button>
         <button class="cfg-btn" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
       </div>
       <div class="card" style="margin-top:.75rem">
@@ -613,7 +614,16 @@ var envioFilter = 'todos';
 var entregaFilter = 'pendiente';
 
 function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); updateDot(false); }
-function loadDB(){ var r=localStorage.getItem(DB_KEY); if(r) db=JSON.parse(r); }
+function loadDB(){
+  var r=localStorage.getItem(DB_KEY);
+  if(!r) return;
+  try{
+    var g=JSON.parse(r)||{};
+    // Se rellenan las claves que falten: una version antigua pudo guardar sin 'clientes'
+    db={ envios:g.envios||[], mensajeros:g.mensajeros||[], pagos:g.pagos||[], clientes:g.clientes||[] };
+    Object.keys(g).forEach(function(k){ if(!(k in db)) db[k]=g[k]; });
+  }catch(e){ console.error('No se pudo leer la base local:',e); }
+}
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function today(){ return new Date().toISOString().split('T')[0]; }
 function fmtDate(d){ if(!d) return ''; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
@@ -1399,65 +1409,156 @@ function saveGsUrl(){
 
 function gsUrl(){ return localStorage.getItem(GS_KEY)||''; }
 
+// Diagnostico paso a paso: dice exactamente en que punto se rompe la cadena.
+function probarConexion(){
+  var url=gsUrl();
+  var log=[];
+  function linea(t){ log.push(t); }
+
+  if(!url){ alert('No hay URL guardada. Pégala arriba y dale a Guardar URL.'); return; }
+  linea('URL: ...'+url.slice(-28));
+  linea(/\/exec\s*$/.test(url) ? '1) Termina en /exec ...... OK'
+                              : '1) Termina en /exec ...... MAL (debe acabar en /exec)');
+
+  db.clientes=db.clientes||[]; db.envios=db.envios||[];
+  linea('2) En este teléfono hay '+db.clientes.length+' clientes propios y '+db.envios.length+' operaciones.');
+  if(!db.clientes.length)
+    linea('   OJO: 0 clientes propios. Los que ves en la pestaña Clientes vienen del Sheet,');
+    linea('   no del teléfono, y esos se migran desde Apps Script, no desde aquí.');
+
+  fetch(url+'?action=ping',{method:'GET'})
+    .then(function(r){ return r.text(); })
+    .then(function(t){
+      var j=interpretar(t);
+      linea('3) GET ................... OK (script versión '+(j.version||'?')+')');
+    })
+    .catch(function(e){ linea('3) GET ................... MAL: '+e.message); })
+    .then(function(){
+      return enviarAlScript(url,{action:'ping'})
+        .then(function(j){
+          linea('4) POST .................. '+(j.recibioPost?'OK, el script lee el cuerpo':'MAL: llega vacío'));
+          if(!j.recibioPost) linea('   -> el script es antiguo. Actualízalo y crea NUEVA implementación.');
+        })
+        .catch(function(e){ linea('4) POST .................. MAL: '+e.message); });
+    })
+    .then(function(){
+      var prueba={action:'sync',data:{envios:[],mensajeros:[],pagos:[],
+        clientes:[{id:'DIAG-1',nombre:'ZZZ Diagnostico Borrar',telefono:'000'}]}};
+      return enviarAlScript(url,prueba)
+        .then(function(j){
+          if(j&&j.clientes) linea('5) Escritura ............. OK ('+j.clientes.nuevos+' nuevo, '+j.clientes.actualizados+' actualizado)');
+          else linea('5) Escritura ............. MAL: respondió '+JSON.stringify(j).slice(0,90));
+        })
+        .catch(function(e){ linea('5) Escritura ............. MAL: '+e.message); });
+    })
+    .then(function(){
+      linea('');
+      linea('Si el paso 5 dio OK, busca "ZZZ Diagnostico Borrar" en la hoja Clientes y bórralo.');
+      alert(log.join('\n'));
+      console.log(log.join('\n'));
+    });
+}
+
 function updateDot(synced){ document.getElementById('sync-dot').className='sync-dot'+(synced?' ok':''); }
 
 // Envia por POST con Content-Type text/plain: asi no hay limite de URL ni preflight,
 // y ademas se puede LEER la respuesta para saber si de verdad se guardo.
+function interpretar(texto){
+  var t=(texto||'').trim();
+  if(t.charAt(0)==='{'||t.charAt(0)==='['){
+    try{ return JSON.parse(t); }catch(e){ throw new Error('Respuesta ilegible del script: '+t.slice(0,150)); }
+  }
+  if(t.toLowerCase().indexOf('<!doctype')===0 || t.charAt(0)==='<')
+    throw new Error('El script devolvio una pagina web en vez de datos.\n\n'+
+                    'Casi siempre significa que la implementacion NO tiene el acceso '+
+                    'en "Cualquier persona", o que la URL no termina en /exec.');
+  throw new Error('Respuesta inesperada: '+t.slice(0,150));
+}
+
+// POST con text/plain: sin limite de URL y sin preflight.
 function enviarAlScript(url, cuerpo){
   return fetch(url,{
     method:'POST',
     headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify(cuerpo)
-  }).then(function(res){ return res.json(); });
+  }).then(function(r){ return r.text(); }).then(interpretar);
+}
+
+// Plan B: por GET. Solo sirve para lotes pequenos, pero funciona donde POST falla.
+function enviarPorGet(url, cuerpo){
+  var q=url+'?data='+encodeURIComponent(JSON.stringify(cuerpo));
+  if(q.length>7500) return Promise.reject(new Error('lote demasiado grande para GET'));
+  return fetch(q,{method:'GET'}).then(function(r){ return r.text(); }).then(interpretar);
 }
 
 function doSync(){
   var url=gsUrl();
   if(!url){ alert('Primero configura la URL del script en Configuración.'); return; }
+  if(!/\/exec\s*$/.test(url)){ alert('La URL debe terminar en /exec.\n\nLa tuya termina en: '+url.slice(-12)); return; }
   if(!navigator.onLine){ alert('Sin conexión. Los datos están guardados localmente.'); return; }
+
+  db.envios=db.envios||[]; db.clientes=db.clientes||[];
+  db.mensajeros=db.mensajeros||[]; db.pagos=db.pagos||[];
 
   var envios=db.envios.map(function(r){
     var m=db.mensajeros.find(function(x){ return x.id===r.mensajero; });
     return Object.assign({},r,{mensajeroNombre:m?m.nombre:''});
   });
-  var pagos=(db.pagos||[]).map(function(p){
+  var pagos=db.pagos.map(function(p){
     var m=db.mensajeros.find(function(x){ return x.id===p.mensajeroId; });
     return Object.assign({},p,{mensajeroNombre:m?m.nombre:''});
   });
 
-  var LOTE=40;                      // operaciones por envio
-  var total=envios.length;
-  var nuevas=0, actualizadas=0, cliNuevos=0, cliActual=0, i=0;
+  var usarGet=false;
+  var nuevas=0, actualizadas=0, cliNuevos=0, cliActual=0;
+  var total=envios.length, i=0, primera=true;
+
+  function mandar(cuerpo){
+    if(usarGet) return enviarPorGet(url,cuerpo);
+    return enviarAlScript(url,cuerpo).catch(function(err){
+      // Si falla el POST, se reintenta por GET una sola vez y se sigue por ahi
+      usarGet=true;
+      return enviarPorGet(url,cuerpo);
+    });
+  }
+
+  function comprobar(res){
+    if(!res) throw new Error('El script no respondió.');
+    if(res.ok===false) throw new Error(res.error||'error desconocido en el script');
+    if(!res.operaciones && !res.clientes)
+      throw new Error('El script respondió pero no procesó nada.\n\n'+
+                      'Tienes una versión antigua del script: actualízalo y crea una '+
+                      'NUEVA implementación (no basta con guardar).');
+    if(res.operaciones){ nuevas+=res.operaciones.nuevas||0; actualizadas+=res.operaciones.actualizadas||0; }
+    if(res.clientes){ cliNuevos+=res.clientes.nuevos||0; cliActual+=res.clientes.actualizados||0; }
+  }
 
   function paso(){
-    var trozo=envios.slice(i,i+LOTE);
+    var lote=usarGet?5:40;
+    var trozo=envios.slice(i,i+lote);
     var cuerpo={action:'sync', data:{
       envios:trozo,
-      mensajeros: i===0 ? db.mensajeros : [],
-      clientes:   i===0 ? (db.clientes||[]) : [],
-      pagos:      i===0 ? pagos : []
+      mensajeros: primera ? db.mensajeros : [],
+      clientes:   primera ? db.clientes  : [],
+      pagos:      primera ? pagos        : []
     }};
     setSyncTexto('Sincronizando '+Math.min(i+trozo.length,total)+' de '+total+'...');
-    return enviarAlScript(url,cuerpo).then(function(res){
-      if(!res||!res.ok) throw new Error(res&&res.error?res.error:'respuesta inesperada');
-      if(!res.operaciones && !res.clientes)
-        throw new Error('El script respondio pero no proceso nada.\n'+
-                        'Casi seguro tienes una version antigua del script: '+
-                        'actualizalo y vuelve a implementarlo.');
-      if(res.operaciones){ nuevas+=res.operaciones.nuevas||0; actualizadas+=res.operaciones.actualizadas||0; }
-      if(res.clientes){ cliNuevos+=res.clientes.nuevos||0; cliActual+=res.clientes.actualizados||0; }
-      i+=LOTE;
+    return mandar(cuerpo).then(function(res){
+      comprobar(res);
+      primera=false;
+      i+=trozo.length||lote;
       if(i<total) return paso();
     });
   }
 
   setSyncTexto('Sincronizando...');
-  var p = total ? paso() : enviarAlScript(url,{action:'sync',data:{
-    envios:[], mensajeros:db.mensajeros, clientes:(db.clientes||[]), pagos:pagos}});
+  var p = total ? paso()
+                : mandar({action:'sync',data:{envios:[],mensajeros:db.mensajeros,
+                                              clientes:db.clientes,pagos:pagos}}).then(comprobar);
   p.then(function(){
     setSyncTexto('Sincronizar');
     updateDot(true);
-    alert('✅ Sincronizado.\n\n'+
+    alert('✅ Sincronizado'+(usarGet?' (por GET)':'')+'.\n\n'+
           'Operaciones nuevas: '+nuevas+'\n'+
           'Operaciones actualizadas: '+actualizadas+'\n'+
           'Clientes nuevos: '+cliNuevos+'\n'+
@@ -1466,7 +1567,7 @@ function doSync(){
     setSyncTexto('Sincronizar');
     updateDot(false);
     alert('❌ No se pudo sincronizar.\n\n'+(err&&err.message?err.message:err)+
-          '\n\nRevisa que la URL del script termine en /exec y que el acceso este en "Cualquier persona".');
+          '\n\nUsa "Probar conexión" en Configuración para ver dónde falla.');
   });
 }
 
