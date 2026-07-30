@@ -1401,26 +1401,67 @@ function gsUrl(){ return localStorage.getItem(GS_KEY)||''; }
 
 function updateDot(synced){ document.getElementById('sync-dot').className='sync-dot'+(synced?' ok':''); }
 
+// Envia por POST con Content-Type text/plain: asi no hay limite de URL ni preflight,
+// y ademas se puede LEER la respuesta para saber si de verdad se guardo.
+function enviarAlScript(url, cuerpo){
+  return fetch(url,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(cuerpo)
+  }).then(function(res){ return res.json(); });
+}
+
 function doSync(){
   var url=gsUrl();
   if(!url){ alert('Primero configura la URL del script en Configuración.'); return; }
   if(!navigator.onLine){ alert('Sin conexión. Los datos están guardados localmente.'); return; }
-  var btn=document.querySelector('.tbtn');
-  var enriched={
-    envios:db.envios.map(function(r){
-      var m=db.mensajeros.find(function(x){ return x.id===r.mensajero; });
-      return Object.assign({},r,{mensajeroNombre:m?m.nombre:''});
-    }),
-    mensajeros:db.mensajeros,
-    pagos:db.pagos.map(function(p){
-      var m=db.mensajeros.find(function(x){ return x.id===p.mensajeroId; });
-      return Object.assign({},p,{mensajeroNombre:m?m.nombre:''});
-    })
-  };
-  var payload=encodeURIComponent(JSON.stringify({action:'sync',data:enriched}));
-  fetch(url+'?data='+payload,{method:'GET',mode:'no-cors'})
-    .then(function(){ updateDot(true); alert('✅ Sincronizado con Google Sheets.'); })
-    .catch(function(){ alert('Error al sincronizar. Verifica la URL del script.'); });
+
+  var envios=db.envios.map(function(r){
+    var m=db.mensajeros.find(function(x){ return x.id===r.mensajero; });
+    return Object.assign({},r,{mensajeroNombre:m?m.nombre:''});
+  });
+  var pagos=(db.pagos||[]).map(function(p){
+    var m=db.mensajeros.find(function(x){ return x.id===p.mensajeroId; });
+    return Object.assign({},p,{mensajeroNombre:m?m.nombre:''});
+  });
+
+  var LOTE=40;                      // operaciones por envio
+  var total=envios.length;
+  var nuevas=0, actualizadas=0, i=0;
+
+  function paso(){
+    var trozo=envios.slice(i,i+LOTE);
+    var cuerpo={action:'sync', data:{
+      envios:trozo,
+      mensajeros: i===0 ? db.mensajeros : [],
+      pagos:      i===0 ? pagos : []
+    }};
+    setSyncTexto('Sincronizando '+Math.min(i+trozo.length,total)+' de '+total+'...');
+    return enviarAlScript(url,cuerpo).then(function(res){
+      if(!res||!res.ok) throw new Error(res&&res.error?res.error:'respuesta inesperada');
+      if(res.operaciones){ nuevas+=res.operaciones.nuevas||0; actualizadas+=res.operaciones.actualizadas||0; }
+      i+=LOTE;
+      if(i<total) return paso();
+    });
+  }
+
+  setSyncTexto('Sincronizando...');
+  var p = total ? paso() : enviarAlScript(url,{action:'sync',data:{envios:[],mensajeros:db.mensajeros,pagos:pagos}});
+  p.then(function(){
+    setSyncTexto('Sincronizar');
+    updateDot(true);
+    alert('✅ Sincronizado.\n\nOperaciones nuevas: '+nuevas+'\nActualizadas: '+actualizadas);
+  }).catch(function(err){
+    setSyncTexto('Sincronizar');
+    updateDot(false);
+    alert('❌ No se pudo sincronizar.\n\n'+(err&&err.message?err.message:err)+
+          '\n\nRevisa que la URL del script termine en /exec y que el acceso este en "Cualquier persona".');
+  });
+}
+
+function setSyncTexto(t){
+  var b=document.querySelector('.tbtn');
+  if(b) b.textContent=t;
 }
 
 function loadSheetsClientes(){
@@ -1436,8 +1477,8 @@ function loadSheetsClientes(){
 function saveClienteToSheets(c){
   var url=gsUrl();
   if(!url||!navigator.onLine) return;
-  var payload=encodeURIComponent(JSON.stringify({action:'saveCliente',cliente:c}));
-  fetch(url+'?data='+payload,{method:'GET',mode:'no-cors'}).catch(function(){});
+  enviarAlScript(url,{action:'saveCliente',cliente:c})
+    .catch(function(e){ console.warn('No se pudo guardar el cliente en Sheets:',e); });
 }
 
 function saveOpToSheets(op){
@@ -1449,9 +1490,10 @@ function saveOpToSheets(op){
   var dd=parseInt(op.dia,10);
   if(!(dd>=1&&dd<=31)) dd=hoy.getDate();
   var iso=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+dd).slice(-2);
-  var payload=encodeURIComponent(JSON.stringify({
+  var cuerpo={
     action:'saveOperacion',
     operacion:{
+      id:op.id||'',
       dia_iso:iso,
       dia:dd,
       tipo:op.tipo||'EeUu \u2192 Cuba',
@@ -1472,8 +1514,11 @@ function saveOpToSheets(op){
       fecha:op.fecha||'',
       hora:op.hora||''
     }
-  }));
-  fetch(url+'?data='+payload,{method:'GET',mode:'no-cors'}).catch(function(){});
+  };
+  enviarAlScript(url,cuerpo).then(function(res){
+    if(res&&res.ok) updateDot(true);
+    else { updateDot(false); console.warn('Sheets rechazo la operacion:',res); }
+  }).catch(function(e){ updateDot(false); console.warn('Sin conexion con Sheets:',e); });
 }
 
 // ══ CONFIG ══
