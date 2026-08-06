@@ -308,6 +308,8 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
         </div>
         <button class="btn btn-pri" onclick="saveGsUrl()">Guardar URL</button>
         <button class="cfg-btn" style="margin-top:.75rem" onclick="probarConexion()">🔎 Probar conexión</button>
+        <button class="cfg-btn" style="margin-top:.4rem" onclick="buscarActualizacion()">🔄 Buscar actualización</button>
+        <div id="app-version" style="margin-top:.6rem;font-size:.8rem;opacity:.65;text-align:center"></div>
         <button class="cfg-btn" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
       </div>
       <div class="card" style="margin-top:.75rem">
@@ -1407,6 +1409,27 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
+var APP_VERSION='v8 · 2026-08-01';
+
+function pintarVersion(){
+  var d=document.getElementById('app-version');
+  if(d) d.textContent='Versión de la app: '+APP_VERSION;
+}
+
+// Fuerza al navegador a comprobar si hay una version nueva publicada
+function buscarActualizacion(){
+  if(!('serviceWorker' in navigator)){ location.reload(true); return; }
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    var p=regs.map(function(r){ return r.update(); });
+    return Promise.all(p);
+  }).then(function(){
+    alert('Comprobación hecha. La página se va a recargar.\n\n'+
+          'Si sigue sin verse el cambio, entra en Configuración del navegador y '+
+          'borra los datos del sitio.');
+    location.reload(true);
+  }).catch(function(){ location.reload(true); });
+}
+
 function gsUrl(){ return localStorage.getItem(GS_KEY)||''; }
 
 // Diagnostico paso a paso: dice exactamente en que punto se rompe la cadena.
@@ -1773,9 +1796,30 @@ window.addEventListener('DOMContentLoaded', function(){
     document.getElementById('box-login').style.display='none';
     document.getElementById('auth-toggle').textContent='Ya tengo cuenta';
   }
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+  pintarVersion();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      // Comprueba si hay version nueva cada vez que se abre la app
+      reg.update().catch(function(){});
+      reg.addEventListener('updatefound', function(){
+        var nuevo=reg.installing;
+        if(!nuevo) return;
+        nuevo.addEventListener('statechange', function(){
+          if(nuevo.state==='installed' && navigator.serviceWorker.controller){
+            console.log('Hay una version nueva de la app disponible.');
+          }
+        });
+      });
+    }).catch(function(){});
+    // Si el service worker cambia, se recarga sola una vez
+    var recargado=false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(recargado) return;
+      recargado=true;
+      location.reload();
+    });
+  }
 });
 </script>
 </body>
 </html>
-
