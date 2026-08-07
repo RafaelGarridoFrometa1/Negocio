@@ -308,6 +308,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
         </div>
         <button class="btn btn-pri" onclick="saveGsUrl()">Guardar URL</button>
         <button class="cfg-btn" style="margin-top:.75rem" onclick="probarConexion()">🔎 Probar conexión</button>
+        <button class="cfg-btn" style="margin-top:.4rem" onclick="loadSheetsClientes(true)">👥 Recargar clientes de la hoja</button>
         <button class="cfg-btn" style="margin-top:.4rem" onclick="buscarActualizacion()">🔄 Buscar actualización</button>
         <div id="app-version" style="margin-top:.6rem;font-size:.8rem;opacity:.65;text-align:center"></div>
         <button class="cfg-btn" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
@@ -762,7 +763,7 @@ function showSection(name, btn){
   document.getElementById('sec-'+name).classList.add('active');
   btn.classList.add('active');
   if(name==='resumen') populateMensSelects();
-  if(name==='clientes') renderClientes();
+  if(name==='clientes'){ renderClientes(); loadSheetsClientes(); }
 }
 
 // ══ MODALS ══
@@ -1406,10 +1407,11 @@ function saveGsUrl(){
   var url=document.getElementById('gs-url').value.trim();
   if(!url){ alert('La URL no puede estar vacía.'); return; }
   localStorage.setItem(GS_KEY,url);
+  loadSheetsClientes(true);
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v8 · 2026-08-01';
+var APP_VERSION='v9 · 2026-08-06';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -1599,14 +1601,25 @@ function setSyncTexto(t){
   if(b) b.textContent=t;
 }
 
-function loadSheetsClientes(){
+function loadSheetsClientes(avisar){
   var url=gsUrl();
-  if(!url||!navigator.onLine) return;
-  fetch(url+'?action=getClientes',{method:'GET',mode:'cors'})
-    .then(function(r){ return r.json(); })
+  if(!url||!navigator.onLine){
+    if(avisar) alert(!url?'Primero configura la URL del script.':'Sin conexión a internet.');
+    return Promise.resolve();
+  }
+  return fetch(url+'?action=getClientes',{method:'GET'})
+    .then(function(r){ return r.text(); })
+    .then(interpretar)
     .then(function(data){
-      if(data.clientes){ sheetsClientes=data.clientes; renderClientes(); }
-    }).catch(function(){});
+      if(!data || !data.clientes) throw new Error('El script no devolvió la lista de clientes.');
+      sheetsClientes=data.clientes;
+      renderClientes();
+      if(avisar) alert('✅ '+sheetsClientes.length+' clientes cargados desde la hoja.');
+    })
+    .catch(function(e){
+      console.warn('No se pudieron cargar los clientes:',e);
+      if(avisar) alert('❌ No se pudieron cargar los clientes.\n\n'+(e&&e.message?e.message:e));
+    });
 }
 
 function saveClienteToSheets(c){
