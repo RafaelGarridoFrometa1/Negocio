@@ -631,6 +631,9 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 function today(){ return new Date().toISOString().split('T')[0]; }
 function fmtDate(d){ if(!d) return ''; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 function fmtMoney(n){ return '$'+parseFloat(n||0).toFixed(2); }
+// El Sheet puede devolver numeros o fechas donde se espera texto (un nombre que son
+// solo cifras, por ejemplo). Sin esto, .toLowerCase() revienta.
+function txt(v){ return (v===null||v===undefined)?'':String(v); }
 
 // ══ AUTH ══
 // Código de administrador — cámbialo por uno que solo tú conozcas
@@ -804,21 +807,21 @@ function calcOp(){
 
 // ══ DROPDOWN CLIENTES ══
 function getAllClientNames(){
-  var fromSheets = sheetsClientes.map(function(c){ return c.nombre||''; }).filter(Boolean);
-  var fromLocal  = db.clientes.map(function(c){ return c.nombre||''; }).filter(Boolean);
+  var fromSheets = sheetsClientes.map(function(c){ return txt(c.nombre); }).filter(Boolean);
+  var fromLocal  = db.clientes.map(function(c){ return txt(c.nombre); }).filter(Boolean);
   var all = fromSheets.concat(fromLocal);
   var unique = all.filter(function(v,i){ return all.indexOf(v)===i; });
-  return unique.sort(function(a,b){ return a.localeCompare(b,'es'); });
+  return unique.sort(function(a,b){ return txt(a).localeCompare(txt(b),'es'); });
 }
 
 function findClientByName(nombre){
   if(!nombre) return null;
-  var n = nombre.toLowerCase().trim();
+  var n = txt(nombre).toLowerCase().trim();
   // Buscar primero en clientes locales (más recientes/editados)
-  var local = db.clientes.find(function(c){ return (c.nombre||'').toLowerCase().trim()===n; });
+  var local = db.clientes.find(function(c){ return txt(c.nombre).toLowerCase().trim()===n; });
   if(local) return local;
   // Luego en los de Google Sheets
-  var sheet = sheetsClientes.find(function(c){ return (c.nombre||'').toLowerCase().trim()===n; });
+  var sheet = sheetsClientes.find(function(c){ return txt(c.nombre).toLowerCase().trim()===n; });
   if(sheet) return sheet;
   return null;
 }
@@ -827,10 +830,10 @@ function openDD(id){ filterDD(id); }
 function closeDD(id){ document.getElementById('ddl-'+id).classList.remove('open'); }
 
 function filterDD(id){
-  var q = document.getElementById('dd-'+id).value.toLowerCase().trim();
+  var q = txt(document.getElementById('dd-'+id).value).toLowerCase().trim();
   var list = document.getElementById('ddl-'+id);
   var names = getAllClientNames();
-  var filtered = q ? names.filter(function(n){ return n.toLowerCase().indexOf(q)>=0; }) : names;
+  var filtered = q ? names.filter(function(n){ return txt(n).toLowerCase().indexOf(q)>=0; }) : names;
   list.innerHTML='';
   if(!filtered.length){
     var emp=document.createElement('div'); emp.className='dd-empty';
@@ -841,7 +844,7 @@ function filterDD(id){
   filtered.slice(0,50).forEach(function(c){
     var d=document.createElement('div'); d.className='dd-item';
     if(q){
-      var idx=c.toLowerCase().indexOf(q);
+      var idx=txt(c).toLowerCase().indexOf(q);
       d.innerHTML=c.slice(0,idx)+'<strong>'+c.slice(idx,idx+q.length)+'</strong>'+c.slice(idx+q.length);
     } else { d.textContent=c; }
     d.onmousedown=function(e){ e.preventDefault(); document.getElementById('dd-'+id).value=c; closeDD(id); seleccionarClienteOp(id,c); };
@@ -1368,14 +1371,14 @@ function filterClientes(f,btn){
 }
 
 function renderClientes(){
-  var sheetsSet=new Set(sheetsClientes.map(function(c){ return (c.nombre||'').toLowerCase().trim(); }));
-  var localExtra=db.clientes.filter(function(c){ return !sheetsSet.has((c.nombre||'').toLowerCase().trim()); });
+  var sheetsSet=new Set(sheetsClientes.map(function(c){ return txt(c.nombre).toLowerCase().trim(); }));
+  var localExtra=db.clientes.filter(function(c){ return !sheetsSet.has(txt(c.nombre).toLowerCase().trim()); });
   var all=sheetsClientes.map(function(c){ return Object.assign({},c,{fromSheets:true}); })
     .concat(localExtra.map(function(c){ return Object.assign({},c,{fromSheets:false}); }));
-  var q=(document.getElementById('srch-clientes').value||'').toLowerCase();
-  if(q) all=all.filter(function(c){ return (c.nombre||'').toLowerCase().indexOf(q)>=0||(c.telefono||'').indexOf(q)>=0||(c.municipio||'').toLowerCase().indexOf(q)>=0; });
-  if(clienteFilter==='Cuba') all=all.filter(function(c){ return (c.reside||'').toLowerCase().indexOf('cuba')>=0; });
-  if(clienteFilter==='EeUu') all=all.filter(function(c){ return (c.reside||'').toLowerCase().indexOf('eeu')>=0||(c.reside||'').toLowerCase().indexOf('usa')>=0; });
+  var q=txt(document.getElementById('srch-clientes').value).toLowerCase();
+  if(q) all=all.filter(function(c){ return txt(c.nombre).toLowerCase().indexOf(q)>=0||txt(c.telefono).indexOf(q)>=0||txt(c.municipio).toLowerCase().indexOf(q)>=0; });
+  if(clienteFilter==='Cuba') all=all.filter(function(c){ return txt(c.reside).toLowerCase().indexOf('cuba')>=0; });
+  if(clienteFilter==='EeUu') all=all.filter(function(c){ return txt(c.reside).toLowerCase().indexOf('eeu')>=0||txt(c.reside).toLowerCase().indexOf('usa')>=0; });
   var div=document.getElementById('list-clientes');
   if(!all.length){ div.innerHTML='<div class="empty"><div class="empty-ico">👥</div><div>No hay clientes que coincidan</div></div>'; return; }
   div.innerHTML=all.map(function(c){
@@ -1411,7 +1414,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v9 · 2026-08-06';
+var APP_VERSION='v10 · 2026-08-06';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -1612,7 +1615,12 @@ function loadSheetsClientes(avisar){
     .then(interpretar)
     .then(function(data){
       if(!data || !data.clientes) throw new Error('El script no devolvió la lista de clientes.');
-      sheetsClientes=data.clientes;
+      sheetsClientes=(data.clientes||[]).map(function(c){
+        return {nombre:txt(c.nombre), telefono:txt(c.telefono), email:txt(c.email),
+                direccion:txt(c.direccion), municipio:txt(c.municipio), reside:txt(c.reside),
+                contacto:txt(c.contacto), decision:txt(c.decision), canal:txt(c.canal),
+                nota:txt(c.nota)};
+      }).filter(function(c){ return c.nombre.trim()!==''; });
       renderClientes();
       if(avisar) alert('✅ '+sheetsClientes.length+' clientes cargados desde la hoja.');
     })
