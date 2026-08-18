@@ -1,187 +1,204 @@
-# Mi Negocio — Documento de Proyecto
+# Mi Negocio — Contabilidad de remesas EE.UU. ↔ Cuba
 
-## Contexto del negocio
-Aplicación privada para gestión de remesas Cuba-EEUU. El negocio implica operaciones de envío de dinero entre EEUU y Cuba, con mensajeros en Cuba que realizan las entregas físicas. El propietario es Rafael Garrido.
-
-**IMPORTANTE:** La app no menciona en ningún lugar la palabra "remesas" para mantener discreción. El nombre público es **"Mi Negocio"**.
+Contexto para retomar el proyecto. Léeme antes de tocar nada.
 
 ---
 
-## Infraestructura actual
+## Qué es
 
-| Elemento | Detalle |
-|----------|---------|
-| URL de la app | `https://rafaelgarridofrometa1.github.io/negocio` |
-| Repositorio GitHub | `github.com/rafaelgarridofrometa1/negocio` |
-| Google Sheets | Libro llamado "Remesas" (ID: `1cvpLbD4cmX8TxdFeC5k4t_dqxfca5cj5y00DDIn597c`) |
-| Script Apps Script | URL: `https://script.google.com/macros/s/AKfycby3SRFuU93t37Umwh8w1gZRrIRjvdcvGUDdYTl06OvN0LD7usJo3evUxghBL1-zfA2C/exec` |
-| Correo Google | `rafaelgarridofrometa1@gmail.com` |
+Negocio de remesas y mensajería entre Estados Unidos y Cuba, con dos socios
+(**Rafael** y **Daniela**). Tres piezas que trabajan juntas:
 
----
+| Pieza | Qué es | Dónde vive |
+|---|---|---|
+| `Contabilidad_Remesas.xlsx` | Libro contable, 8 hojas, ~20.500 fórmulas | Google Sheets (convertido) |
+| `negocio-contabilidad.gs` | Backend Apps Script (v3.8) | script.google.com |
+| `index.html` + `sw.js` | PWA (v11) | github.com/RafaelGarridoFrometa1/Negocio |
 
-## Arquitectura técnica
-
-- **Tipo:** PWA (Progressive Web App) — funciona sin internet, instalable en móvil
-- **Frontend:** HTML/CSS/JS puro en un solo archivo `index.html`
-- **Almacenamiento local:** localStorage (clave `negocio_db`)
-- **Autenticación:** localStorage (clave `negocio_auth`) — sistema de 2 usuarios máximo
-- **Backend:** Google Apps Script (no hay servidor propio)
-- **Sincronización:** fetch GET con `mode:'no-cors'` a Google Apps Script
-- **Offline:** Service Worker (`sw.js`, caché `negocio-v5`)
-- **Código admin para crear usuarios:** `negocio2024admin` (variable `ADMIN_CODE` en index.html)
+**Web publicada:** `https://rafaelgarridofrometa1.github.io/Negocio/`
+(la `N` de Negocio va en mayúscula — GitHub Pages distingue mayúsculas)
 
 ---
 
-## Estructura del Google Sheets "Remesas"
+## Principio contable que gobierna todo
 
-### Hojas existentes (NO TOCAR)
-- **Hojas mensuales** (ej: `Junio 2026`): operaciones mensuales con columnas exactas:
-  `R | Daniela | OpeNumero | Dia | Tipo | Donde se cobra la ganancia | Cliente reside en EeUu | Cliente en Cuba | Cantidad a Depositar | Entrega | Costo Mens | Ganancia | Total de Alberto-Dani | Ganado por cada uno | AcumMens | Mensajerias Rosy`
-- **Clientes**: base de datos de clientes con columnas:
-  `N° | Nombre completo | Telefono | Email | Direccion | Municipio | Reside | Con quien tiene contacto | Decision de compra | Canal | Nota`
+**El dinero del cliente NO es ingreso.** La *Cantidad a Depositar* es dinero de
+terceros en tránsito: un pasivo hasta que se entrega en Cuba.
 
-### Hojas que crea la app (App Script)
-- `App_Envios` — sincronización general de envíos
-- `App_Mensajeros` — sincronización de mensajeros
-- `App_Pagos` — sincronización de pagos a mensajeros
+El ingreso real es la **Ganancia** = `Cantidad a Depositar − Entrega − Costo Mens`.
 
-### Acciones del script
-- `?action=getClientes` → devuelve lista de clientes de hoja "Clientes"
-- `?data={"action":"saveCliente",...}` → añade cliente a hoja "Clientes"
-- `?data={"action":"saveOperacion",...}` → añade fila a hoja del mes activo
-- `?data={"action":"sync",...}` → sincronización completa a hojas App_*
+Toda la utilidad del Dashboard se calcula sobre la Ganancia, nunca sobre el volumen.
+Si alguien "corrige" esto para que sume el volumen, rompe la contabilidad entera.
 
 ---
 
-## Estructura de la base de datos local (localStorage)
+## Estructura del libro
 
-```json
-{
-  "envios": [{
-    "id": "uid",
-    "cliente": "Nombre cliente EEUU",
-    "clienteCuba": "Nombre cliente Cuba",
-    "telefono": "+53...",
-    "direccion": "Calle, número",
-    "municipio": "Playa",
-    "mensajero": "id_mensajero",
-    "tipo": "EeUu → Cuba",
-    "cobro": "EeUu",
-    "dia": 24,
-    "fecha": "2026-06-24",
-    "hora": "15:00",
-    "depositar": 57.50,
-    "entrega": 50.00,
-    "costoMens": 5.00,
-    "ganancia": 2.50,
-    "ganadoCu": 1.25,
-    "notas": "",
-    "estado": "pendiente",
-    "revisado": false,
-    "creado": "2026-06-24"
-  }],
-  "mensajeros": [{"id": "uid", "nombre": "Alberto", "tel": "+53..."}],
-  "pagos": [{"id": "uid", "mensajeroId": "uid", "tipo": "pago", "importe": 30, "concepto": "Semana del...", "fecha": "2026-06-24"}],
-  "clientes": [{"id": "uid", "nombre": "...", "telefono": "...", "email": "...", "direccion": "...", "municipio": "...", "reside": "Cuba", "contacto": "...", "canal": "...", "decision": "si", "nota": "...", "creado": "2026-06-24"}]
-}
+### Operaciones (21 columnas, filas 5–2004)
+
+```
+A  OpeNumero              FÓRMULA — consecutivo OP-0001, OP-0002...
+B  Dia                    fecha
+C  Tipo                   EeUu → Cuba  /  Cuba → EeUu
+D  Donde se cobra         EeUu / Cuba
+E  Cliente reside en EeUu ← desplegable de Clientes!B
+F  Cliente en Cuba        ← desplegable de beneficiarios
+G  Cantidad a Depositar
+H  Entrega                lo que recibe el beneficiario
+I  Costo Mens             comisión del mensajero
+J  Ganancia               FÓRMULA — G − H − I
+K  AcumMens               FÓRMULA — acumulado corriente de I
+L  Mensajero
+M  Pagado al Mensajero    Si / No
+N  Estado                 Pendiente / En camino / Entregada / Devuelta / Cancelada
+O  Revisado Rafael        Si / No
+P  Revisado Daniela       Si / No
+Q  Estado de Revision     FÓRMULA — CONCILIADO cuando O y P son Si
+R  Ref. Banco             línea del extracto bancario
+S  Periodo                FÓRMULA — AAAA-MM, agrupa el Dashboard
+T  Nota
+U  ID App                 llave de sincronización (la escribe la app)
 ```
 
----
+### Clientes (21 columnas, filas 6–805)
 
-## Auth (localStorage `negocio_auth`)
-
-```json
-[
-  {"u": "rafael", "p": "BASE64_DE_CONTRASEÑA"},
-  {"u": "usuario2", "p": "BASE64_DE_CONTRASEÑA"}
-]
+```
+A  ID Cliente        FÓRMULA — CL-0001, CL-0002...
+B  Nombre Completo   ← LLAVE que conecta con Operaciones!E
+C  Telefono
+D  Email
+E  Direccion
+F  Municipio
+G  Reside
+H  Con Quien Tiene Contacto
+I  Decision de Compra
+J  Canal
+K  Nota
+L–T                  FÓRMULAS: Primera Compra, Antigüedad, Última Compra,
+                     Días sin Operar, Compras del Mes, Compras Totales,
+                     Volumen, Ganancia Generada, Estado
+U  ID App
 ```
 
-- Máximo 2 usuarios (`MAX_USERS = 2`)
-- Código admin requerido para crear usuarios: `negocio2024admin`
-- Sesión guardada en `sessionStorage` como `logged`
+**Parámetros:** `N3` = días para marcar INACTIVO (60). `Q3` = mes en curso (automático).
+
+**Beneficiarios en Cuba:** segunda sección de la misma hoja, filas 810–1609.
+
+### Otras hojas
+
+- **Catalogos** — listas maestras. Col. A = clientes (automática, enlaza a `Clientes!B`),
+  B = mensajeros, K = tipos, L = dónde se cobra, M = socios.
+- **Gastos** — filas 5–1004. NO incluye el Costo Mens (va en Operaciones).
+- **Mensajeros** — adelantos (6–505) + saldos calculados (509–569).
+  `Saldo Neto = Adelantos − Entregas − Comisiones Pendientes`.
+  Positivo = te debe. Negativo = le debes. Hay columna SITUACION en palabras.
+- **Socios** — filas 5–404. Aportes y retiros de Rafael y Daniela.
+  Un retiro NO es gasto: no va nunca en la hoja Gastos.
+- **Dashboard** — A) resultados por mes  B) socios y reparto  C) doble revisión
+  D) conciliación de fondos con celda DESCUADRE que debe dar 0.
 
 ---
 
-## Pestañas de la app
+## Reglas del backend (Apps Script)
 
-| Pestaña | ID sección | Función |
-|---------|-----------|---------|
-| 📦 Envíos | `sec-envios` | Lista de operaciones con stats, botón copiar mensaje, marcar entregada |
-| 🛵 Entregas | `sec-entregas` | Vista cronológica por fecha/hora, botón copiar mensaje |
-| 👤 Mensajeros | `sec-mensajeros` | Gestión de mensajeros, balance de pagos |
-| 📋 Resumen | `sec-resumen` | Resumen WhatsApp filtrado por mensajero |
-| 👥 Clientes | `sec-clientes` | Lista combinada Sheets+local, búsqueda, formulario nuevo |
-| ⚙️ Config | `sec-config` | URL script, usuarios, backup |
+**Nunca usar `appendRow`.** Las filas 5–2004 ya traen fórmulas puestas; `appendRow`
+las considera ocupadas y escribiría en la 2005, fuera del bloque, donde nada calcula.
+Usar `filaLibre()`, que busca la primera fila con la columna clave vacía.
 
----
+**Al ampliar el bloque, insertar ANTES de la última fila** (`insertRowsBefore`).
+Insertando después, los rangos `5:2004` de todo el libro no crecen y las filas
+nuevas quedan fuera de todos los cálculos.
 
-## Funciones JS clave
+**POST llega en `e.postData.contents`, no en `e.parameter`.** El manejador acepta
+ambos: POST para la app, GET como plan B.
 
-| Función | Qué hace |
-|---------|---------|
-| `saveOp()` | Guarda operación, valida dirección/municipio Cuba obligatorios, genera mensaje mensajero, envía a Sheets |
-| `generarTextoMensajero(op)` | Genera texto WhatsApp con datos de entrega |
-| `copiarMensajeEnvio(id)` | Copia mensaje WhatsApp de una entrega existente sin editar |
-| `seleccionarClienteOp(id, nombre)` | Autocompletada dirección+municipio+teléfono al seleccionar cliente Cuba |
-| `findClientByName(nombre)` | Busca cliente en local y en Sheets |
-| `loadSheetsClientes()` | Carga lista de clientes desde Google Sheets |
-| `saveClienteToSheets(c)` | Guarda cliente nuevo en hoja "Clientes" de Sheets |
-| `saveOpToSheets(op)` | Guarda operación en hoja del mes activo |
-| `doSync()` | Sincronización completa a hojas App_* |
-| `mostrarResumenMensajero(op)` | Muestra mensaje mensajero en pantalla tras guardar |
-| `generarResumen()` | Genera resumen de pendientes por mensajero |
+**Leer con `getDisplayValues()`**, no `getValues()`: devuelve lo que se ve en la
+celda, sin convertir fechas ni números. Los datos salen tal cual.
+
+**Sincronización idempotente.** Llave para operaciones = `ID App`. Llave para
+clientes = **nombre**, no id: si se usara el id y alguien renombra un cliente en la
+app, se rompería el vínculo con todas sus operaciones ya registradas.
+
+**Funciones de diagnóstico:** `diagnostico()`, `contarClientes()`, `probarPost()`,
+`verRespaldos()`, `importarRespaldo()`, `limpiarPruebas()`,
+`migrarClientesDesdeLibroViejo()`.
 
 ---
 
-## Decisiones ejecutivas tomadas
+## Reglas de la app (PWA)
 
-1. **Nombre público:** "Mi Negocio" — nunca mencionar "remesas" en la UI ni en el nombre del repositorio
-2. **Repositorio:** `negocio` (no `remesas-app`)
-3. **Tecnología:** PWA HTML puro, sin frameworks, sin servidor propio — máxima simplicidad
-4. **Sin bloqueo automático:** La sesión permanece abierta en el teléfono del propietario indefinidamente
-5. **Máximo 2 usuarios:** Sistema de autenticación cerrado con código admin
-6. **Google Sheets como base de datos:** No se usa ninguna base de datos externa, todo va a Sheets
-7. **Escritura directa al mes activo:** Las operaciones se escriben en la hoja del mes (ej: "Junio 2026") con el formato EXACTO de columnas existentes — no se altera la estructura del libro
-8. **Clientes de Cuba solo:** El autocompletado de teléfono solo aplica al campo "Cliente en Cuba" — el teléfono de EEUU no siempre se recopila
-9. **Dirección y municipio obligatorios:** Si el cliente de Cuba no tiene estos datos en la ficha, la app exige completarlos antes de guardar
-10. **Offline first:** Todo se guarda localmente primero, Sheets es secundario — funciona sin internet
-11. **Municipios de La Habana:** La app tiene la tabla de tarifas (La Lisa 3-4$, Playa 5-6$, etc.) integrada en los selectores
-12. **Mensaje para mensajero automático:** Al guardar cada operación aparece automáticamente el texto para WhatsApp sin necesidad de ir a Resumen
-13. **Botón copiar en cada entrega:** Cada tarjeta de envío/entrega tiene su propio botón "📲 Copiar mensaje" independiente
-14. **Tipos de operación:** EeUu→Cuba y Cuba→EeUu, con campo "Donde se cobra la ganancia"
-15. **Revisado por Daniela:** Checkbox en cada operación que mapea a columna "Daniela" en Sheets
-16. **Sync mode no-cors:** La sincronización usa `mode:'no-cors'` para evitar bloqueos de CORS de Google
-17. **getClientes con cors:** La carga de clientes usa `mode:'cors'` (necesita devolver JSON)
+**Nunca `mode:'no-cors'`.** Hace que el `fetch` se considere exitoso aunque el
+servidor devuelva error. Esto ocultó fallos durante días: la app decía
+"✅ Sincronizado" mientras Google rechazaba todo con un 400.
 
----
+**POST con `Content-Type: text/plain`** — sin límite de URL y sin preflight CORS.
+Envío por lotes de 40 operaciones. Plan B automático por GET si el POST falla.
 
-## Tarifas de mensajería por municipio
+**El service worker debe ser red-primero para el HTML.** La v7 era cache-first
+para todo: una vez guardado el `index.html`, el navegador no volvía a pedirlo nunca
+y las actualizaciones subidas a GitHub no llegaban jamás. Causó días de bloqueo.
 
-| Municipio | Costo |
-|-----------|-------|
-| La Coronela | 0-1$ |
-| La Lisa | 3-4$ |
-| Playa, Marianao | 5-6$ |
-| Plaza, Boyeros, Cerro, Centro Habana, Habana Vieja | 7-8$ |
-| 10 de Octubre, Arroyo Naranjo | 8-9$ |
-| Regla | 10-11$ |
-| Guanabacoa, Cotorro, Habana del Este | 12-13$ |
+**Marcador de versión visible** en Configuración (`APP_VERSION`). Es la única forma
+fiable de saber qué versión está corriendo el navegador. Subirlo en cada cambio,
+junto con `CACHE` en `sw.js`.
+
+**Dos listas de clientes distintas:**
+- `sheetsClientes` — se leen del Sheet, solo para mostrar. NO se guardan en el móvil.
+- `db.clientes` — los creados dentro de la app. Estos sí se sincronizan.
+
+Confundirlas lleva a pensar que la sincronización falla cuando no hay nada que enviar.
+
+**`ADMIN_CODE`** está en claro en el HTML. Pendiente de cambiar.
 
 ---
 
-## Pendientes / Mejoras futuras
+## Estado actual
 
-- Ninguna pendiente documentada hasta el fin de esta sesión
+Funcionando: libro completo y sin errores, backend probado, sincronización
+idempotente verificada con datos reales, saldos de mensajeros en ambos sentidos,
+reparto de socios, reconstrucción de fechas (7/7 casos correctos).
+
+### Pendiente inmediato
+
+1. **Ejecutar `contarClientes()`.** Solo se ven 39 clientes de ~427. Sospecha
+   principal: al mover el ID Cliente a la columna A, el nombre pasó a la B; si la
+   lista se pegó empezando en A, los datos quedaron corridos una columna. El
+   contador lo confirma o lo descarta mostrando cuántas celdas tiene cada columna.
+
+2. Migrar los ~427 clientes del libro antiguo con `migrarClientesDesdeLibroViejo()`
+   (ID del libro viejo configurado en `ID_LIBRO_VIEJO`).
+
+3. Subir la app v11 y comprobar que el marcador dice `v11 · 2026-08-17`.
+
+4. **Copiar `negocio-contabilidad.gs` en el editor de Apps Script y crear una
+   nueva implementación (Deploy → Manage deployments → Edit → New version).**
+   El repositorio tenía guardada una versión vieja del backend
+   (`script_google_apps.gs`, apuntando al libro "Remesas" antiguo, leyendo
+   `e.parameter.data` en vez de `e.postData.contents`) — por eso las operaciones
+   no llegaban y los contactos salían incompletos. Ya se reemplazó en el
+   repositorio por `negocio-contabilidad.gs`, pero el cambio solo tiene efecto
+   cuando se pega en script.google.com y se publica una implementación nueva
+   (pegar el código no basta si la implementación activa sigue siendo la vieja).
+   El modal "Copiar código del script" dentro de Configuración también estaba
+   desactualizado (traía la misma versión obsoleta) y ya se corrigió para que
+   entregue el mismo `negocio-contabilidad.gs`.
+
+### Sin construir
+
+- Hoja de conciliación bancaria contra el extracto (falta saber con qué banco
+  trabajan y qué columnas descarga el export).
+- Migración del histórico de operaciones desde las pestañas mensuales del libro
+  viejo ("Junio 2026", "Julio 2026"...).
 
 ---
 
-## Archivos del proyecto
+## Cosas que ya se probaron y NO funcionan
 
-| Archivo | Descripción |
-|---------|-------------|
-| `index.html` | App completa (HTML + CSS + JS en un solo archivo) |
-| `sw.js` | Service Worker para funcionamiento offline (caché `negocio-v4`) |
-| `manifest.json` | Manifest PWA para instalación en móvil |
-| `script_google_apps.gs` | Script de Google Apps Script para el backend en Sheets |
-| `PROYECTO.md` | Este documento |
+- Enviar la sincronización por GET con todo en la URL → 363.000 caracteres, error 400.
+- `appendRow` en hojas con fórmulas pre-cargadas.
+- `insertRowsAfter` para ampliar bloques.
+- Cache-first en el service worker para el HTML.
+- `mode:'no-cors'` en cualquier llamada cuya respuesta importe.
+- Leer `e.parameter.data` cuando la app envía por POST.
+- Convertir a texto los valores del Sheet con `String()` → altera los datos;
+  usar `getDisplayValues()`.

@@ -11,7 +11,7 @@
 //   - El resto (manifest, iconos) sigue en cache, que es lo correcto.
 // Con esto ya no hace falta subir el numero de version a mano cada vez.
 
-const CACHE = 'negocio-v10';
+const CACHE = 'negocio-v11';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
