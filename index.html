@@ -749,6 +749,7 @@ function initApp(){
   buildScriptText();
   renderAll();
   loadSheetsClientes();
+  loadSheetsOperaciones();
   window.addEventListener('online', function(){ document.getElementById('offline-bar').style.display='none'; updateDot(true); });
   window.addEventListener('offline', function(){ document.getElementById('offline-bar').style.display='block'; updateDot(false); });
   if(!navigator.onLine) document.getElementById('offline-bar').style.display='block';
@@ -1102,12 +1103,18 @@ function renderEnvios(){
   var all=db.envios;
   var pend=all.filter(function(r){ return r.estado==='pendiente'||r.estado==='en_camino'; });
   var done=all.filter(function(r){ return r.estado==='entregada'; });
-  var totalGan=all.reduce(function(s,r){ return s+(r.ganancia||0); },0);
+  // La Devuelta y la Cancelada no generaron ganancia real: no cuentan en los totales.
+  var conGanancia=all.filter(function(r){ return r.estado!=='devuelta'&&r.estado!=='cancelada'; });
+  var totalGan=conGanancia.reduce(function(s,r){ return s+(r.ganancia||0); },0);
+  var mesActual=today().slice(0,7);
+  var mesGan=conGanancia.filter(function(r){ return (r.fecha||r.creado||'').slice(0,7)===mesActual; })
+    .reduce(function(s,r){ return s+(r.ganancia||0); },0);
   document.getElementById('stats-envios').innerHTML=
     '<div class="stat"><div class="stat-val">'+all.length+'</div><div class="stat-lbl">Total envíos</div></div>'
     +'<div class="stat"><div class="stat-val w">'+pend.length+'</div><div class="stat-lbl">Pendientes</div></div>'
     +'<div class="stat"><div class="stat-val g">'+done.length+'</div><div class="stat-lbl">Entregados</div></div>'
-    +'<div class="stat"><div class="stat-val s">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>';
+    +'<div class="stat"><div class="stat-val s">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>'
+    +'<div class="stat"><div class="stat-val s">'+fmtMoney(mesGan)+'</div><div class="stat-lbl">Ganancia del mes</div></div>';
   var list=all;
   if(envioFilter==='pendiente') list=all.filter(function(r){ return r.estado==='pendiente'||r.estado==='en_camino'; });
   if(envioFilter==='entregada') list=all.filter(function(r){ return r.estado==='entregada'; });
@@ -1414,7 +1421,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v11 · 2026-08-17';
+var APP_VERSION='v12 · 2026-08-31';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -1584,6 +1591,10 @@ function doSync(){
                 : mandar({action:'sync',data:{envios:[],mensajeros:db.mensajeros,
                                               clientes:db.clientes,pagos:pagos}}).then(comprobar);
   p.then(function(){
+    // Despues de subir lo de este telefono, se bajan TODAS las operaciones
+    // del Sheet: asi lo que registraron otros telefonos tambien aparece aqui.
+    return loadSheetsOperaciones();
+  }).then(function(){
     setSyncTexto('Sincronizar');
     updateDot(true);
     alert('✅ Sincronizado'+(usarGet?' (por GET)':'')+'.\n\n'+
@@ -1624,6 +1635,57 @@ function loadSheetsClientes(avisar){
       console.warn('No se pudieron cargar los clientes:',e);
       if(avisar) alert('❌ No se pudieron cargar los clientes.\n\n'+(e&&e.message?e.message:e));
     });
+}
+
+// Trae TODAS las operaciones del Sheet y las mezcla con las de este telefono.
+// Sin esto, cada telefono solo veia lo que el mismo habia escrito: la app
+// subia operaciones a la hoja pero nunca las volvia a bajar.
+function loadSheetsOperaciones(avisar){
+  var url=gsUrl();
+  if(!url||!navigator.onLine){
+    if(avisar) alert(!url?'Primero configura la URL del script.':'Sin conexión a internet.');
+    return Promise.resolve();
+  }
+  return fetch(url+'?action=getOperaciones',{method:'GET'})
+    .then(function(r){ return r.text(); })
+    .then(interpretar)
+    .then(function(data){
+      if(!data || !data.operaciones) throw new Error('El script no devolvió las operaciones.');
+      mezclarOperacionesRemotas(data.operaciones);
+      renderAll();
+      if(avisar) alert('✅ '+data.operaciones.length+' operaciones traídas de la hoja.');
+    })
+    .catch(function(e){
+      console.warn('No se pudieron cargar las operaciones:',e);
+      if(avisar) alert('❌ No se pudieron cargar las operaciones.\n\n'+(e&&e.message?e.message:e));
+    });
+}
+
+// Los campos "de negocio" siempre se toman de la hoja (es la fuente de verdad
+// compartida entre telefonos). Los campos que solo existen en este telefono
+// (el id local del mensajero, telefono del cliente) no se tocan si la hoja
+// no trae algo mejor, para no perder lo que ya sabia este aparato.
+var CAMPOS_OP_SERVIDOR=['tipo','cobro','cliente','clienteCuba','depositar','entrega',
+  'costoMens','ganancia','mensajeroNombre','pagadoMens','estado','revisado','refBanco',
+  'periodo','dia','creado'];
+function mezclarOperacionesRemotas(lista){
+  var porId={};
+  db.envios.forEach(function(r){ if(r.id) porId[r.id]=r; });
+  lista.forEach(function(r){
+    if(!r.id) return;
+    var local=porId[r.id];
+    if(local){
+      CAMPOS_OP_SERVIDOR.forEach(function(k){ if(r[k]!==undefined) local[k]=r[k]; });
+      if(r.fecha) local.fecha=r.fecha;
+      if(r.hora) local.hora=r.hora;
+      if(r.municipio) local.municipio=r.municipio;
+      if(r.notas) local.notas=r.notas;
+    } else {
+      db.envios.push(r);
+      porId[r.id]=r;
+    }
+  });
+  saveDB();
 }
 
 function saveClienteToSheets(c){
@@ -1718,7 +1780,11 @@ function buildScriptText(){
 // ============================================================
 
 // Acepta el ID solo o la URL entera del Sheet.
-var ID_LIBRO = '19d55fUB8UC03BFKKtDURak_wihlBrq-JpK_ixRWUIlM';
+// OJO: este es el ID del libro REAL y activo "Contabilidad_Remesas36" (el que
+// se sigue editando). Antes apuntaba por error a "Copy of Contabilidad_Remesas",
+// una copia vieja de prueba del 28 de julio con casi ningun cliente real: por
+// eso nada de lo que se escribia en el libro de verdad llegaba a la app.
+var ID_LIBRO = '1VcEjOFUod5vl1JiLvFMKdC4-tfQ1LVtom0QHBg4M17U';
 
 // Libro ANTIGUO, solo para la migracion de una vez. Comprueba que sea el correcto:
 // tiene que ser el que contiene la pestana "Clientes" con los 427 clientes.
@@ -1738,6 +1804,8 @@ var OP = {
 };
 
 // OJO: en Clientes la columna A es el ID (formula). El NOMBRE esta en la B.
+// Confirmado leyendo el libro real "Contabilidad_Remesas36": A=ID Cliente,
+// B=Nombre Completo, C=Telefono... exactamente como abajo.
 var CLI = { hoja: 'Clientes', primera: 6, ultima: 805, colNombre: 2, ancho: 10,
             idApp: 21, formulas: [1,12,13,14,15,16,17,18,19,20] };
 var BEN = { hoja: 'Clientes',   primera: 810, ultima: 1609, formulas: [] };
@@ -1790,6 +1858,7 @@ function manejar(e) {
 
       // --- lecturas ---
       case 'getClientes':      return json({ ok: true, clientes: getClientes() });
+      case 'getOperaciones':   return json({ ok: true, operaciones: getOperaciones() });
       case 'getBeneficiarios': return json({ ok: true, beneficiarios: getBeneficiarios() });
       case 'getMensajeros':    return json({ ok: true, mensajeros: getListaCatalogo(CAT.colMensajeros) });
       case 'getSocios':        return json({ ok: true, socios: getListaCatalogo(CAT.colSocios) });
@@ -1939,6 +2008,82 @@ function getClientes() {
     });
   }
   return out;
+}
+
+/**
+ * Devuelve TODAS las operaciones del libro para que cualquier telefono que
+ * abra la app pueda traerlas, no solo las que el registro localmente.
+ * Sin esto, cada telefono solo ve lo que el mismo escribio: la app nunca
+ * bajaba operaciones de vuelta desde el Sheet, solo las subia.
+ */
+function getOperaciones() {
+  var sh = hoja(OP.hoja);
+  var n = OP.ultima - OP.primera + 1;
+  var v = sh.getRange(OP.primera, 1, n, 21).getDisplayValues();
+  var out = [];
+  for (var i = 0; i < n; i++) {
+    var fila = v[i];
+    var idApp = String(fila[OP.idApp - 1] || '').trim();
+    if (!idApp) continue;   // sin ID App no se puede enlazar de vuelta con el telefono
+    var fecha = parseFechaSheet(fila[OP.dia - 1]);
+    var nota = desarmarNota(fila[OP.nota - 1]);
+    out.push({
+      id: idApp,
+      tipo: fila[OP.tipo - 1],
+      cobro: fila[OP.donde - 1],
+      cliente: fila[OP.clienteUsa - 1],
+      clienteCuba: fila[OP.clienteCuba - 1],
+      depositar: aNumero(fila[OP.cantidad - 1]),
+      entrega: aNumero(fila[OP.entrega - 1]),
+      costoMens: aNumero(fila[OP.costoMens - 1]),
+      ganancia: aNumero(fila[9]),           // columna J, formula
+      mensajeroNombre: fila[OP.mensajero - 1],
+      pagadoMens: deSiNo(fila[OP.pagado - 1]),
+      estado: deEstado(fila[OP.estado - 1]),
+      revisado: deSiNo(fila[OP.revDaniela - 1]),
+      refBanco: fila[OP.refBanco - 1],
+      periodo: fila[18],                    // columna S, formula
+      dia: fecha.dia,
+      creado: fecha.iso,
+      fecha: nota.fecha,
+      hora: nota.hora,
+      municipio: nota.municipio,
+      notas: nota.texto
+    });
+  }
+  return out;
+}
+
+/** dd/mm/aaaa (como lo muestra la celda Dia) -> {dia, iso}. */
+function parseFechaSheet(v) {
+  var s = String(v || '').trim();
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return { dia: '', iso: '' };
+  return {
+    dia: parseInt(m[1], 10),
+    iso: m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2)
+  };
+}
+
+/** Deshace construirNota(): separa de vuelta fecha/hora de entrega, municipio y nota libre. */
+function desarmarNota(texto) {
+  var out = { texto: '', fecha: '', hora: '', municipio: '' };
+  String(texto || '').split(' | ').forEach(function (p) {
+    var mEntrega = p.match(/^Entrega:\s*(\d{4}-\d{2}-\d{2})(?:\s+(\d{1,2}:\d{2}))?/);
+    var mMun = p.match(/^Mun:\s*(.+)/);
+    if (mEntrega) { out.fecha = mEntrega[1]; out.hora = mEntrega[2] || ''; }
+    else if (mMun) { out.municipio = mMun[1]; }
+    else if (p) { out.texto = p; }
+  });
+  return out;
+}
+
+function deSiNo(v) { return String(v || '').trim().toLowerCase() === 'si'; }
+
+function deEstado(v) {
+  var mapa = { 'Pendiente': 'pendiente', 'En camino': 'en_camino', 'Entregada': 'entregada',
+               'Devuelta': 'devuelta', 'Cancelada': 'cancelada' };
+  return mapa[String(v || '').trim()] || 'pendiente';
 }
 
 function getBeneficiarios() {
@@ -2465,6 +2610,34 @@ function aSiNo(v) {
 // ============================================================
 // PRUEBAS
 // ============================================================
+
+/**
+ * Lista las filas de Clientes que tienen algun dato (telefono, email...) pero
+ * les falta el Nombre en la columna A: esas filas la app las ignora, porque
+ * sin nombre no se puede enlazar con las Operaciones. Rellena el nombre a
+ * mano en esas filas y ya deberian aparecer en la app.
+ */
+function listarFilasSinNombre() {
+  var sh = hoja(CLI.hoja);
+  var n = CLI.ultima - CLI.primera + 1;
+  var v = sh.getRange(CLI.primera, CLI.colNombre, n, CLI.ancho).getDisplayValues();
+  var faltantes = [];
+  for (var i = 0; i < n; i++) {
+    var nombre = String(v[i][0] || '').trim();
+    var tieneAlgoMas = v[i].slice(1).some(function (c) { return String(c || '').trim() !== ''; });
+    if (!nombre && tieneAlgoMas) faltantes.push(CLI.primera + i);
+  }
+  if (!faltantes.length) {
+    Logger.log('Ninguna fila tiene datos sin nombre. Todo en orden.');
+  } else {
+    Logger.log('Filas con datos pero SIN nombre (columna del Nombre Completo) - rellenar a mano:');
+    faltantes.forEach(function (f) {
+      var fila = sh.getRange(f, CLI.colNombre, 1, CLI.ancho).getDisplayValues()[0];
+      Logger.log('   fila ' + f + ':  ' + fila.join('  |  '));
+    });
+  }
+  return faltantes;
+}
 
 /**
  * Cuenta que hay REALMENTE en la hoja Clientes, columna por columna.
