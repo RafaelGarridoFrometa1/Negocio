@@ -1491,7 +1491,15 @@ function filterClientes(f,btn){
 // separada del Estado Activo/Inactivo que calculan las formulas del libro.
 var MSG_REACTIVACION='Hola, buenas tardes☺️ ¿Cómo estás?\nNotamos que hace un tiempo no sabemos de ti y queríamos escribirte para recordarte que seguimos brindando los servicios con la calidad y el compromiso de siempre.\n¡Saludos!';
 function esPerdido(c){ return txt(c.seguimiento).toLowerCase().indexOf('perdid')>=0; }
-function esInactivo(c){ return txt(c.estado).toLowerCase().indexOf('inactiv')>=0; }
+// "Estado" solo lo calcula el Sheet cuando el cliente tiene al menos una
+// operacion a su nombre (Primera Compra no vacia). La inmensa mayoria de los
+// clientes nunca compraron, asi que ese campo les queda en blanco — y un
+// cliente que nunca compro necesita el mismo seguimiento que uno inactivo,
+// asi que blanco tambien cuenta como inactivo aqui.
+function esInactivo(c){
+  var e=txt(c.estado).toLowerCase().trim();
+  return e.indexOf('inactiv')>=0 || e==='';
+}
 function diasSinOperarNum(c){ var n=parseInt(c.diasSinOperar,10); return isNaN(n)?Infinity:n; }
 
 // Limpia el telefono y le pone codigo de pais para el enlace de WhatsApp.
@@ -1593,7 +1601,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v14 · 2026-09-04';
+var APP_VERSION='v14.1 · 2026-09-04';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
