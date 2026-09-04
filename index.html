@@ -275,6 +275,16 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
       </div>
     </div>
 
+    <!-- DASHBOARD -->
+    <div class="section" id="sec-dashboard">
+      <div class="sec-hdr"><div class="sec-ttl">Dashboard</div></div>
+      <div class="stats" id="stats-dashboard"></div>
+      <div class="card">
+        <div class="card-ttl">Ranking de meses (por ganancia)</div>
+        <div id="ranking-meses"></div>
+      </div>
+    </div>
+
     <!-- CLIENTES -->
     <div class="section" id="sec-clientes">
       <div class="sec-hdr">
@@ -285,6 +295,8 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
         <button class="tmi on" onclick="filterClientes('todos',this)">Todos</button>
         <button class="tmi" onclick="filterClientes('Cuba',this)">En Cuba</button>
         <button class="tmi" onclick="filterClientes('EeUu',this)">En EeUu</button>
+        <button class="tmi" onclick="filterClientes('Inactivos',this)">⚠️ Inactivos</button>
+        <button class="tmi" onclick="filterClientes('Perdidos',this)">❌ Perdidos</button>
       </div>
       <input class="search-inp" id="srch-clientes" placeholder="🔍 Buscar cliente..." oninput="renderClientes()">
       <div id="list-clientes"></div>
@@ -329,6 +341,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
     <button class="tab" onclick="showSection('mensajeros',this)"><span class="tab-ico">👤</span><span>Mensajeros</span></button>
     <button class="tab" onclick="showSection('resumen',this)"><span class="tab-ico">📋</span><span>Resumen</span></button>
+    <button class="tab" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
     <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
   </div>
@@ -426,6 +439,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
                 <option>Marianao</option><option>Plaza</option><option>Boyeros</option>
                 <option>Cerro</option><option>Centro Habana</option><option>Habana Vieja</option>
                 <option>10 de Octubre</option><option>Arroyo Naranjo</option><option>Regla</option>
+                <option>San Miguel del Padrón</option>
                 <option>Guanabacoa</option><option>Cotorro</option><option>Habana del Este</option>
               </select>
             </div>
@@ -438,12 +452,13 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
     <div class="frow">
       <div class="fgroup">
         <label class="flabel">Municipio</label>
-        <select class="finput" id="op-municipio">
+        <select class="finput" id="op-municipio" onchange="calcularDeposito()">
           <option value="">— Seleccionar —</option>
           <option>La Lisa</option><option>La Coronela</option><option>Playa</option>
           <option>Marianao</option><option>Plaza</option><option>Boyeros</option>
           <option>Cerro</option><option>Centro Habana</option><option>Habana Vieja</option>
           <option>10 de Octubre</option><option>Arroyo Naranjo</option><option>Regla</option>
+          <option>San Miguel del Padrón</option>
           <option>Guanabacoa</option><option>Cotorro</option><option>Habana del Este</option>
         </select>
       </div>
@@ -465,9 +480,15 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
   <div class="op-card">
     <div class="op-card-ttl">💰 Montos</div>
     <div class="f3">
-      <div class="fgroup"><label class="flabel">Cantidad depositar ($)</label><input type="number" class="finput" id="op-dep" placeholder="0.00" step="0.01" oninput="calcOp()"></div>
-      <div class="fgroup"><label class="flabel">Entrega ($)</label><input type="number" class="finput" id="op-ent" placeholder="0.00" step="0.01" oninput="calcOp()"></div>
-      <div class="fgroup"><label class="flabel">Costo mensajero ($)</label><input type="number" class="finput" id="op-mens" placeholder="0.00" step="0.01" oninput="calcOp()"></div>
+      <div class="fgroup"><label class="flabel">Entrega en Cuba ($)</label><input type="number" class="finput" id="op-ent" placeholder="0.00" step="0.01" oninput="calcularDeposito()"></div>
+      <div class="fgroup"><label class="flabel">Costo mensajero ($)</label><input type="number" class="finput" id="op-mens" placeholder="0.00" step="0.01" oninput="opMensAuto=false; calcularDeposito();"></div>
+      <div class="fgroup"><label class="flabel">Cantidad depositar ($)</label><input type="number" class="finput" id="op-dep" placeholder="0.00" step="0.01" oninput="opDepAuto=false; calcOp();"></div>
+    </div>
+    <button class="add-link" type="button" onclick="toggleMargen()"><span id="margen-lbl">⚙️ Margen: 5% — cambiar</span></button>
+    <div class="fgroup" id="box-margen" style="display:none;max-width:140px;margin-top:.4rem">
+      <label class="flabel">Margen sobre la entrega (%)</label>
+      <input type="number" class="finput" id="op-margen" value="5" step="0.5"
+        oninput="calcularDeposito(); document.getElementById('margen-lbl').textContent='⚙️ Margen: '+(this.value||5)+'% — cambiar';">
     </div>
     <div class="op-divider">Resultados calculados</div>
     <div class="f3">
@@ -551,6 +572,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
           <option>Marianao</option><option>Plaza</option><option>Boyeros</option>
           <option>Cerro</option><option>Centro Habana</option><option>Habana Vieja</option>
           <option>10 de Octubre</option><option>Arroyo Naranjo</option><option>Regla</option>
+          <option>San Miguel del Padrón</option>
           <option>Guanabacoa</option><option>Cotorro</option><option>Habana del Este</option>
           <option>USA</option><option>Otro</option>
         </select>
@@ -768,6 +790,7 @@ function showSection(name, btn){
   btn.classList.add('active');
   if(name==='resumen') populateMensSelects();
   if(name==='clientes'){ renderClientes(); loadSheetsClientes(); }
+  if(name==='dashboard') renderDashboard();
 }
 
 // ══ MODALS ══
@@ -804,6 +827,39 @@ function calcOp(){
   var gan=dep-ent-cmen;
   document.getElementById('op-r-gan').textContent = fmtMoney(gan);
   document.getElementById('op-r-gcu').textContent = fmtMoney(gan/2);
+}
+
+// ══ CALCULADORA: Entrega en Cuba -> Cantidad a depositar ══
+var TARIFAS_MENSAJERIA={
+  'La Coronela':0, 'La Lisa':3, 'Playa':5, 'Marianao':5, 'Boyeros':7, 'Plaza':7,
+  'Cerro':7, 'Centro Habana':7, 'Habana Vieja':7, '10 de Octubre':8, 'Arroyo Naranjo':8,
+  'Regla':10, 'San Miguel del Padrón':10, 'Cotorro':12, 'Habana del Este':12, 'Guanabacoa':12
+};
+var MARGEN_DEFAULT=5;
+// Se apagan en cuanto el usuario toca el campo a mano, para no pisarle lo que escribio.
+// Al editar una operacion ya guardada nunca se prenden: sus numeros no se deben recalcular solos.
+var opDepAuto=true, opMensAuto=true;
+
+function toggleMargen(){
+  var box=document.getElementById('box-margen');
+  var abrir=box.style.display==='none';
+  box.style.display=abrir?'block':'none';
+}
+
+function calcularDeposito(){
+  if(opMensAuto){
+    var costo=TARIFAS_MENSAJERIA[document.getElementById('op-municipio').value];
+    if(costo!==undefined) document.getElementById('op-mens').value=costo;
+  }
+  if(opDepAuto){
+    var ent=parseFloat(document.getElementById('op-ent').value)||0;
+    var margen=parseFloat(document.getElementById('op-margen').value);
+    if(isNaN(margen)) margen=MARGEN_DEFAULT;
+    var mens=parseFloat(document.getElementById('op-mens').value)||0;
+    var dep=ent*(1+margen/100)+mens;
+    document.getElementById('op-dep').value=ent?dep.toFixed(2):'';
+  }
+  calcOp();
 }
 
 // ══ DROPDOWN CLIENTES ══
@@ -878,6 +934,7 @@ function seleccionarClienteOp(id, nombre){
       dirField.value=''; munField.value=''; telField.value='';
       marcarCamposObligatorios(true,true);
     }
+    calcularDeposito(); // el municipio se acaba de rellenar a mano, no dispara 'change' solo
   }
   // Cliente en EEUU: no se autocompleta teléfono, ese dato no se recoge siempre
 }
@@ -926,6 +983,7 @@ function saveMiniCliente(id){
     document.getElementById('op-municipio').value = mun;
     if(tel) document.getElementById('op-telefono').value = tel;
     limpiarCamposObligatorios();
+    calcularDeposito();
   }
   toggleMini(id);
   document.getElementById('m'+id+'-nombre').value='';
@@ -1004,10 +1062,17 @@ function clearOpForm(){
   document.getElementById('op-r-gcu').textContent='—';
   document.getElementById('op-modal-ttl').textContent='Nueva operación';
   limpiarCamposObligatorios();
+  // Operación nueva: la calculadora vuelve a rellenar todo por defecto.
+  opDepAuto=true; opMensAuto=true;
+  document.getElementById('op-margen').value=MARGEN_DEFAULT;
+  document.getElementById('margen-lbl').textContent='⚙️ Margen: '+MARGEN_DEFAULT+'% — cambiar';
+  document.getElementById('box-margen').style.display='none';
 }
 
 function editOp(id){
   var r=db.envios.find(function(x){ return x.id===id; }); if(!r) return;
+  // Operación ya guardada: nunca recalcular sus montos solos, aunque se toque el municipio.
+  opDepAuto=false; opMensAuto=false;
   document.getElementById('op-id').value=r.id;
   document.getElementById('dd-usa').value=r.cliente||'';
   document.getElementById('dd-cuba').value=r.clienteCuba||'';
@@ -1175,6 +1240,51 @@ function renderEntregas(){
         ?'<button class="btn btn-ok btn-sm" onclick="markEntregada(\''+r.id+'\')">✓ Entregada</button>'
         :'<span class="bdg bdg-ok">✓ Completada</span>')
       +'</div></div>';
+  }).join('');
+}
+
+// ══ DASHBOARD ══
+var MESES_ES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function renderDashboard(){
+  var all=db.envios;
+  // Mismas reglas que Ganancia total/del mes en Envíos: Devuelta/Cancelada no cuentan.
+  var conGanancia=all.filter(function(r){ return r.estado!=='devuelta'&&r.estado!=='cancelada'; });
+  var totalGan=conGanancia.reduce(function(s,r){ return s+(r.ganancia||0); },0);
+  var mesActual=today().slice(0,7);
+  var mesGan=conGanancia.filter(function(r){ return (r.fecha||r.creado||'').slice(0,7)===mesActual; })
+    .reduce(function(s,r){ return s+(r.ganancia||0); },0);
+  document.getElementById('stats-dashboard').innerHTML=
+    '<div class="stat"><div class="stat-val">'+all.length+'</div><div class="stat-lbl">Operaciones totales</div></div>'
+    +'<div class="stat"><div class="stat-val g">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>'
+    +'<div class="stat"><div class="stat-val g">'+fmtMoney(mesGan)+'</div><div class="stat-lbl">Ganancia del mes</div></div>';
+
+  var porMes={};
+  conGanancia.forEach(function(r){
+    var per=(r.fecha||r.creado||'').slice(0,7);
+    if(!per) return;
+    if(!porMes[per]) porMes[per]={gan:0,n:0};
+    porMes[per].gan+=r.ganancia||0;
+    porMes[per].n++;
+  });
+  var meses=Object.keys(porMes).map(function(k){ return {mes:k, gan:porMes[k].gan, n:porMes[k].n}; });
+  meses.sort(function(a,b){ return b.gan-a.gan; });
+  var div=document.getElementById('ranking-meses');
+  if(!meses.length){ div.innerHTML='<div class="empty"><div class="empty-ico">📊</div><div>Todavía no hay operaciones para armar el ranking</div></div>'; return; }
+  var max=meses[0].gan||1;
+  var medallas=['🥇','🥈','🥉'];
+  div.innerHTML=meses.map(function(m,i){
+    var p=m.mes.split('-');
+    var nombreMes=(MESES_ES[parseInt(p[1],10)-1]||p[1])+' '+p[0];
+    var ancho=Math.max(0,Math.round(m.gan/max*100));
+    return '<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0'+(i?';border-top:1px solid var(--g1)':'')+'">'
+      +'<div style="width:22px;text-align:center;font-size:.95rem;flex-shrink:0">'+(medallas[i]||(i+1))+'</div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:.82rem;font-weight:600;color:var(--g8);display:flex;justify-content:space-between">'
+      +nombreMes+' <b style="color:var(--ok)">'+fmtMoney(m.gan)+'</b></div>'
+      +'<div style="font-size:.68rem;color:var(--g5);margin-top:1px">'+m.n+' operaciones</div>'
+      +'<div style="height:6px;background:var(--g1);border-radius:4px;margin-top:.35rem;overflow:hidden">'
+      +'<div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--pri),#60a5fa);width:'+ancho+'%"></div>'
+      +'</div></div></div>';
   }).join('');
 }
 
@@ -1377,22 +1487,82 @@ function filterClientes(f,btn){
   renderClientes();
 }
 
+// El seguimiento manual se guarda en una columna aparte del Sheet (Seguimiento),
+// separada del Estado Activo/Inactivo que calculan las formulas del libro.
+var MSG_REACTIVACION='Hola, buenas tardes☺️ ¿Cómo estás?\nNotamos que hace un tiempo no sabemos de ti y queríamos escribirte para recordarte que seguimos brindando los servicios con la calidad y el compromiso de siempre.\n¡Saludos!';
+function esPerdido(c){ return txt(c.seguimiento).toLowerCase().indexOf('perdid')>=0; }
+function esInactivo(c){ return txt(c.estado).toLowerCase().indexOf('inactiv')>=0; }
+function diasSinOperarNum(c){ var n=parseInt(c.diasSinOperar,10); return isNaN(n)?Infinity:n; }
+
+// Limpia el telefono y le pone codigo de pais para el enlace de WhatsApp.
+// 8 digitos -> movil cubano (+53). 10 digitos -> EEUU (+1). Si no calza en
+// ningun patron conocido, se omite el boton en vez de armar un enlace roto.
+function telWhatsapp(tel){
+  var d=String(tel||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.length===8) return '53'+d;
+  if(d.length===10) return '1'+d;
+  if(d.length>=11 && (d.indexOf('53')===0||d.indexOf('1')===0)) return d;
+  return '';
+}
+
+function guardarSeguimientoCliente(nombre, valor){
+  var url=gsUrl();
+  if(!url||!navigator.onLine){ alert('Sin conexión: no se pudo guardar el seguimiento.'); renderClientes(); return; }
+  var c=sheetsClientes.find(function(x){ return txt(x.nombre)===nombre; });
+  var previo=c?c.seguimiento:undefined;
+  if(c) c.seguimiento=valor; // optimista, se revierte si falla
+  enviarAlScript(url,{action:'setSeguimiento',cliente:{nombre:nombre,valor:valor}})
+    .then(function(res){
+      if(!res||res.ok===false) throw new Error(res&&res.error||'el script rechazó el cambio');
+      renderClientes();
+    })
+    .catch(function(e){
+      if(c) c.seguimiento=previo;
+      alert('❌ No se pudo guardar el seguimiento.\n\n'+(e&&e.message?e.message:e));
+      renderClientes();
+    });
+}
+
 function renderClientes(){
   var sheetsSet=new Set(sheetsClientes.map(function(c){ return txt(c.nombre).toLowerCase().trim(); }));
   var localExtra=db.clientes.filter(function(c){ return !sheetsSet.has(txt(c.nombre).toLowerCase().trim()); });
   var all=sheetsClientes.map(function(c){ return Object.assign({},c,{fromSheets:true}); })
     .concat(localExtra.map(function(c){ return Object.assign({},c,{fromSheets:false}); }));
+  // De los que más llevan inactivos a los más activos, siempre.
+  all.sort(function(a,b){ return diasSinOperarNum(b)-diasSinOperarNum(a); });
   var q=txt(document.getElementById('srch-clientes').value).toLowerCase();
   if(q) all=all.filter(function(c){ return txt(c.nombre).toLowerCase().indexOf(q)>=0||txt(c.telefono).indexOf(q)>=0||txt(c.municipio).toLowerCase().indexOf(q)>=0; });
   if(clienteFilter==='Cuba') all=all.filter(function(c){ return txt(c.reside).toLowerCase().indexOf('cuba')>=0; });
   if(clienteFilter==='EeUu') all=all.filter(function(c){ return txt(c.reside).toLowerCase().indexOf('eeu')>=0||txt(c.reside).toLowerCase().indexOf('usa')>=0; });
+  // Un cliente marcado Perdido ya no cuenta como Inactivo: es un estado aparte, no un subconjunto.
+  if(clienteFilter==='Inactivos') all=all.filter(function(c){ return esInactivo(c)&&!esPerdido(c); });
+  if(clienteFilter==='Perdidos') all=all.filter(esPerdido);
+  var enSeguimiento=(clienteFilter==='Inactivos'||clienteFilter==='Perdidos');
   var div=document.getElementById('list-clientes');
   if(!all.length){ div.innerHTML='<div class="empty"><div class="empty-ico">👥</div><div>No hay clientes que coincidan</div></div>'; return; }
   div.innerHTML=all.map(function(c){
     var cls=c.fromSheets?'citm':'citm local';
+    if(esPerdido(c)) cls+=' perdido';
     var rBdg=c.reside==='Cuba'||c.reside==='cuba'?'<span class="bdg bdg-warn">Cuba</span>':'<span class="bdg bdg-pri">EeUu</span>';
+    var estBdg=esPerdido(c)?'<span class="bdg" style="background:var(--err-bg);color:var(--err)">❌ Perdido</span>'
+      :esInactivo(c)?'<span class="bdg bdg-warn">⚠️ Inactivo'+(isFinite(diasSinOperarNum(c))?' · '+c.diasSinOperar+'d':'')+'</span>':'';
+    var seguimientoBox='';
+    if(enSeguimiento&&c.fromSheets){
+      var opciones=['','Contactado 1 vez','Contactado 2 veces','Contactado 3 veces','Perdido'];
+      seguimientoBox='<div class="fgroup" style="margin:.5rem 0 0">'
+        +'<label class="flabel">Seguimiento</label>'
+        +'<select class="finput" onchange="guardarSeguimientoCliente(\''+c.nombre.replace(/'/g,"\\'")+'\',this.value)">'
+        +opciones.map(function(o){
+            var sel=txt(c.seguimiento).toLowerCase()===o.toLowerCase()?' selected':'';
+            return '<option value="'+o+'"'+sel+'>'+(o||'Sin contactar')+'</option>';
+          }).join('')
+        +'</select></div>';
+    }
+    var waNum=enSeguimiento?telWhatsapp(c.telefono):'';
+    var waBtn=waNum?'<a class="btn btn-ok btn-sm" style="display:block;text-align:center;text-decoration:none;margin-top:.5rem" target="_blank" rel="noopener" href="https://wa.me/'+waNum+'?text='+encodeURIComponent(MSG_REACTIVACION)+'">📲 Escribir por WhatsApp</a>':'';
     return '<div class="'+cls+'">'
-      +'<div class="item-hdr"><div class="item-name">'+c.nombre+'</div>'+rBdg+'</div>'
+      +'<div class="item-hdr"><div class="item-name">'+c.nombre+'</div><div style="display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end">'+rBdg+estBdg+'</div></div>'
       +'<div class="item-detail">'
       +(c.telefono?'📱 '+c.telefono+'<br>':'')
       +(c.municipio?'📍 '+c.municipio+(c.direccion?' · '+c.direccion:'')+'<br>':'')
@@ -1401,6 +1571,8 @@ function renderClientes(){
       +(c.nota?'<br>📝 '+c.nota:'')
       +(!c.fromSheets?'<br><span style="font-size:.7rem;color:var(--ok)">✓ Guardado localmente</span>':'')
       +'</div>'
+      +seguimientoBox
+      +waBtn
       +(!c.fromSheets?'<div class="item-actions">'
         +'<button class="btn btn-out btn-sm" onclick="editCliente(\''+c.id+'\')">Editar</button>'
         +'<button class="btn btn-err btn-sm" onclick="deleteCliente(\''+c.id+'\')">Borrar</button>'
@@ -1421,7 +1593,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v12 · 2026-08-31';
+var APP_VERSION='v14 · 2026-09-04';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -1846,6 +2018,8 @@ function manejar(e) {
         return json(guardarOperacion(datos.operacion || datos));
       case 'saveCliente':
         return json(guardarCliente(datos.cliente || datos));
+      case 'setSeguimiento':
+        return json(guardarSeguimiento(datos.cliente || datos));
       case 'sync':
         return json(sincronizar(datos.data || datos));
 
@@ -1994,17 +2168,25 @@ function construirNota(d) {
 // LECTURAS
 // ============================================================
 
+// Lee mas columnas de las que CLI.ancho abarca (que es solo para las escrituras,
+// A..K): hasta la V (Seguimiento), sin tocar CLI.ancho para no arriesgar las
+// formulas de las columnas L..U al escribir.
+var CLI_ANCHO_LECTURA = 21; // B..V
+
 function getClientes() {
   var sh = hoja(CLI.hoja);
   var n = CLI.ultima - CLI.primera + 1;
-  var v = sh.getRange(CLI.primera, CLI.colNombre, n, CLI.ancho).getDisplayValues();
+  var v = sh.getRange(CLI.primera, CLI.colNombre, n, CLI_ANCHO_LECTURA).getDisplayValues();
   var out = [];
   for (var i = 0; i < n; i++) {
     if (!v[i][0]) continue;            // sin nombre no hay cliente
     out.push({
       nombre: v[i][0], telefono: v[i][1], email: v[i][2],
       direccion: v[i][3], municipio: v[i][4], reside: v[i][5],
-      contacto: v[i][6], decision: v[i][7], canal: v[i][8], nota: v[i][9]
+      contacto: v[i][6], decision: v[i][7], canal: v[i][8], nota: v[i][9],
+      diasSinOperar: v[i][13],  // columna O
+      estado: v[i][18],         // columna T (Activo/Inactivo, formula del libro)
+      seguimiento: v[i][20]     // columna V (manual: 1/2/3 veces contactado, Perdido)
     });
   }
   return out;
@@ -2135,6 +2317,27 @@ function getSaldosMensajeros() {
 function guardarCliente(c) {
   var r = sincronizarClientes([c || {}]);
   return { ok: true, clientes: r };
+}
+
+/**
+ * Guarda el seguimiento manual (Contactado 1/2/3 veces, Perdido) de un cliente.
+ * Es independiente del Estado Activo/Inactivo, que lo calculan las formulas del
+ * libro segun dias sin operar. Se busca por nombre, igual que sincronizarClientes.
+ */
+function guardarSeguimiento(d) {
+  var nombre = String((d && d.nombre) || '').trim();
+  if (!nombre) throw new Error('Falta el nombre del cliente.');
+  var valor = String((d && d.valor) || '').trim();
+  var sh = hoja(CLI.hoja);
+  var n = CLI.ultima - CLI.primera + 1;
+  var nombres = sh.getRange(CLI.primera, CLI.colNombre, n, 1).getValues();
+  for (var i = 0; i < n; i++) {
+    if (String(nombres[i][0] || '').trim().toLowerCase() === nombre.toLowerCase()) {
+      sh.getRange(CLI.primera + i, 22).setValue(valor); // columna V
+      return { ok: true, fila: CLI.primera + i };
+    }
+  }
+  throw new Error('No se encontró un cliente con ese nombre: ' + nombre);
 }
 
 function guardarBeneficiario(d) {
