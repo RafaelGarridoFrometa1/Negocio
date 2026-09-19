@@ -114,6 +114,10 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 .op-result{background:var(--g1);border:1px solid var(--g2);border-radius:6px;padding:.5rem .75rem;font-size:.9rem;font-weight:700;color:var(--g9)}
 .op-divider{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g4);margin:10px 0 8px;padding-top:10px;border-top:1px dashed var(--g2)}
 
+/* ── DAY GROUP (Envíos agrupados por día) ── */
+.day-hdr{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--g5);margin:1.1rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--g2)}
+.day-hdr:first-child{margin-top:0}
+
 /* ── DROPDOWN ── */
 .dd-wrap{position:relative}
 .dd-list{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;background:#fff;border:1.5px solid var(--g3);border-radius:var(--rs);max-height:200px;overflow-y:auto;z-index:300;box-shadow:0 4px 16px rgba(0,0,0,.1)}
@@ -145,7 +149,6 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 .mc-row{display:flex;justify-content:space-between;font-size:.75rem;color:var(--g5);padding:2px 0}
 
 /* ── SUMMARY BOX ── */
-.sbox{background:var(--pri-bg);border:1.5px solid #bfdbfe;border-radius:var(--r);padding:1rem;font-family:monospace;font-size:.8rem;line-height:1.7;color:var(--g8);white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:.75rem}
 
 /* ── NOTICE ── */
 .notice{background:var(--ok-bg);border:1px solid #86efac;border-radius:var(--rs);padding:.6rem 1rem;font-size:.8rem;color:var(--ok);font-weight:600;margin-bottom:.75rem}
@@ -236,6 +239,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
         <button class="tmi" onclick="filterEnvios('entregada',this)">Entregados</button>
       </div>
       <div class="stats" id="stats-envios"></div>
+      <input class="search-inp" id="srch-envios" placeholder="🔍 Buscar por cliente (EEUU/Cuba) o cantidad..." oninput="renderEnvios()">
       <div id="list-envios"></div>
     </div>
 
@@ -259,21 +263,6 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
       <div id="list-mensajeros"></div>
     </div>
 
-    <!-- RESUMEN -->
-    <div class="section" id="sec-resumen">
-      <div class="sec-hdr"><div class="sec-ttl">Resumen para repartidores</div></div>
-      <div class="card">
-        <div class="fgroup">
-          <label class="flabel">Seleccionar mensajero</label>
-          <select class="finput" id="res-sel-mens"><option value="">— Todos —</option></select>
-        </div>
-        <button class="btn btn-pri" onclick="generarResumen()">📋 Generar resumen</button>
-      </div>
-      <div id="res-out" style="display:none">
-        <div class="sbox" id="res-txt"></div>
-        <button class="btn btn-ok" style="width:100%" onclick="copiarResumen()">📱 Copiar para WhatsApp</button>
-      </div>
-    </div>
 
     <!-- DASHBOARD -->
     <div class="section" id="sec-dashboard">
@@ -340,7 +329,6 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
     <button class="tab active" onclick="showSection('envios',this)"><span class="tab-ico">📦</span><span>Envíos</span></button>
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
     <button class="tab" onclick="showSection('mensajeros',this)"><span class="tab-ico">👤</span><span>Mensajeros</span></button>
-    <button class="tab" onclick="showSection('resumen',this)"><span class="tab-ico">📋</span><span>Resumen</span></button>
     <button class="tab" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
     <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
@@ -652,6 +640,15 @@ function loadDB(){
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function today(){ return new Date().toISOString().split('T')[0]; }
 function fmtDate(d){ if(!d) return ''; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+// Encabezado de grupo en Envíos: "Martes 15/07/2026". Construido con y/m/d
+// locales (no new Date(iso) directo) para que no se corra un dia por zona horaria.
+function fmtDiaLargo(iso){
+  var dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  var p=(iso||'').split('-');
+  if(p.length<3) return fmtDate(iso);
+  var d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10));
+  return dias[d.getDay()]+' '+fmtDate(iso);
+}
 function fmtMoney(n){ return '$'+parseFloat(n||0).toFixed(2); }
 // El Sheet puede devolver numeros o fechas donde se espera texto (un nombre que son
 // solo cifras, por ejemplo). Sin esto, .toLowerCase() revienta.
@@ -788,7 +785,6 @@ function showSection(name, btn){
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('sec-'+name).classList.add('active');
   btn.classList.add('active');
-  if(name==='resumen') populateMensSelects();
   if(name==='clientes'){ renderClientes(); loadSheetsClientes(); }
   if(name==='dashboard') renderDashboard();
 }
@@ -1183,27 +1179,48 @@ function renderEnvios(){
   var list=all;
   if(envioFilter==='pendiente') list=all.filter(function(r){ return r.estado==='pendiente'||r.estado==='en_camino'; });
   if(envioFilter==='entregada') list=all.filter(function(r){ return r.estado==='entregada'; });
+  var q=txt(document.getElementById('srch-envios').value).toLowerCase().trim();
+  if(q) list=list.filter(function(r){
+    var texto=(txt(r.cliente)+' '+txt(r.clienteCuba)+' '+txt(r.depositar)+' '+txt(r.entrega)).toLowerCase();
+    return texto.indexOf(q)>=0;
+  });
   var div=document.getElementById('list-envios');
-  if(!list.length){ div.innerHTML='<div class="empty"><div class="empty-ico">📭</div><div>No hay envíos aquí todavía</div></div>'; return; }
+  if(!list.length){
+    div.innerHTML='<div class="empty"><div class="empty-ico">📭</div><div>'+(q?'Ningún envío coincide con la búsqueda':'No hay envíos aquí todavía')+'</div></div>';
+    return;
+  }
   var estadoMap={pendiente:'<span class="bdg bdg-warn">Pendiente</span>',en_camino:'<span class="bdg bdg-pri">En camino</span>',entregada:'<span class="bdg bdg-ok">Entregada</span>',devuelta:'<span class="bdg bdg-warn">Devuelta</span>'};
-  div.innerHTML=list.map(function(r){
-    var mens=db.mensajeros.find(function(m){ return m.id===r.mensajero; });
-    var cls=r.estado==='entregada'?'done':(r.estado==='en_camino'?'transit':'pend');
-    return '<div class="item '+cls+'">'
-      +'<div class="item-hdr"><div class="item-name">'+r.cliente+'</div>'+(estadoMap[r.estado]||'')+'</div>'
-      +'<div class="item-detail">'
-      +(r.clienteCuba?'🇨🇺 '+r.clienteCuba+'<br>':'')
-      +'📍 '+(r.direccion||'—')+(r.municipio?' · '+r.municipio:'')+'<br>'
-      +'💰 '+fmtMoney(r.depositar)+' · Entrega: '+fmtMoney(r.entrega)+(r.costoMens?' · Mens: '+fmtMoney(r.costoMens):'')+' · 🛵 '+(mens?mens.nombre:'Sin asignar')+'<br>'
-      +(r.fecha?'📅 '+fmtDate(r.fecha)+(r.hora?' ⏰ '+r.hora:'')+'<br>':'')
-      +(r.notas?'📝 '+r.notas:'')
-      +'</div>'
-      +'<div class="item-actions">'
-      +'<button class="btn btn-pri btn-sm" onclick="copiarMensajeEnvio(\''+r.id+'\')">📲 Copiar mensaje</button>'
-      +(r.estado!=='entregada'?'<button class="btn btn-ok btn-sm" onclick="markEntregada(\''+r.id+'\')">✓ Entregada</button>':'')
-      +'<button class="btn btn-out btn-sm" onclick="editOp(\''+r.id+'\')">Editar</button>'
-      +'<button class="btn btn-err btn-sm" onclick="deleteOp(\''+r.id+'\')">Borrar</button>'
-      +'</div></div>';
+
+  // Agrupar por dia: la fecha de entrega si ya se puso, si no la de registro.
+  var grupos={}, dias=[];
+  list.forEach(function(r){
+    var dia=r.fecha||r.creado||'';
+    if(!grupos[dia]){ grupos[dia]=[]; dias.push(dia); }
+    grupos[dia].push(r);
+  });
+  dias.sort(function(a,b){ return b.localeCompare(a); }); // dia mas reciente primero
+
+  div.innerHTML=dias.map(function(dia){
+    var items=grupos[dia].map(function(r){
+      var mens=db.mensajeros.find(function(m){ return m.id===r.mensajero; });
+      var cls=r.estado==='entregada'?'done':(r.estado==='en_camino'?'transit':'pend');
+      return '<div class="item '+cls+'">'
+        +'<div class="item-hdr"><div class="item-name">'+r.cliente+'</div>'+(estadoMap[r.estado]||'')+'</div>'
+        +'<div class="item-detail">'
+        +(r.clienteCuba?'🇨🇺 '+r.clienteCuba+'<br>':'')
+        +'📍 '+(r.direccion||'—')+(r.municipio?' · '+r.municipio:'')+'<br>'
+        +'💰 '+fmtMoney(r.depositar)+' · Entrega: '+fmtMoney(r.entrega)+(r.costoMens?' · Mens: '+fmtMoney(r.costoMens):'')+' · 🛵 '+(mens?mens.nombre:'Sin asignar')+'<br>'
+        +(r.fecha?'📅 '+fmtDate(r.fecha)+(r.hora?' ⏰ '+r.hora:'')+'<br>':'')
+        +(r.notas?'📝 '+r.notas:'')
+        +'</div>'
+        +'<div class="item-actions">'
+        +'<button class="btn btn-pri btn-sm" onclick="copiarMensajeEnvio(\''+r.id+'\')">📲 Copiar mensaje</button>'
+        +(r.estado!=='entregada'?'<button class="btn btn-ok btn-sm" onclick="markEntregada(\''+r.id+'\')">✓ Entregada</button>':'')
+        +'<button class="btn btn-out btn-sm" onclick="editOp(\''+r.id+'\')">Editar</button>'
+        +'<button class="btn btn-err btn-sm" onclick="deleteOp(\''+r.id+'\')">Borrar</button>'
+        +'</div></div>';
+    }).join('');
+    return '<div class="day-hdr">'+(dia?fmtDiaLargo(dia):'Sin fecha')+'</div>'+items;
   }).join('');
 }
 
@@ -1378,44 +1395,6 @@ function populateMensSelects(){
   }).join('');
   var opMens=document.getElementById('op-mensajero');
   if(opMens) opMens.innerHTML=opts;
-  var resOpts='<option value="">— Todos —</option>'+db.mensajeros.map(function(m){
-    return '<option value="'+m.id+'">'+m.nombre+'</option>';
-  }).join('');
-  var resMens=document.getElementById('res-sel-mens');
-  if(resMens) resMens.innerHTML=resOpts;
-}
-
-// ══ RESUMEN ══
-function generarResumen(){
-  var mid=document.getElementById('res-sel-mens').value;
-  var list=db.envios.filter(function(r){ return r.estado!=='entregada'&&r.estado!=='devuelta'; });
-  if(mid) list=list.filter(function(r){ return r.mensajero===mid; });
-  list.sort(function(a,b){ return ((a.fecha||'')+(a.hora||'00:00')).localeCompare((b.fecha||'')+(b.hora||'00:00')); });
-  var mens=mid?(db.mensajeros.find(function(m){ return m.id===mid; })||{}).nombre:'Todos los mensajeros';
-  var sep='─'.repeat(28);
-  var txt='📦 ENVÍOS PENDIENTES\n👤 '+mens+'\n📅 '+fmtDate(today())+'\n'+sep+'\n\n';
-  if(!list.length){ txt+='No hay entregas pendientes.\n'; }
-  else {
-    list.forEach(function(r,i){
-      txt+=(i+1)+'. 👤 '+(r.clienteCuba||r.cliente)+'\n';
-      txt+='   📍 '+(r.direccion||'—')+(r.municipio?', '+r.municipio:'')+'\n';
-      txt+='   📱 '+(r.telefono||'—')+'\n';
-      txt+='   💰 Entregar: '+fmtMoney(r.entrega)+'\n';
-      if(r.costoMens) txt+='   🔧 Costo mensajería: '+fmtMoney(r.costoMens)+'\n';
-      if(r.fecha) txt+='   📅 '+fmtDate(r.fecha)+(r.hora?' ⏰ '+r.hora:'')+'\n';
-      txt+='\n';
-    });
-    txt+=sep+'\nTotal: '+list.length+' entregas · '+fmtMoney(list.reduce(function(s,r){ return s+(r.entrega||0); },0));
-  }
-  window._lastResumen=txt;
-  document.getElementById('res-txt').textContent=txt;
-  document.getElementById('res-out').style.display='block';
-}
-
-function copiarResumen(){
-  var txt=window._lastResumen||'';
-  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ alert('¡Copiado! Pégalo en WhatsApp.'); }); }
-  else { var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('¡Copiado!'); }
 }
 
 // ══ CLIENTES ══
@@ -1544,7 +1523,7 @@ function renderClientes(){
   if(clienteFilter==='Cuba') all=all.filter(function(c){ return txt(c.reside).toLowerCase().indexOf('cuba')>=0; });
   if(clienteFilter==='EeUu') all=all.filter(function(c){ return txt(c.reside).toLowerCase().indexOf('eeu')>=0||txt(c.reside).toLowerCase().indexOf('usa')>=0; });
   // Un cliente marcado Perdido ya no cuenta como Inactivo: es un estado aparte, no un subconjunto.
-  if(clienteFilter==='Inactivos') all=all.filter(function(c){ return esInactivo(c)&&!esPerdido(c); });
+  if(clienteFilter==='Inactivos') all=all.filter(function(c){ return esInactivo(c)&&!esPerdido(c)&&txt(c.telefono).trim()!==''; });
   if(clienteFilter==='Perdidos') all=all.filter(esPerdido);
   var enSeguimiento=(clienteFilter==='Inactivos'||clienteFilter==='Perdidos');
   var div=document.getElementById('list-clientes');
@@ -1601,7 +1580,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v14.1 · 2026-09-04';
+var APP_VERSION='v15 · 2026-09-19';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
