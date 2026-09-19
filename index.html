@@ -230,7 +230,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
     <div class="section active" id="sec-envios">
       <div class="sec-hdr">
         <div class="sec-ttl">Envíos</div>
-        <button class="btn btn-ok btn-sm" onclick="openModal('modal-op')">+ Nuevo</button>
+        <button class="btn btn-ok btn-sm" onclick="clearOpForm();openModal('modal-op')">+ Nuevo</button>
       </div>
       <div id="op-result-area"></div>
       <div class="tmini">
@@ -1044,9 +1044,10 @@ function saveOp(){
 }
 
 function clearOpForm(){
-  var campos=['op-id','dd-usa','dd-cuba','op-telefono','op-direccion','op-notas','op-dep','op-ent','op-mens','op-hora','op-dia'];
+  var campos=['op-id','dd-usa','dd-cuba','op-telefono','op-direccion','op-notas','op-dep','op-ent','op-mens','op-hora'];
   campos.forEach(function(c){ document.getElementById(c).value=''; });
   document.getElementById('op-fecha').value=today();
+  document.getElementById('op-dia').value=new Date().getDate();
   document.getElementById('op-tipo').value='EeUu → Cuba';
   document.getElementById('op-cobro').value='EeUu';
   document.getElementById('op-municipio').value='';
@@ -1580,7 +1581,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v15 · 2026-09-19';
+var APP_VERSION='v15.1 · 2026-09-19';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
