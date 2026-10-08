@@ -219,6 +219,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
     <div class="topbar-ttl">💼 Mi Negocio</div>
     <div class="topbar-r">
       <span class="sync-dot" id="sync-dot"></span>
+      <span class="bdg bdg-warn" id="pend-badge" style="display:none"></span>
       <button class="tbtn" onclick="doSync()">Sincronizar</button>
       <button class="tbtn" onclick="doLogout()">Salir</button>
     </div>
@@ -266,7 +267,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 
     <!-- DASHBOARD -->
     <div class="section" id="sec-dashboard">
-      <div class="sec-hdr"><div class="sec-ttl">Dashboard</div></div>
+      <div class="sec-hdr"><div class="sec-ttl">Dashboard</div><button class="btn btn-ok btn-sm" onclick="abrirConsolidacion()">📋 Consolidación</button></div>
       <div class="stats" id="stats-dashboard"></div>
       <div class="card">
         <div class="card-ttl">Ranking de meses (por ganancia)</div>
@@ -313,6 +314,17 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
         <button class="cfg-btn" style="margin-top:.4rem" onclick="buscarActualizacion()">🔄 Buscar actualización</button>
         <div id="app-version" style="margin-top:.6rem;font-size:.8rem;opacity:.65;text-align:center"></div>
         <button class="cfg-btn" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
+      </div>
+      <div class="card" style="margin-top:.75rem">
+        <div class="card-ttl">🔔 Notificaciones push al celular</div>
+        <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
+          Avisa a tu celular cuando una entrega pendiente llega a su hora — aunque
+          tengas la app cerrada y sin internet en ese momento. Usa la app gratuita
+          <strong>ntfy</strong> como mensajero: instálala desde Google Play y
+          suscríbete al aviso <code>Mi Negocio</code> (Rafael te da el nombre exacto
+          del tema). Una vez suscrito, prueba el botón de abajo.
+        </p>
+        <button class="cfg-btn" onclick="probarNotificacionPush()">🔔 Enviar notificación de prueba</button>
       </div>
       <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">Cuenta</div>
@@ -613,6 +625,19 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 </div>
 </div>
 
+<!-- ══ MODAL: CONSOLIDACIÓN MENSUAL ══ -->
+<div class="modal-bg" id="modal-consolidacion">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-consolidacion')">×</button>
+  <div class="modal-ttl">📋 Consolidación mensual</div>
+  <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem">Trae todas las operaciones del mes elegido directo de la hoja de Google Sheets (no de este teléfono), listas para copiar y pegar.</p>
+  <div class="fgroup"><label class="flabel">Mes</label><input type="month" class="finput" id="cons-mes"></div>
+  <button class="btn btn-pri" onclick="generarConsolidacion()">Generar</button>
+  <textarea class="finput" id="cons-txt" rows="10" readonly style="font-family:monospace;font-size:.7rem;line-height:1.4;margin-top:.75rem" placeholder="Aquí aparecerán las operaciones del mes..."></textarea>
+  <button class="btn btn-ok" style="margin-top:.75rem" onclick="copiarConsolidacion()">📋 Copiar para pegar en Sheets</button>
+</div>
+</div>
+
 <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
 
 <script>
@@ -648,6 +673,21 @@ function fmtDiaLargo(iso){
   if(p.length<3) return fmtDate(iso);
   var d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10));
   return dias[d.getDay()]+' '+fmtDate(iso);
+}
+// Reconstruye la fecha real de la operacion a partir del campo "Dia del mes"
+// (op.dia, 1-31) — NO de cuando se registro en el sistema (creado) ni de la
+// entrega (fecha). Misma logica que aFecha() en el backend: si el dia es muy
+// posterior al de la fecha base, es del mes anterior (ej: registrada el 4 de
+// julio con dia=29 -> 29 de junio, no 29 de julio).
+function fechaOperacion(r){
+  var base=r.creado||r.fecha||today();
+  var d=parseInt(r.dia,10);
+  if(!(d>=1&&d<=31)) return base.slice(0,10);
+  var p=base.split('-');
+  var y=parseInt(p[0],10), m=parseInt(p[1],10)-1, bd=parseInt(p[2],10);
+  if(d-bd>20) m-=1;
+  var dt=new Date(y,m,d);
+  return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2);
 }
 function fmtMoney(n){ return '$'+parseFloat(n||0).toFixed(2); }
 // El Sheet puede devolver numeros o fechas donde se espera texto (un nombre que son
@@ -765,13 +805,22 @@ function initApp(){
   loadDB();
   document.getElementById('gs-url').value = localStorage.getItem(GS_KEY)||'';
   updateDot(true);
+  actualizarBadgePendientes();
   buildScriptText();
   renderAll();
   loadSheetsClientes();
   loadSheetsOperaciones();
-  window.addEventListener('online', function(){ document.getElementById('offline-bar').style.display='none'; updateDot(true); });
+  empujarPendientes();
+  window.addEventListener('online', function(){
+    document.getElementById('offline-bar').style.display='none';
+    updateDot(true);
+    empujarPendientes();
+  });
   window.addEventListener('offline', function(){ document.getElementById('offline-bar').style.display='block'; updateDot(false); });
   if(!navigator.onLine) document.getElementById('offline-bar').style.display='block';
+  // Red de seguridad adicional: reintenta solas cada pocos minutos, por si el
+  // reintento al reconectar tambien fallo (p.ej. el script tardo en responder).
+  setInterval(function(){ if(navigator.onLine) empujarPendientes(); }, 3*60*1000);
 }
 
 function renderAll(){
@@ -1036,7 +1085,8 @@ function saveOp(){
   if(eid){ var idx=db.envios.findIndex(function(r){ return r.id===eid; }); db.envios[idx]=obj; }
   else db.envios.unshift(obj);
   saveDB();
-  saveOpToSheets(obj);
+  marcarPendiente(obj.id);
+  empujarPendientes();
   mostrarResumenMensajero(obj);
   closeModal('modal-op');
   clearOpForm();
@@ -1192,10 +1242,11 @@ function renderEnvios(){
   }
   var estadoMap={pendiente:'<span class="bdg bdg-warn">Pendiente</span>',en_camino:'<span class="bdg bdg-pri">En camino</span>',entregada:'<span class="bdg bdg-ok">Entregada</span>',devuelta:'<span class="bdg bdg-warn">Devuelta</span>'};
 
-  // Agrupar por dia: la fecha de entrega si ya se puso, si no la de registro.
+  // Agrupar por el dia en que se hizo la operacion (campo "Dia del mes"),
+  // NO por cuando se registro en el sistema ni por la fecha de entrega.
   var grupos={}, dias=[];
   list.forEach(function(r){
-    var dia=r.fecha||r.creado||'';
+    var dia=fechaOperacion(r);
     if(!grupos[dia]){ grupos[dia]=[]; dias.push(dia); }
     grupos[dia].push(r);
   });
@@ -1304,6 +1355,69 @@ function renderDashboard(){
       +'<div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--pri),#60a5fa);width:'+ancho+'%"></div>'
       +'</div></div></div>';
   }).join('');
+}
+
+// ══ CONSOLIDACIÓN MENSUAL ══
+//
+// Se pide SIEMPRE fresco a la hoja (accion getOperaciones), no de db.envios de
+// este telefono: la idea es precisamente reconciliar contra lo que hay de
+// verdad en el Sheet, y este telefono podria tener operaciones locales que
+// todavia no llegaron (por eso existe la cola de pendientes de mas arriba).
+var CONS_ENCABEZADO=['OpeNumero','Dia','Tipo','Donde se cobra la ganancia',
+  'Cliente reside en EeUu','Cliente en Cuba','Cantidad a Depositar','Entrega','Costo Mens'];
+
+function abrirConsolidacion(){
+  var hoy=new Date();
+  document.getElementById('cons-mes').value=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2);
+  document.getElementById('cons-txt').value='';
+  openModal('modal-consolidacion');
+}
+
+function generarConsolidacion(){
+  var mes=document.getElementById('cons-mes').value;
+  if(!mes){ alert('Elige un mes.'); return; }
+  var url=gsUrl();
+  if(!url){ alert('Primero configura la URL del script en Configuración.'); return; }
+  if(!navigator.onLine){ alert('Sin conexión. La consolidación se arma con los datos de la hoja: hace falta internet.'); return; }
+  var area=document.getElementById('cons-txt');
+  area.value='Buscando en la hoja...';
+  fetch(url+'?action=getOperaciones',{method:'GET'})
+    .then(function(r){ return r.text(); })
+    .then(interpretar)
+    .then(function(data){
+      if(!data||!data.operaciones) throw new Error('El script no devolvió las operaciones.');
+      var filas=data.operaciones.filter(function(r){ return (r.creado||'').slice(0,7)===mes; });
+      if(!filas.length){ area.value=''; alert('No hay operaciones en la hoja para ese mes.'); return; }
+      filas.sort(function(a,b){
+        if(a.creado!==b.creado) return (a.creado||'').localeCompare(b.creado||'');
+        return (parseFloat(a.opeNumero)||0)-(parseFloat(b.opeNumero)||0);
+      });
+      var lineas=[CONS_ENCABEZADO.join('\t')];
+      filas.forEach(function(r){
+        lineas.push([
+          r.opeNumero||'',
+          r.creado?fmtDate(r.creado):'',
+          r.tipo||'',
+          r.cobro||'',
+          r.cliente||'',
+          r.clienteCuba||'',
+          (parseFloat(r.depositar)||0).toFixed(2),
+          (parseFloat(r.entrega)||0).toFixed(2),
+          (parseFloat(r.costoMens)||0).toFixed(2)
+        ].join('\t'));
+      });
+      area.value=lineas.join('\n');
+    })
+    .catch(function(e){
+      area.value='';
+      alert('❌ No se pudo generar la consolidación.\n\n'+(e&&e.message?e.message:e));
+    });
+}
+
+function copiarConsolidacion(){
+  var txt=document.getElementById('cons-txt').value;
+  if(!txt||txt==='Buscando en la hoja...'){ alert('Primero genera la consolidación de un mes.'); return; }
+  copiarTexto(txt);
 }
 
 // ══ MENSAJEROS ══
@@ -1581,7 +1695,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v15.1 · 2026-09-19';
+var APP_VERSION='v17 · 2026-09-29';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -1603,6 +1717,20 @@ function buscarActualizacion(){
 }
 
 function gsUrl(){ return localStorage.getItem(GS_KEY)||''; }
+
+// Manda un aviso de prueba por ntfy a traves del backend, para confirmar que
+// el celular suscrito al tema de ntfy si recibe las notificaciones push.
+function probarNotificacionPush(){
+  var url=gsUrl();
+  if(!url){ alert('Primero configura la URL del script en Configuración.'); return; }
+  if(!navigator.onLine){ alert('Sin conexión: esto necesita internet para pedirle al backend que envíe el aviso.'); return; }
+  enviarAlScript(url,{action:'probarNtfy'})
+    .then(function(res){
+      if(res&&res.ok) alert('✅ Enviado. Revisa la notificación en el celular suscrito al tema de ntfy.');
+      else alert('❌ El script no pudo enviarlo.\n\n'+(res&&res.error?res.error:'respuesta inesperada'));
+    })
+    .catch(function(e){ alert('❌ No se pudo enviar.\n\n'+(e&&e.message?e.message:e)); });
+}
 
 // Diagnostico paso a paso: dice exactamente en que punto se rompe la cadena.
 function probarConexion(){
@@ -1755,6 +1883,8 @@ function doSync(){
     // del Sheet: asi lo que registraron otros telefonos tambien aparece aqui.
     return loadSheetsOperaciones();
   }).then(function(){
+    // Se acaba de subir TODO db.envios de golpe: ya no queda nada pendiente.
+    db.pendientes=[]; saveDB(); actualizarBadgePendientes();
     setSyncTexto('Sincronizar');
     updateDot(true);
     alert('✅ Sincronizado'+(usarGet?' (por GET)':'')+'.\n\n'+
@@ -1812,6 +1942,7 @@ function loadSheetsOperaciones(avisar){
     .then(function(data){
       if(!data || !data.operaciones) throw new Error('El script no devolvió las operaciones.');
       mezclarOperacionesRemotas(data.operaciones);
+      marcarFaltantesComoPendientes(data.operaciones);
       renderAll();
       if(avisar) alert('✅ '+data.operaciones.length+' operaciones traídas de la hoja.');
     })
@@ -1855,44 +1986,98 @@ function saveClienteToSheets(c){
     .catch(function(e){ console.warn('No se pudo guardar el cliente en Sheets:',e); });
 }
 
-function saveOpToSheets(op){
+// \u2550\u2550 ENV\u00cdO INDIVIDUAL DE OPERACIONES: COLA DE PENDIENTES \u2550\u2550
+//
+// Antes, cada operacion se mandaba sola con la accion "saveOperacion", que en el
+// backend NO es idempotente (busca fila libre y escribe, sin mirar si el ID App
+// ya existe) y si fallaba (sin se\u00f1al, el script tarda, un corte de red) se perdia
+// en silencio: quedaba SOLO en el telefono, sin ningun aviso, y nunca se volvia
+// a intentar. Asi es como terminaron apareciendo 77 operaciones en la app y solo
+// 48 en la hoja: 29 se habian quedado atascadas sin que nadie se enterara.
+//
+// Ahora cada operacion se marca "pendiente" al guardarla y se manda por la MISMA
+// via que el boton Sincronizar (accion "sync"), que en el backend SI es idempotente
+// (empareja por ID App: si ya existe la actualiza, si no la crea) y nunca duplica
+// aunque se reintente. Si el envio falla, la operacion se queda marcada como
+// pendiente (con una insignia visible junto al punto de sincronizacion) y se
+// reintenta sola: al recuperar conexion, cada pocos minutos y al abrir la app.
+function marcarPendiente(id){
+  if(!id) return;
+  db.pendientes=db.pendientes||[];
+  if(db.pendientes.indexOf(id)===-1) db.pendientes.push(id);
+  saveDB();
+  actualizarBadgePendientes();
+}
+
+function quitarPendientes(ids){
+  if(!db.pendientes||!db.pendientes.length||!ids.length) return;
+  var fuera={}; ids.forEach(function(id){ fuera[id]=true; });
+  db.pendientes=db.pendientes.filter(function(id){ return !fuera[id]; });
+  saveDB();
+  actualizarBadgePendientes();
+}
+
+function actualizarBadgePendientes(){
+  var n=(db.pendientes||[]).length;
+  var b=document.getElementById('pend-badge');
+  if(!b) return;
+  if(n>0){ b.style.display='inline-flex'; b.textContent='\u23f3 '+n+' sin subir'; }
+  else b.style.display='none';
+}
+
+/** Manda al Sheet, en lotes idempotentes, las operaciones marcadas como pendientes. */
+function empujarPendientes(){
   var url=gsUrl();
-  if(!url||!navigator.onLine) return;
-  var m=db.mensajeros.find(function(x){ return x.id===op.mensajero; });
-  // Fecha completa: el libro nuevo es una sola hoja, ya no hay pestanas por mes.
-  var hoy=new Date();
-  var dd=parseInt(op.dia,10);
-  if(!(dd>=1&&dd<=31)) dd=hoy.getDate();
-  var iso=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+dd).slice(-2);
-  var cuerpo={
-    action:'saveOperacion',
-    operacion:{
-      id:op.id||'',
-      dia_iso:iso,
-      dia:dd,
-      tipo:op.tipo||'EeUu \u2192 Cuba',
-      cobro:op.cobro||'EeUu',
-      cliente_eeuu:op.cliente||'',
-      cliente_cuba:op.clienteCuba||'',
-      depositar:op.depositar||0,
-      entrega:op.entrega||0,
-      costo_mens:op.costoMens||0,
-      mensajero:m?m.nombre:'',
-      pagado_mensajero:op.pagadoMens||false,
-      estado:op.estado||'pendiente',
-      revisado_rafael:false,
-      revisado_daniela:op.revisado||false,
-      ref_banco:op.refBanco||'',
-      notas:op.notas||'',
-      municipio:op.municipio||'',
-      fecha:op.fecha||'',
-      hora:op.hora||''
-    }
-  };
-  enviarAlScript(url,cuerpo).then(function(res){
-    if(res&&res.ok) updateDot(true);
-    else { updateDot(false); console.warn('Sheets rechazo la operacion:',res); }
-  }).catch(function(e){ updateDot(false); console.warn('Sin conexion con Sheets:',e); });
+  if(!url||!navigator.onLine) return Promise.resolve();
+  var ids=(db.pendientes||[]).slice();
+  if(!ids.length) return Promise.resolve();
+
+  var porId={}; db.envios.forEach(function(r){ porId[r.id]=r; });
+  var envios=[], fantasmas=[];
+  ids.forEach(function(id){
+    var r=porId[id];
+    if(!r){ fantasmas.push(id); return; } // se borro localmente: ya no hay nada que subir
+    var m=db.mensajeros.find(function(x){ return x.id===r.mensajero; });
+    envios.push(Object.assign({},r,{mensajeroNombre:m?m.nombre:''}));
+  });
+  if(fantasmas.length) quitarPendientes(fantasmas);
+  if(!envios.length) return Promise.resolve();
+
+  function lote(i){
+    var trozo=envios.slice(i,i+40);
+    if(!trozo.length) return Promise.resolve();
+    return enviarAlScript(url,{action:'sync',data:{envios:trozo,mensajeros:[],clientes:[],pagos:[]}})
+      .then(function(res){
+        if(!res||res.ok===false) throw new Error((res&&res.error)||'error desconocido');
+        quitarPendientes(trozo.map(function(e){ return e.id; }));
+        updateDot(true);
+        return lote(i+40);
+      });
+  }
+  return lote(0).catch(function(e){
+    console.warn('No se pudieron subir '+envios.length+' operaciones pendientes:',e);
+    updateDot(false);
+  });
+}
+
+/**
+ * Red de seguridad: si una operacion existe en este telefono pero NO vino en la
+ * lista de la hoja, es que su subida fallo en su momento y quedo atascada solo
+ * aqui. Se marca como pendiente para que empujarPendientes() la reintente sola.
+ * Es seguro aunque se equivoque (p.ej. si la hoja tardo en responder bien):
+ * volver a mandar una operacion que ya estaba en la hoja no la duplica, porque
+ * el backend empareja por ID App.
+ */
+function marcarFaltantesComoPendientes(remotas){
+  var enHoja={};
+  (remotas||[]).forEach(function(r){ if(r.id) enHoja[r.id]=true; });
+  var faltan=db.envios.filter(function(r){ return r.id&&!enHoja[r.id]; }).map(function(r){ return r.id; });
+  if(!faltan.length) return;
+  db.pendientes=db.pendientes||[];
+  faltan.forEach(function(id){ if(db.pendientes.indexOf(id)===-1) db.pendientes.push(id); });
+  saveDB();
+  actualizarBadgePendientes();
+  empujarPendientes();
 }
 
 // ══ CONFIG ══
@@ -1922,7 +2107,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 3.8
+ * MI NEGOCIO - Backend Apps Script  ·  version 3.9
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -1949,6 +2134,12 @@ var ID_LIBRO = '1VcEjOFUod5vl1JiLvFMKdC4-tfQ1LVtom0QHBg4M17U';
 // Libro ANTIGUO, solo para la migracion de una vez. Comprueba que sea el correcto:
 // tiene que ser el que contiene la pestana "Clientes" con los 427 clientes.
 var ID_LIBRO_VIEJO = '1cvpLbD4cmX8TxdFeC5k4t_dqxfca5cj5y00DDIn597c';
+
+// Tema privado de ntfy.sh para las notificaciones push al celular. Cualquiera
+// que sepa este nombre puede leer o mandar avisos a este tema, asi que no lo
+// compartas fuera del negocio. Instala la app "ntfy" (gratis, Google Play o
+// App Store) y suscribete a este tema exacto para recibir los avisos.
+var NTFY_TOPIC = 'mi-negocio-627cd0a0591f';
 
 // ============================================================
 // MAPA DEL LIBRO
@@ -1997,7 +2188,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '3.8',
+        return json({ ok: true, message: 'Script activo', version: '3.9',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -2025,6 +2216,11 @@ function manejar(e) {
       case 'getMensajeros':    return json({ ok: true, mensajeros: getListaCatalogo(CAT.colMensajeros) });
       case 'getSocios':        return json({ ok: true, socios: getListaCatalogo(CAT.colSocios) });
       case 'getSaldosMensajeros': return json({ ok: true, saldos: getSaldosMensajeros() });
+
+      // --- notificaciones push (ntfy) ---
+      case 'probarNtfy':
+        enviarNtfy('🔔 Prueba', 'Si ves esto en tu celular, las notificaciones funcionan.');
+        return json({ ok: true });
 
       default:
         return json({ ok: false, error: 'Accion no reconocida: ' + accion });
@@ -2199,6 +2395,7 @@ function getOperaciones() {
     var nota = desarmarNota(fila[OP.nota - 1]);
     out.push({
       id: idApp,
+      opeNumero: fila[0],   // columna A, formula (numero correlativo)
       tipo: fila[OP.tipo - 1],
       cobro: fila[OP.donde - 1],
       cliente: fila[OP.clienteUsa - 1],
@@ -2796,6 +2993,93 @@ function aNumero(v) {
 
 function aSiNo(v) {
   return (v === true || v === 'Si' || v === 'si' || v === 1 || v === '1') ? 'Si' : 'No';
+}
+
+// ============================================================
+// NOTIFICACIONES PUSH (ntfy.sh)
+// ============================================================
+
+/**
+ * Manda un aviso push a traves de ntfy.sh. No hace falta cuenta ni claves:
+ * cualquiera que instale la app ntfy y se suscriba a NTFY_TOPIC recibe esto.
+ * Se usa el endpoint JSON (no headers) para que emojis y tildes no se rompan.
+ */
+function enviarNtfy(titulo, mensaje) {
+  try {
+    UrlFetchApp.fetch('https://ntfy.sh/', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        topic: NTFY_TOPIC, title: titulo, message: mensaje,
+        priority: 4, tags: ['motor_scooter']
+      }),
+      muteHttpExceptions: true
+    });
+  } catch (err) {
+    Logger.log('Error enviando ntfy: ' + err);
+  }
+}
+
+/**
+ * Revisa las operaciones Pendiente/En camino y avisa por ntfy las que ya
+ * llegaron a su fecha/hora de entrega. Pensada para correr sola cada minuto
+ * via un trigger de tiempo (ver configurarTriggerEntregas). Guarda en
+ * PropertiesService (no en el Sheet) cuales ya se avisaron, para no repetir
+ * el aviso en cada corrida — si se cambia la fecha/hora de una operacion ya
+ * avisada, se vuelve a avisar cuando llegue el nuevo horario.
+ */
+function revisarEntregasPendientes() {
+  var sh = hoja(OP.hoja);
+  var n = OP.ultima - OP.primera + 1;
+  var v = sh.getRange(OP.primera, 1, n, 21).getDisplayValues();
+  var props = PropertiesService.getScriptProperties();
+  var avisadas = JSON.parse(props.getProperty('avisadas') || '{}');
+  var ahora = new Date();
+  var cambiado = false;
+
+  for (var i = 0; i < n; i++) {
+    var fila = v[i];
+    var idApp = String(fila[OP.idApp - 1] || '').trim();
+    if (!idApp) continue;
+    var estado = deEstado(fila[OP.estado - 1]);
+    if (estado !== 'pendiente' && estado !== 'en_camino') continue;
+
+    var nota = desarmarNota(fila[OP.nota - 1]);
+    if (!nota.fecha) continue; // sin fecha de entrega, no hay nada que avisar
+
+    var horaEntrega = new Date(nota.fecha + 'T' + (nota.hora || '00:00'));
+    if (horaEntrega > ahora) continue; // todavia no llega
+
+    var clave = nota.fecha + ' ' + (nota.hora || '');
+    if (avisadas[idApp] === clave) continue; // ya se avisó para este horario
+    avisadas[idApp] = clave;
+    cambiado = true;
+
+    var cliente = fila[OP.clienteCuba - 1] || fila[OP.clienteUsa - 1] || 'Cliente';
+    var entrega = fila[OP.entrega - 1];
+    var partes = [cliente];
+    if (nota.municipio) partes.push(nota.municipio);
+    if (entrega) partes.push('$' + entrega);
+    if (nota.hora) partes.push(nota.hora);
+    enviarNtfy('🛵 Entrega pendiente', partes.join(' · '));
+  }
+
+  if (cambiado) props.setProperty('avisadas', JSON.stringify(avisadas));
+}
+
+/**
+ * EJECUTAR UNA SOLA VEZ a mano desde este editor (seleccionar la funcion en
+ * el desplegable de arriba y darle a Ejecutar). Crea el trigger que corre
+ * revisarEntregasPendientes() cada minuto. Es seguro volver a ejecutarla:
+ * borra cualquier trigger viejo de la misma funcion antes de crear el nuevo,
+ * asi que nunca queda duplicado.
+ */
+function configurarTriggerEntregas() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'revisarEntregasPendientes') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('revisarEntregasPendientes').timeBased().everyMinutes(1).create();
+  Logger.log('Listo: revisarEntregasPendientes() correra sola cada minuto.');
 }
 
 // ============================================================
