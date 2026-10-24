@@ -338,6 +338,91 @@ pero no se incluía en la respuesta) — **hace falta pegar de nuevo
 `negocio-contabilidad.gs` en Apps Script y crear una NUEVA implementación**
 para que este dato llegue.
 
+**Dashboard contaba operaciones en el mes equivocado (v18, 2026-10-08).**
+Tras el arreglo de sincronización (v17), Rafael reportó otro desajuste:
+Consolidación de septiembre daba 77 operaciones, pero el ranking del
+Dashboard decía 84 para el mismo mes. No era un problema de sincronización
+— era de **qué fecha se usa para decidir a qué mes pertenece cada
+operación**:
+
+- Consolidación filtra con `r.creado`, que viene de `getOperaciones()` en
+  el backend — la fecha real de la operación, sacada de la columna "Dia"
+  del Sheet. Esa es la fuente de verdad.
+- El Dashboard (ranking por mes y "Ganancia del mes") y la "Ganancia del
+  mes" de Envíos usaban `(r.fecha||r.creado||'')` — y `r.fecha` **no es la
+  fecha de la operación, es la fecha de ENTREGA** (opcional, la que se le
+  da al mensajero). Si una operación tenía fecha de entrega programada en
+  un mes distinto al de la operación real, se contaba en el mes de la
+  entrega en vez del mes real.
+- Arreglo: ambos sitios ahora usan `fechaOperacion(r)` (la misma función ya
+  usada para agrupar Envíos por día, que reconstruye la fecha real a partir
+  del campo "Día del mes") en vez de `r.fecha||r.creado`. Dashboard,
+  "Ganancia del mes" y Consolidación quedan consistentes entre sí.
+
+**Organización — tablero diario tipo Excel, con puente a Envíos (v19,
+2026-10-24).** Rafael subió su Excel "Entregas.xlsx" (3 hojas: EUA-Cuba,
+Cuba-EUA, De tío pa' cá) y pidió replicarlo en la app como una pestaña
+nueva, con posibilidad de editar/añadir/quitar filas. Se validó el diseño
+con una maqueta interactiva (artefacto de Claude) antes de tocar el código
+real, iterando varias rondas hasta que Rafael la aprobó.
+
+- **Nueva sección "Organización"**, 7.ª pestaña de la barra inferior
+  (`sec-organizacion`), con 3 sub-pestañas tipo pastilla (una por hoja del
+  Excel). Cada una muestra una **tabla real** (no tarjetas) con encabezados
+  agrupados igual que el Excel ("Envía"/"Recibe" con sub-columnas), con
+  scroll horizontal (`.tbl-wrap{overflow-x:auto}`) porque en el teléfono no
+  entran las 14 columnas de golpe.
+- **Dato nuevo, independiente de Envíos:** `db.organizacion = {eua:[],
+  cuba:[], tio:[]}`. A propósito **no se sincroniza con Google Sheets** —
+  vive solo en este teléfono, como un bloc de notas rápido, hasta que una
+  fila se manda a Envíos (que sí sincroniza). Si Daniela necesita ver lo
+  mismo desde su teléfono, hace falta otra ronda para agregarle
+  sincronización — no se ha hecho todavía.
+- **Autocompletado de nombres real:** los campos "Envía"/"Recibe" del
+  formulario de alta reutilizan `getAllClientNames()` y `findClientByName()`
+  — las mismas funciones del formulario de Envíos, no una lista inventada.
+  Al elegir el nombre de "Recibe", Dirección y Mensajería se autocompletan
+  del cliente guardado (mismo patrón que `seleccionarClienteOp()`), usando
+  la tabla `TARIFAS_MENSAJERIA` ya existente.
+- **Captura de transferencia / Confirmación nuestra:** solo existen en la
+  pestaña EUA-Cuba (es la única que las tiene en el Excel). Son celdas
+  tocables que alternan X/— (`toggleOrgCaptura`/`toggleOrgConfirm`).
+- **Botón "📤 Enviar" por fila** (columna "En el sistema"): abre el
+  formulario de Nueva operación de Envíos ya rellenado (cliente EEUU/Cuba,
+  dirección, municipio, entrega, mensajería, notas) vía `enviarOrgRow()`.
+  La fila de Organización solo se marca "✅ Enviado" **si la operación se
+  guarda de verdad** — se rastrea con `window._orgBridge` y se resuelve
+  dentro de `saveOp()`; si se cancela el formulario, la fila se queda como
+  estaba. Así nunca queda una fila marcada "enviada" sin la operación real
+  detrás.
+- **Tres resúmenes** (iconos junto a "+ Nuevo", `abrirResumenOrg()`):
+  💰 total a entregar agrupado por nombre de "Recibe"; 📋 cuántas filas
+  tienen Captura y cuáles faltan; ✅ lo mismo para Confirmación. Los tres
+  se calculan sobre la pestaña que se esté viendo. 📋/✅ solo aparecen en
+  EUA-Cuba.
+- Cada fila tiene su 🗑️ para borrarla (con confirmación).
+- **No requiere cambios en el backend** — todo esto es local (`index.html`
+  únicamente), así que esta ronda no necesita redesplegar Apps Script.
+
+**Pendiente de esta ronda (preguntas sin resolver, no bloquean el uso):**
+si el botón "Enviar" debería mandar la operación directa a Envíos sin
+abrir el formulario (hoy sí lo abre, para revisar mensajero/estado antes
+de guardar); si conviene que 💰 sume también las otras pestañas juntas en
+vez de solo la activa; y si hace falta sincronizar Organización entre
+teléfonos.
+
+**Aviso: esta ronda reveló que el arreglo del Dashboard (v18) se había
+perdido.** Al abrir la sesión para este cambio, `index.html` tenía el
+código de v17 (Consolidación) pero NO el de v18 (el fix de
+`fechaOperacion()` en Dashboard) — se había entregado por archivo pero
+Rafael aún no lo había subido a GitHub cuando la sesión anterior terminó,
+y el contenedor de esa sesión se perdió. Se volvió a aplicar el fix de v18
+dentro de esta misma entrega (v19), así que subiendo este archivo quedan
+los dos arreglos a la vez. Recordatorio: **la única copia confiable de lo
+que "ya quedó arreglado" es lo que está subido en GitHub** — si una sesión
+termina sin que Rafael suba el archivo entregado, ese cambio no existe
+todavía aunque el chat diga que sí se hizo.
+
 ### Pendiente inmediato
 
 - Confirmar que el backend real en script.google.com tiene pegado

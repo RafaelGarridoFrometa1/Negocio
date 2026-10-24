@@ -114,6 +114,35 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 .op-result{background:var(--g1);border:1px solid var(--g2);border-radius:6px;padding:.5rem .75rem;font-size:.9rem;font-weight:700;color:var(--g9)}
 .op-divider{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g4);margin:10px 0 8px;padding-top:10px;border-top:1px dashed var(--g2)}
 
+/* ── ORGANIZACIÓN ── */
+.sec-tools{display:flex;gap:.4rem;align-items:center}
+.icon-btn{width:2rem;height:2rem;border-radius:var(--rs);border:1.5px solid var(--g2);background:#fff;font-size:.95rem;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex-shrink:0}
+.chip{padding:.45rem .6rem;border-radius:var(--rs);font-size:.78rem;font-weight:600;border:1.5px solid var(--g2);background:#fff;color:var(--g4);cursor:pointer;text-align:center}
+.chip.on{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.1);background:#fff;margin-bottom:.75rem}
+table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100%}
+.tbl th,.tbl td{padding:.5rem .6rem;border-bottom:1px solid var(--g1);text-align:left}
+.tbl thead th{background:var(--g0);color:var(--g5);font-size:.62rem;text-transform:uppercase;letter-spacing:.02em;font-weight:700;border-bottom:1px solid var(--g2)}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tbl td.obs{white-space:normal;max-width:160px;color:var(--warn)}
+.tbl td.dim{color:var(--g3)}
+.chkcell{cursor:pointer;text-align:center;font-weight:700}
+.chkcell.yes{color:var(--ok)}
+.chkcell.no{color:var(--g3)}
+.org-del-btn{border:none;background:none;font-size:.85rem;cursor:pointer;opacity:.6}
+.org-send-btn{border:none;background:var(--pri);color:#fff;border-radius:6px;padding:.3rem .6rem;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.org-sent-bdg{color:var(--ok);font-weight:700;white-space:nowrap;font-size:.7rem}
+.sum-grand{background:var(--ok-bg);border-radius:var(--rs);padding:.6rem .875rem;margin-bottom:.75rem;display:flex;justify-content:space-between;font-weight:700;color:var(--ok)}
+.sum-row{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--g1);font-size:.85rem}
+.sum-row:last-child{border-bottom:none}
+.sum-row b{color:var(--ok)}
+.sum-grp-ttl{font-size:.7rem;font-weight:700;color:var(--g5);text-transform:uppercase;letter-spacing:.03em;margin:.75rem 0 .3rem}
+.sum-item{font-size:.82rem;padding:.3rem 0;border-bottom:1px solid var(--g1)}
+.sum-item:last-child{border-bottom:none}
+.sum-item.ok{color:var(--ok)}
+.sum-item.miss{color:var(--warn)}
+
 /* ── DAY GROUP (Envíos agrupados por día) ── */
 .day-hdr{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--g5);margin:1.1rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--g2)}
 .day-hdr:first-child{margin-top:0}
@@ -244,6 +273,64 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
       <div id="list-envios"></div>
     </div>
 
+    <!-- ORGANIZACIÓN -->
+    <div class="section" id="sec-organizacion">
+      <div class="sec-hdr">
+        <div class="sec-ttl">Organización</div>
+        <div class="sec-tools">
+          <button class="icon-btn" title="Resumen por persona a entregar" onclick="abrirResumenOrg('money')">💰</button>
+          <button class="icon-btn" id="org-btn-captura" title="Resumen de capturas" onclick="abrirResumenOrg('captura')">📋</button>
+          <button class="icon-btn" id="org-btn-confirm" title="Resumen de confirmaciones" onclick="abrirResumenOrg('confirm')">✅</button>
+          <button class="btn btn-ok btn-sm" onclick="toggleOrgAdd()" id="org-btn-nuevo">+ Nuevo</button>
+        </div>
+      </div>
+      <div class="sec-sub">Seguimiento rápido del día a día. Toca ✓/— para marcar capturas y confirmaciones, 🗑️ para borrar, y "Enviar" cuando una fila esté lista para pasar a Envíos.</div>
+
+      <div class="tmini">
+        <button class="tmi on" onclick="filterOrgTab('eua',this)">🇺🇸→🇨🇺 EUA–Cuba</button>
+        <button class="tmi" onclick="filterOrgTab('cuba',this)">🇨🇺→🇺🇸 Cuba–EUA</button>
+        <button class="tmi" onclick="filterOrgTab('tio',this)">👴 De tío pa' cá</button>
+      </div>
+
+      <div class="op-card" id="org-add-form" style="display:none">
+        <div class="op-card-ttl">➕ Nueva fila</div>
+        <div class="fgroup"><label class="flabel">Fecha</label><input type="text" class="finput" id="org-fecha" placeholder="dd/mm"></div>
+        <div class="frow">
+          <div class="dd-wrap">
+            <label class="flabel">Envía — Nombre</label>
+            <input type="text" class="finput" id="org-env-nombre" placeholder="Buscar cliente..." autocomplete="off"
+              oninput="filterOrgDD('env')" onfocus="openOrgDD('env')" onblur="setTimeout(function(){closeOrgDD('env')},200)">
+            <div class="dd-list" id="ddl-org-env"></div>
+          </div>
+          <div class="fgroup"><label class="flabel">Cant.</label><input type="text" class="finput" id="org-env-cant" placeholder="0.00"></div>
+        </div>
+        <div class="frow">
+          <div class="dd-wrap">
+            <label class="flabel">Recibe — Nombre</label>
+            <input type="text" class="finput" id="org-rec-nombre" placeholder="Buscar cliente..." autocomplete="off"
+              oninput="filterOrgDD('rec')" onfocus="openOrgDD('rec')" onblur="setTimeout(function(){closeOrgDD('rec')},200)">
+            <div class="dd-list" id="ddl-org-rec"></div>
+          </div>
+          <div class="fgroup"><label class="flabel">Entregar</label><input type="text" class="finput" id="org-entregar" placeholder="0.00"></div>
+        </div>
+        <div class="frow">
+          <div class="fgroup"><label class="flabel">Dirección</label><input type="text" class="finput" id="org-direccion" placeholder="Calle, número..."></div>
+          <div class="fgroup"><label class="flabel">Mensajería</label><input type="text" class="finput" id="org-mensaj" placeholder="0.00"></div>
+        </div>
+        <div class="frow" id="org-chk-row">
+          <button class="chip" id="org-chk-captura" onclick="toggleChip('org-chk-captura')">— Captura transf.</button>
+          <button class="chip" id="org-chk-confirm" onclick="toggleChip('org-chk-confirm')">— Confirmación</button>
+        </div>
+        <div class="fgroup"><label class="flabel">Observación</label><input type="text" class="finput" id="org-obs" placeholder="Opcional"></div>
+        <div class="frow">
+          <button class="btn btn-out" onclick="toggleOrgAdd()">Cancelar</button>
+          <button class="btn btn-pri" onclick="guardarOrgRow()">Guardar fila</button>
+        </div>
+      </div>
+
+      <div id="org-tbl-wrap"></div>
+    </div>
+
     <!-- ENTREGAS -->
     <div class="section" id="sec-entregas">
       <div class="sec-hdr"><div class="sec-ttl">Horario de entregas</div></div>
@@ -339,6 +426,7 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 
   <div class="tabs">
     <button class="tab active" onclick="showSection('envios',this)"><span class="tab-ico">📦</span><span>Envíos</span></button>
+    <button class="tab" onclick="showSection('organizacion',this)"><span class="tab-ico">🗂️</span><span>Organización</span></button>
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
     <button class="tab" onclick="showSection('mensajeros',this)"><span class="tab-ico">👤</span><span>Mensajeros</span></button>
     <button class="tab" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
@@ -614,6 +702,15 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 </div>
 </div>
 
+<!-- ══ MODAL: RESUMEN ORGANIZACIÓN ══ -->
+<div class="modal-bg" id="modal-org-resumen">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-org-resumen')">×</button>
+  <div class="modal-ttl" id="org-resumen-ttl">Resumen</div>
+  <div id="org-resumen-body"></div>
+</div>
+</div>
+
 <!-- ══ MODAL: SCRIPT ══ -->
 <div class="modal-bg" id="modal-script">
 <div class="modal">
@@ -645,11 +742,12 @@ select.finput{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xm
 var DB_KEY='negocio_db', AUTH_KEY='negocio_auth', GS_KEY='negocio_gs';
 
 // ══ DB ══
-var db = {envios:[], mensajeros:[], pagos:[], clientes:[]};
+var db = {envios:[], mensajeros:[], pagos:[], clientes:[], organizacion:{eua:[],cuba:[],tio:[]}};
 var sheetsClientes = [];
 var clienteFilter = 'todos';
 var envioFilter = 'todos';
 var entregaFilter = 'pendiente';
+var orgTab = 'eua';
 
 function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); updateDot(false); }
 function loadDB(){
@@ -658,7 +756,9 @@ function loadDB(){
   try{
     var g=JSON.parse(r)||{};
     // Se rellenan las claves que falten: una version antigua pudo guardar sin 'clientes'
-    db={ envios:g.envios||[], mensajeros:g.mensajeros||[], pagos:g.pagos||[], clientes:g.clientes||[] };
+    var org=g.organizacion||{};
+    db={ envios:g.envios||[], mensajeros:g.mensajeros||[], pagos:g.pagos||[], clientes:g.clientes||[],
+         organizacion:{eua:org.eua||[], cuba:org.cuba||[], tio:org.tio||[]} };
     Object.keys(g).forEach(function(k){ if(!(k in db)) db[k]=g[k]; });
   }catch(e){ console.error('No se pudo leer la base local:',e); }
 }
@@ -824,7 +924,7 @@ function initApp(){
 }
 
 function renderAll(){
-  renderEnvios(); renderEntregas(); renderMensajeros(); renderClientes();
+  renderEnvios(); renderEntregas(); renderMensajeros(); renderClientes(); renderOrganizacion();
   populateMensSelects();
 }
 
@@ -1087,6 +1187,14 @@ function saveOp(){
   saveDB();
   marcarPendiente(obj.id);
   empujarPendientes();
+  if(window._orgBridge){
+    var ob=window._orgBridge;
+    var orow=(db.organizacion[ob.tab]||[]).find(function(x){ return x.id===ob.id; });
+    if(orow) orow.enviado=true;
+    window._orgBridge=null;
+    saveDB();
+    renderOrganizacion();
+  }
   mostrarResumenMensajero(obj);
   closeModal('modal-op');
   clearOpForm();
@@ -1094,6 +1202,7 @@ function saveOp(){
 }
 
 function clearOpForm(){
+  window._orgBridge=null;
   var campos=['op-id','dd-usa','dd-cuba','op-telefono','op-direccion','op-notas','op-dep','op-ent','op-mens','op-hora'];
   campos.forEach(function(c){ document.getElementById(c).value=''; });
   document.getElementById('op-fecha').value=today();
@@ -1219,7 +1328,10 @@ function renderEnvios(){
   var conGanancia=all.filter(function(r){ return r.estado!=='devuelta'&&r.estado!=='cancelada'; });
   var totalGan=conGanancia.reduce(function(s,r){ return s+(r.ganancia||0); },0);
   var mesActual=today().slice(0,7);
-  var mesGan=conGanancia.filter(function(r){ return (r.fecha||r.creado||'').slice(0,7)===mesActual; })
+  // OJO: el mes se calcula con fechaOperacion() (campo "Dia del mes"), NUNCA con
+  // r.fecha (esa es la fecha de ENTREGA, opcional, que puede caer en otro mes
+  // distinto al de la operacion y descuadraba este total contra Consolidacion).
+  var mesGan=conGanancia.filter(function(r){ return fechaOperacion(r).slice(0,7)===mesActual; })
     .reduce(function(s,r){ return s+(r.ganancia||0); },0);
   document.getElementById('stats-envios').innerHTML=
     '<div class="stat"><div class="stat-val">'+all.length+'</div><div class="stat-lbl">Total envíos</div></div>'
@@ -1320,7 +1432,10 @@ function renderDashboard(){
   var conGanancia=all.filter(function(r){ return r.estado!=='devuelta'&&r.estado!=='cancelada'; });
   var totalGan=conGanancia.reduce(function(s,r){ return s+(r.ganancia||0); },0);
   var mesActual=today().slice(0,7);
-  var mesGan=conGanancia.filter(function(r){ return (r.fecha||r.creado||'').slice(0,7)===mesActual; })
+  // OJO: igual que en Envíos, el mes se calcula con fechaOperacion() (campo "Dia
+  // del mes"), NUNCA con r.fecha (fecha de ENTREGA, opcional, puede caer en otro
+  // mes y era lo que descuadraba este Dashboard contra Consolidación).
+  var mesGan=conGanancia.filter(function(r){ return fechaOperacion(r).slice(0,7)===mesActual; })
     .reduce(function(s,r){ return s+(r.ganancia||0); },0);
   document.getElementById('stats-dashboard').innerHTML=
     '<div class="stat"><div class="stat-val">'+all.length+'</div><div class="stat-lbl">Operaciones totales</div></div>'
@@ -1329,7 +1444,7 @@ function renderDashboard(){
 
   var porMes={};
   conGanancia.forEach(function(r){
-    var per=(r.fecha||r.creado||'').slice(0,7);
+    var per=fechaOperacion(r).slice(0,7);
     if(!per) return;
     if(!porMes[per]) porMes[per]={gan:0,n:0};
     porMes[per].gan+=r.ganancia||0;
@@ -1418,6 +1533,263 @@ function copiarConsolidacion(){
   var txt=document.getElementById('cons-txt').value;
   if(!txt||txt==='Buscando en la hoja...'){ alert('Primero genera la consolidación de un mes.'); return; }
   copiarTexto(txt);
+}
+
+// ══ ORGANIZACIÓN ══
+//
+// Vista rapida del dia a dia (como el Excel "Entregas"), separada de Envios:
+// aqui se anota todo segun va entrando, y cuando una fila esta lista se manda
+// a Envios con el boton "Enviar" (abre el formulario ya rellenado). No se
+// sincroniza con Google Sheets: vive solo en este telefono, igual que
+// db.envios antes de pulsar "Sincronizar".
+var orgRecMunicipio = '';
+
+function filterOrgTab(tab, btn){
+  orgTab = tab;
+  document.querySelectorAll('#sec-organizacion .tmini .tmi').forEach(function(b){ b.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+  renderOrganizacion();
+}
+
+function toggleChip(id){
+  var b = document.getElementById(id);
+  var on = !b.classList.contains('on');
+  b.classList.toggle('on', on);
+  b.textContent = (on?'✓':'—') + (id==='org-chk-captura' ? ' Captura transf.' : ' Confirmación');
+}
+
+function toggleOrgAdd(){
+  var box = document.getElementById('org-add-form');
+  var abrir = box.style.display==='none';
+  box.style.display = abrir ? 'block' : 'none';
+  if(abrir) limpiarOrgForm();
+}
+
+function limpiarOrgForm(){
+  ['org-env-nombre','org-env-cant','org-rec-nombre','org-entregar','org-direccion','org-mensaj','org-obs'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  var p = today().split('-');
+  document.getElementById('org-fecha').value = p[2]+'/'+p[1];
+  orgRecMunicipio='';
+  ['org-chk-captura','org-chk-confirm'].forEach(function(id){
+    var b=document.getElementById(id);
+    b.classList.remove('on');
+  });
+  document.getElementById('org-chk-captura').textContent='— Captura transf.';
+  document.getElementById('org-chk-confirm').textContent='— Confirmación';
+}
+
+// Autocompletado de nombres: la misma lista de clientes del formulario de Envios.
+function openOrgDD(which){ filterOrgDD(which); }
+function closeOrgDD(which){ document.getElementById('ddl-org-'+which).classList.remove('open'); }
+
+function filterOrgDD(which){
+  var inputId = which==='env' ? 'org-env-nombre' : 'org-rec-nombre';
+  var q = txt(document.getElementById(inputId).value).toLowerCase().trim();
+  var list = document.getElementById('ddl-org-'+which);
+  var names = getAllClientNames();
+  var filtered = q ? names.filter(function(n){ return txt(n).toLowerCase().indexOf(q)>=0; }) : names;
+  list.innerHTML='';
+  if(!filtered.length){
+    var emp=document.createElement('div'); emp.className='dd-empty';
+    emp.textContent = q ? 'Sin resultados — puedes escribir el nombre directamente' : 'Sin clientes aún';
+    list.appendChild(emp);
+    list.classList.add('open'); return;
+  }
+  filtered.slice(0,50).forEach(function(c){
+    var d=document.createElement('div'); d.className='dd-item';
+    if(q){
+      var idx=txt(c).toLowerCase().indexOf(q);
+      d.innerHTML=c.slice(0,idx)+'<strong>'+c.slice(idx,idx+q.length)+'</strong>'+c.slice(idx+q.length);
+    } else { d.textContent=c; }
+    d.onmousedown=function(e){ e.preventDefault(); document.getElementById(inputId).value=c; closeOrgDD(which); seleccionarClienteOrg(which,c); };
+    list.appendChild(d);
+  });
+  list.classList.add('open');
+}
+
+// Al elegir el cliente de "Recibe", autocompletar Direccion y Mensajeria —
+// igual que seleccionarClienteOp() hace en el formulario de Envios.
+function seleccionarClienteOrg(which, nombre){
+  if(which!=='rec') return;
+  var cliente = findClientByName(nombre);
+  if(!cliente) return;
+  if(cliente.direccion) document.getElementById('org-direccion').value = cliente.direccion;
+  orgRecMunicipio = cliente.municipio||'';
+  if(cliente.municipio && TARIFAS_MENSAJERIA[cliente.municipio]!==undefined){
+    document.getElementById('org-mensaj').value = TARIFAS_MENSAJERIA[cliente.municipio];
+  }
+}
+
+function guardarOrgRow(){
+  var envNombre = document.getElementById('org-env-nombre').value.trim();
+  var recNombre = document.getElementById('org-rec-nombre').value.trim();
+  if(!envNombre && !recNombre){ alert('Introduce al menos un nombre (Envía o Recibe).'); return; }
+  var rows = db.organizacion[orgTab];
+  var maxNo = rows.reduce(function(m,r){ return Math.max(m, parseInt(r.no,10)||0); }, 0);
+  var row = {
+    id: uid(), no: maxNo+1,
+    fecha: document.getElementById('org-fecha').value.trim(),
+    envNombre: envNombre,
+    envCant: document.getElementById('org-env-cant').value.trim(),
+    recNombre: recNombre,
+    entregar: document.getElementById('org-entregar').value.trim(),
+    direccion: document.getElementById('org-direccion').value.trim(),
+    municipio: orgRecMunicipio,
+    mensaj: document.getElementById('org-mensaj').value.trim(),
+    obs: document.getElementById('org-obs').value.trim(),
+    captura: document.getElementById('org-chk-captura').classList.contains('on'),
+    confirm: document.getElementById('org-chk-confirm').classList.contains('on'),
+    enviado: false
+  };
+  rows.push(row);
+  saveDB();
+  toggleOrgAdd();
+  renderOrganizacion();
+}
+
+function borrarOrgRow(tab,id){
+  if(!confirm('¿Eliminar esta fila?')) return;
+  db.organizacion[tab] = db.organizacion[tab].filter(function(r){ return r.id!==id; });
+  saveDB();
+  renderOrganizacion();
+}
+
+function toggleOrgCaptura(tab,id){
+  var r = db.organizacion[tab].find(function(x){ return x.id===id; });
+  if(!r) return;
+  r.captura = !r.captura;
+  saveDB();
+  renderOrganizacion();
+}
+
+function toggleOrgConfirm(tab,id){
+  var r = db.organizacion[tab].find(function(x){ return x.id===id; });
+  if(!r) return;
+  r.confirm = !r.confirm;
+  saveDB();
+  renderOrganizacion();
+}
+
+// Puente a Envios: abre el formulario de Nueva operacion ya rellenado con los
+// datos de esta fila. La fila solo se marca "Enviado" si de verdad se guarda
+// la operacion (ver el bloque en saveOp() que revisa window._orgBridge) — si
+// se cancela el formulario, esta fila se queda como estaba.
+function enviarOrgRow(tab,id){
+  var r = db.organizacion[tab].find(function(x){ return x.id===id; });
+  if(!r) return;
+  clearOpForm();
+  document.getElementById('dd-usa').value = r.envNombre||'';
+  document.getElementById('dd-cuba').value = r.recNombre||'';
+  document.getElementById('op-direccion').value = r.direccion||'';
+  if(r.municipio) document.getElementById('op-municipio').value = r.municipio;
+  var mFecha = String(r.fecha||'').match(/^(\d{1,2})\/(\d{1,2})/);
+  if(mFecha) document.getElementById('op-dia').value = parseInt(mFecha[1],10);
+  var ent = parseFloat(String(r.entregar).replace(/,/g,'')) || 0;
+  if(ent) document.getElementById('op-ent').value = ent;
+  if(r.mensaj!==undefined && String(r.mensaj).trim()!==''){
+    opMensAuto = false;
+    document.getElementById('op-mens').value = r.mensaj;
+  }
+  document.getElementById('op-notas').value = r.obs||'';
+  calcularDeposito();
+  window._orgBridge = {tab:tab, id:id};
+  document.getElementById('op-modal-ttl').textContent='Nueva operación (de Organización)';
+  openModal('modal-op');
+}
+
+function renderOrganizacion(){
+  var wrap = document.getElementById('org-tbl-wrap');
+  if(!wrap) return; // seccion todavia no esta en el DOM (no deberia pasar, defensivo)
+  var hasChk = orgTab==='eua';
+  var labelEnv = orgTab==='tio' ? 'Enviamos a' : 'Envía';
+  var labelRec = orgTab==='tio' ? 'Nos entrega' : 'Recibe';
+  var labelEntregar = orgTab==='tio' ? 'Recibimos' : 'Entregar';
+  var rows = db.organizacion[orgTab]||[];
+
+  var btnCaptura=document.getElementById('org-btn-captura'), btnConfirm=document.getElementById('org-btn-confirm'),
+      chkRow=document.getElementById('org-chk-row');
+  if(btnCaptura) btnCaptura.style.display = hasChk?'':'none';
+  if(btnConfirm) btnConfirm.style.display = hasChk?'':'none';
+  if(chkRow) chkRow.style.display = hasChk?'':'none';
+
+  var thead = '<tr>'
+    +'<th rowspan="2">No</th><th rowspan="2">Fecha</th>'
+    +'<th colspan="2">'+labelEnv+'</th>'
+    +'<th colspan="3">'+labelRec+'</th>'
+    +(hasChk?'<th rowspan="2">Captura<br>transf.</th><th rowspan="2">Confirm.<br>nuestra</th>':'')
+    +'<th rowspan="2">Observación</th>'
+    +'<th rowspan="2">En el<br>sistema</th>'
+    +'<th rowspan="2"></th>'
+    +'</tr><tr><th>Nombre</th><th>Cant.</th><th>Nombre</th><th>'+labelEntregar+'</th><th>Dirección / Mensaj.</th></tr>';
+
+  var body = '';
+  if(!rows.length){
+    body = '<tr><td colspan="'+(hasChk?12:10)+'" style="text-align:center;color:var(--g4);padding:1rem">Sin filas todavía</td></tr>';
+  } else {
+    rows.forEach(function(r){
+      var dirMens = (r.direccion||'—')+' · '+((r.mensaj!==undefined && String(r.mensaj).trim()!=='')?r.mensaj:'—');
+      body += '<tr>'
+        +'<td>'+r.no+'</td><td>'+(r.fecha||'')+'</td>'
+        +'<td>'+txt(r.envNombre)+'</td><td class="num">'+txt(r.envCant)+'</td>'
+        +'<td>'+txt(r.recNombre)+'</td><td class="num">'+txt(r.entregar)+'</td>'
+        +'<td>'+dirMens+'</td>';
+      if(hasChk){
+        body += '<td class="chkcell '+(r.captura?'yes':'no')+'" onclick="toggleOrgCaptura(\''+orgTab+'\',\''+r.id+'\')">'+(r.captura?'X':'—')+'</td>'
+              + '<td class="chkcell '+(r.confirm?'yes':'no')+'" onclick="toggleOrgConfirm(\''+orgTab+'\',\''+r.id+'\')">'+(r.confirm?'X':'—')+'</td>';
+      }
+      body += '<td class="obs">'+txt(r.obs)+'</td>'
+        +'<td>'+(r.enviado
+            ? '<span class="org-sent-bdg">✅ Enviado</span>'
+            : '<button class="org-send-btn" onclick="enviarOrgRow(\''+orgTab+'\',\''+r.id+'\')">📤 Enviar</button>')+'</td>'
+        +'<td><button class="org-del-btn" onclick="borrarOrgRow(\''+orgTab+'\',\''+r.id+'\')">🗑️</button></td>'
+        +'</tr>';
+    });
+  }
+
+  wrap.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead>'+thead+'</thead><tbody>'+body+'</tbody></table></div>';
+}
+
+function abrirResumenOrg(tipo){
+  var rows = db.organizacion[orgTab]||[];
+  var ttl = document.getElementById('org-resumen-ttl');
+  var body = document.getElementById('org-resumen-body');
+  var html = '';
+
+  if(tipo==='money'){
+    ttl.textContent = '💰 Por entregar, por persona';
+    var porNombre = {};
+    rows.forEach(function(r){
+      var nom = txt(r.recNombre).trim();
+      if(!nom) return;
+      var n = parseFloat(String(r.entregar).replace(/,/g,''))||0;
+      porNombre[nom] = (porNombre[nom]||0) + n;
+    });
+    var lista = Object.keys(porNombre).map(function(n){ return {nombre:n, total:porNombre[n]}; })
+      .sort(function(a,b){ return b.total-a.total; });
+    var totalGeneral = lista.reduce(function(s,x){ return s+x.total; },0);
+    html += '<div class="sum-grand"><span>Total pendiente</span><span>'+fmtMoney(totalGeneral)+'</span></div>';
+    if(!lista.length) html += '<div class="sum-item" style="color:var(--g4)">No hay nombres de "Recibe" en esta pestaña todavía.</div>';
+    else lista.forEach(function(x){ html += '<div class="sum-row"><span>'+txt(x.nombre)+'</span><b>'+fmtMoney(x.total)+'</b></div>'; });
+  } else {
+    var campo = tipo==='captura' ? 'captura' : 'confirm';
+    var etiqueta = tipo==='captura' ? 'Captura de transferencia' : 'Confirmación nuestra';
+    var icono = tipo==='captura' ? '📋' : '✅';
+    ttl.textContent = icono+' '+etiqueta;
+    var ok = rows.filter(function(r){ return r[campo]; });
+    var miss = rows.filter(function(r){ return !r[campo]; });
+    html += '<div class="sum-grand"><span>Completas</span><span>'+ok.length+' de '+rows.length+'</span></div>';
+    html += '<div class="sum-grp-ttl">⚠️ Faltan ('+miss.length+')</div>';
+    if(!miss.length) html += '<div class="sum-item" style="color:var(--g4)">Ninguna, todas completas.</div>';
+    else miss.forEach(function(r){ html += '<div class="sum-item miss">#'+r.no+' · '+txt(r.envNombre)+' → '+txt(r.recNombre)+'</div>'; });
+    html += '<div class="sum-grp-ttl">✓ Completas ('+ok.length+')</div>';
+    if(!ok.length) html += '<div class="sum-item" style="color:var(--g4)">Ninguna todavía.</div>';
+    else ok.forEach(function(r){ html += '<div class="sum-item ok">#'+r.no+' · '+txt(r.envNombre)+' → '+txt(r.recNombre)+'</div>'; });
+  }
+
+  body.innerHTML = html;
+  openModal('modal-org-resumen');
 }
 
 // ══ MENSAJEROS ══
@@ -1695,7 +2067,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v17 · 2026-09-29';
+var APP_VERSION='v19 · 2026-10-24';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
