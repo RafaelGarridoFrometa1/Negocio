@@ -293,7 +293,8 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       </div>
 
       <div class="op-card" id="org-add-form" style="display:none">
-        <div class="op-card-ttl">➕ Nueva fila</div>
+        <div class="op-card-ttl" id="org-form-ttl">➕ Nueva fila</div>
+        <input type="hidden" id="org-edit-id">
         <div class="fgroup"><label class="flabel">Fecha</label><input type="text" class="finput" id="org-fecha" placeholder="dd/mm"></div>
         <div class="frow">
           <div class="dd-wrap">
@@ -1641,6 +1642,8 @@ function toggleOrgAdd(){
 }
 
 function limpiarOrgForm(){
+  document.getElementById('org-edit-id').value='';
+  document.getElementById('org-form-ttl').textContent='➕ Nueva fila';
   ['org-env-nombre','org-env-cant','org-rec-nombre','org-entregar','org-direccion','org-mensaj','org-obs'].forEach(function(id){
     document.getElementById(id).value='';
   });
@@ -1653,6 +1656,31 @@ function limpiarOrgForm(){
   });
   document.getElementById('org-chk-captura').textContent='— Captura transf.';
   document.getElementById('org-chk-confirm').textContent='— Confirmación';
+}
+
+// Rellena el formulario con los datos de una fila ya existente para
+// modificarla. guardarOrgRow() distingue si es alta o edicion por
+// org-edit-id — nunca por si el formulario estaba abierto o cerrado.
+function editarOrgRow(tab,id){
+  var r = db.organizacion[tab].find(function(x){ return x.id===id; });
+  if(!r) return;
+  document.getElementById('org-edit-id').value = id;
+  document.getElementById('org-form-ttl').textContent = '✏️ Editar fila';
+  document.getElementById('org-fecha').value = r.fecha||'';
+  document.getElementById('org-env-nombre').value = r.envNombre||'';
+  document.getElementById('org-env-cant').value = r.envCant||'';
+  document.getElementById('org-rec-nombre').value = r.recNombre||'';
+  document.getElementById('org-entregar').value = r.entregar||'';
+  document.getElementById('org-direccion').value = r.direccion||'';
+  document.getElementById('org-mensaj').value = r.mensaj||'';
+  document.getElementById('org-obs').value = r.obs||'';
+  orgRecMunicipio = r.municipio||'';
+  var bc=document.getElementById('org-chk-captura'), bf=document.getElementById('org-chk-confirm');
+  bc.classList.toggle('on', !!r.captura); bc.textContent=(r.captura?'✓':'—')+' Captura transf.';
+  bf.classList.toggle('on', !!r.confirm); bf.textContent=(r.confirm?'✓':'—')+' Confirmación';
+  var box=document.getElementById('org-add-form');
+  box.style.display='block';
+  box.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // Autocompletado de nombres: la misma lista de clientes del formulario de Envios.
@@ -1701,10 +1729,9 @@ function guardarOrgRow(){
   var envNombre = document.getElementById('org-env-nombre').value.trim();
   var recNombre = document.getElementById('org-rec-nombre').value.trim();
   if(!envNombre && !recNombre){ alert('Introduce al menos un nombre (Envía o Recibe).'); return; }
+  var editId = document.getElementById('org-edit-id').value;
   var rows = db.organizacion[orgTab];
-  var maxNo = rows.reduce(function(m,r){ return Math.max(m, parseInt(r.no,10)||0); }, 0);
-  var row = {
-    id: uid(), no: maxNo+1,
+  var campos = {
     fecha: document.getElementById('org-fecha').value.trim(),
     envNombre: envNombre,
     envCant: document.getElementById('org-env-cant').value.trim(),
@@ -1715,10 +1742,17 @@ function guardarOrgRow(){
     mensaj: document.getElementById('org-mensaj').value.trim(),
     obs: document.getElementById('org-obs').value.trim(),
     captura: document.getElementById('org-chk-captura').classList.contains('on'),
-    confirm: document.getElementById('org-chk-confirm').classList.contains('on'),
-    enviado: false
+    confirm: document.getElementById('org-chk-confirm').classList.contains('on')
   };
-  rows.push(row);
+  if(editId){
+    // Edicion: se pisan los campos del formulario, sin tocar id/no/enviado.
+    var idx = rows.findIndex(function(r){ return r.id===editId; });
+    if(idx===-1){ alert('Esta fila ya no existe (puede que se haya borrado).'); }
+    else rows[idx] = Object.assign({}, rows[idx], campos);
+  } else {
+    var maxNo = rows.reduce(function(m,r){ return Math.max(m, parseInt(r.no,10)||0); }, 0);
+    rows.push(Object.assign({id:uid(), no:maxNo+1, enviado:false}, campos));
+  }
   saveDB();
   toggleOrgAdd();
   renderOrganizacion();
@@ -1807,11 +1841,12 @@ function renderOrganizacion(){
     +'<th rowspan="2">Observación</th>'
     +'<th rowspan="2">En el<br>sistema</th>'
     +'<th rowspan="2"></th>'
+    +'<th rowspan="2"></th>'
     +'</tr><tr><th>Nombre</th><th>Cant.</th><th>Nombre</th><th>'+labelEntregar+'</th><th>Dirección / Mensaj.</th></tr>';
 
   var body = '';
   if(!rows.length){
-    body = '<tr><td colspan="'+(hasChk?12:10)+'" style="text-align:center;color:var(--g4);padding:1rem">Sin filas todavía</td></tr>';
+    body = '<tr><td colspan="'+(hasChk?13:11)+'" style="text-align:center;color:var(--g4);padding:1rem">Sin filas todavía</td></tr>';
   } else {
     rows.forEach(function(r){
       var dirMens = (r.direccion||'—')+' · '+((r.mensaj!==undefined && String(r.mensaj).trim()!=='')?r.mensaj:'—');
@@ -1829,7 +1864,8 @@ function renderOrganizacion(){
         +'<td>'+(r.enviado
             ? '<span class="org-sent-bdg">✅ Enviado</span>'
             : '<button class="org-send-btn" onclick="enviarOrgRow(\''+orgTab+'\',\''+r.id+'\')">📤 Enviar</button>')+'</td>'
-        +'<td><button class="org-del-btn" onclick="borrarOrgRow(\''+orgTab+'\',\''+r.id+'\')">🗑️</button></td>'
+        +'<td><button class="org-del-btn" onclick="editarOrgRow(\''+orgTab+'\',\''+r.id+'\')" title="Editar">✏️</button></td>'
+        +'<td><button class="org-del-btn" onclick="borrarOrgRow(\''+orgTab+'\',\''+r.id+'\')" title="Borrar">🗑️</button></td>'
         +'</tr>';
     });
   }
@@ -2077,7 +2113,12 @@ function abrirInfoCliente(nombre){
     entregada:'<span class="bdg bdg-ok">Entregada</span>',devuelta:'<span class="bdg bdg-warn">Devuelta</span>',
     cancelada:'<span class="bdg" style="background:var(--err-bg);color:var(--err)">Cancelada</span>'};
 
-  var frec=frecuenciaDiasCliente(c);
+  // Preferir la frecuencia calculada de los pedidos reales (abajo) sobre la
+  // del Sheet: esta ultima necesita que Apps Script este redesplegado con
+  // Primera Compra/Compras Totales, y mientras eso no pase se queda en
+  // blanco aunque la lista de pedidos de esta misma ficha muestre varios.
+  var frecTodos=frecuenciaDesdeFechas(pedidos.map(function(r){ return fechaOperacion(r); }));
+  var frec=frecTodos!==null?frecTodos:frecuenciaDiasCliente(c);
   var dCompra=diasHastaProximaCompra(c);
   var dCumple=diasHastaCumple(c);
 
@@ -2088,6 +2129,10 @@ function abrirInfoCliente(nombre){
   var enviosComoRemitente=pedidos.filter(function(r){
     return txt(r.cliente).toLowerCase().trim()===txt(nombre).toLowerCase().trim() && r.estado!=='cancelada';
   });
+  // Calculada de las fechas reales de ESTOS envios (no de Primera/Ultima Compra
+  // del Sheet): asi siempre coincide con la lista de pedidos de abajo y no
+  // depende de haber redesplegado Apps Script para tener Compras Totales.
+  var frecEnviado=frecuenciaDesdeFechas(enviosComoRemitente.map(function(r){ return fechaOperacion(r); }));
   var promedioEnviado = enviosComoRemitente.length
     ? enviosComoRemitente.reduce(function(s,r){ return s+(parseFloat(r.depositar)||0); },0) / enviosComoRemitente.length
     : null;
@@ -2105,7 +2150,7 @@ function abrirInfoCliente(nombre){
     +(c.seguimiento?'📞 Seguimiento: '+c.seguimiento+'<br>':'')
     +(isFinite(diasSinOperarNum(c))?'⏳ Días sin operar: '+c.diasSinOperar+'<br>':'')
     +(frec?'🔁 Compra cada ~'+Math.round(frec)+' días'+(dCompra!==null?' (próxima: '+(dCompra<0?'hace '+(-dCompra)+'d':dCompra===0?'hoy':'en '+dCompra+'d')+')':'')+'<br>':'')
-    +(promedioEnviado!==null?'💵 Envía en promedio '+fmtMoney(promedioEnviado)+(frec?' cada ~'+Math.round(frec)+' días':'')+' ('+enviosComoRemitente.length+' envío'+(enviosComoRemitente.length===1?'':'s')+')<br>':'')
+    +(promedioEnviado!==null?'💵 Envía en promedio '+fmtMoney(promedioEnviado)+(frecEnviado?' cada ~'+Math.round(frecEnviado)+' días':'')+' ('+enviosComoRemitente.length+' envío'+(enviosComoRemitente.length===1?'':'s')+')<br>':'')
     +(c.nota?'📝 '+c.nota:'')
     +'</div></div>';
 
@@ -2174,6 +2219,20 @@ function frecuenciaDiasCliente(c){
   var dias=Math.round((d2-d1)/86400000);
   if(dias<=0) return null;
   return dias/(total-1);
+}
+
+// Igual idea que frecuenciaDiasCliente() pero calculada directo de una lista
+// de fechas (aaaa-mm-dd) que ya se tiene a mano — no depende de que el Sheet
+// ya haya calculado Primera Compra/Compras Totales. Se usa en la ficha de
+// cliente (abrirInfoCliente), donde ya se tienen las fechas reales de sus
+// envios y siempre debe coincidir con lo que se ve en esa misma lista.
+function frecuenciaDesdeFechas(fechas){
+  if(fechas.length<2) return null;
+  var ordenadas=fechas.slice().sort();
+  var d1=new Date(ordenadas[0]), d2=new Date(ordenadas[ordenadas.length-1]);
+  var dias=Math.round((d2-d1)/86400000);
+  if(dias<=0) return null;
+  return dias/(ordenadas.length-1);
 }
 
 // Dias que faltan (negativo = ya se pasó) para la proxima compra esperada,
@@ -2293,8 +2352,11 @@ function renderClientes(){
           }).join('')
         +'</select></div>';
     }
-    var waNum=enSeguimiento?telWhatsapp(c.telefono):'';
-    var waBtn=waNum?'<a class="btn btn-ok btn-sm" style="display:block;text-align:center;text-decoration:none;margin-top:.5rem" target="_blank" rel="noopener" href="https://wa.me/'+waNum+'?text='+encodeURIComponent(MSG_REACTIVACION)+'">📲 Escribir por WhatsApp</a>':'';
+    // Numero de WhatsApp calculado siempre (no solo en Inactivos/Perdidos): lo
+    // usan tanto el boton grande de reactivacion como el boton corto de
+    // contacto directo que ahora sale en todas las tarjetas.
+    var waNumero=telWhatsapp(c.telefono);
+    var waBtn=(enSeguimiento&&waNumero)?'<a class="btn btn-ok btn-sm" style="display:block;text-align:center;text-decoration:none;margin-top:.5rem" target="_blank" rel="noopener" href="https://wa.me/'+waNumero+'?text='+encodeURIComponent(MSG_REACTIVACION)+'">📲 Escribir por WhatsApp</a>':'';
     return '<div class="'+cls+'">'
       +'<div class="item-hdr"><div class="item-name">'+c.nombre+'</div><div style="display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end">'+rBdg+estBdg+'</div></div>'
       +'<div class="item-detail">'
@@ -2310,6 +2372,7 @@ function renderClientes(){
       +seguimientoBox
       +waBtn
       +'<div class="item-actions">'
+        +(waNumero?'<a class="btn btn-ok btn-sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/'+waNumero+'">📲 WhatsApp</a>':'')
         +'<button class="btn btn-out btn-sm" onclick="abrirInfoCliente(\''+c.nombre.replace(/'/g,"\\'")+'\')">ℹ️ Info</button>'
         +'<button class="btn btn-out btn-sm" onclick="editCliente(\''+c.nombre.replace(/'/g,"\\'")+'\')">Editar</button>'
         +(!c.fromSheets?'<button class="btn btn-err btn-sm" onclick="deleteCliente(\''+c.id+'\')">Borrar</button>':'')
@@ -2330,7 +2393,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v24 · 2026-10-28';
+var APP_VERSION='v26 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
