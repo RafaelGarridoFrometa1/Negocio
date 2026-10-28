@@ -2183,8 +2183,11 @@ function abrirInfoCliente(nombre){
   var listaHistorial = !notas.length
     ? '<div class="empty" style="padding:1rem"><div class="empty-ico">📇</div><div>Sin notas todavía</div></div>'
     : notas.map(function(n){
+        var bdgTipo = n.tipo==='venta'
+          ? '<span class="bdg bdg-ok">💰 Acción de venta</span>'
+          : '<span class="bdg bdg-pri">📝 Contacto</span>';
         return '<div class="item" style="padding:.6rem .75rem">'
-          +'<div class="item-detail">'+(n.fecha?'📅 '+fmtDate(n.fecha)+'<br>':'')+txt(n.texto)+'</div></div>';
+          +'<div class="item-detail">'+bdgTipo+(n.fecha?' · 📅 '+fmtDate(n.fecha):'')+'<br>'+txt(n.texto)+'</div></div>';
       }).join('');
 
   document.getElementById('info-cliente-ttl').textContent=c.nombre;
@@ -2198,27 +2201,36 @@ function abrirInfoCliente(nombre){
         +'<label class="flabel">Nueva nota</label>'
         +'<input type="text" class="finput" id="hist-nueva-nota" placeholder="Ej: Contactado por WhatsApp, interesado en diciembre">'
       +'</div>'
-      +'<button class="btn btn-pri btn-sm" onclick="agregarHistorialCliente(\''+c.nombre.replace(/'/g,"\\'")+'\')">+ Agregar nota</button>'
+      +'<div class="frow">'
+        +'<button class="btn btn-out btn-sm" onclick="agregarHistorialCliente(\''+c.nombre.replace(/'/g,"\\'")+'\',\'general\')">📝 Agregar nota</button>'
+        +'<button class="btn btn-ok btn-sm" onclick="agregarHistorialCliente(\''+c.nombre.replace(/'/g,"\\'")+'\',\'venta\')">💰 Acción de venta</button>'
+      +'</div>'
     +'</div>';
   openModal('modal-cliente-info');
 }
 
 // El historial se guarda en una sola celda como texto, una nota por linea:
-// "aaaa-mm-dd | texto". Mas nueva primero. parseHistorialCliente() lo separa
-// de vuelta en {fecha, texto} para pintarlo.
+// "aaaa-mm-dd | [VENTA] texto" para una accion de venta, o "aaaa-mm-dd | texto"
+// para un contacto/observacion normal. Mas nueva primero.
+// parseHistorialCliente() lo separa de vuelta en {fecha, texto, tipo}.
 function parseHistorialCliente(c){
   return String(c.historial||'').split('\n').map(function(l){ return l.trim(); }).filter(Boolean).map(function(l){
     var i=l.indexOf('|');
-    if(i===-1) return {fecha:'', texto:l};
-    return {fecha:l.slice(0,i).trim(), texto:l.slice(i+1).trim()};
+    var fecha = i===-1 ? '' : l.slice(0,i).trim();
+    var resto = i===-1 ? l : l.slice(i+1).trim();
+    var tipo='general';
+    if(resto.indexOf('[VENTA]')===0){ tipo='venta'; resto=resto.slice(7).trim(); }
+    return {fecha:fecha, texto:resto, tipo:tipo};
   });
 }
 
 // Agrega una nota nueva ENCIMA de las que ya había (nunca se pierde nada de
 // lo escrito antes) y manda la celda entera al Sheet — igual patron que
-// guardarCumpleCliente(). Al terminar se vuelve a abrir la misma ficha para
-// que se vea la nota recien guardada sin tener que cerrar y volver a entrar.
-function agregarHistorialCliente(nombre){
+// guardarCumpleCliente(). "tipo" distingue una accion de venta de una nota
+// de contacto normal (se guarda como prefijo [VENTA] en la linea). Al
+// terminar se vuelve a abrir la misma ficha para que se vea la nota recien
+// guardada sin tener que cerrar y volver a entrar.
+function agregarHistorialCliente(nombre, tipo){
   var input=document.getElementById('hist-nueva-nota');
   var texto=input.value.trim();
   if(!texto){ alert('Escribe algo antes de guardar.'); return; }
@@ -2226,12 +2238,14 @@ function agregarHistorialCliente(nombre){
   if(!url||!navigator.onLine){ alert('Sin conexión: no se pudo guardar la nota.'); return; }
   var c=findClientByName(nombre);
   if(!c) return;
-  var nuevaLinea=today()+' | '+texto;
+  var etiqueta = tipo==='venta' ? '[VENTA] ' : '';
+  var nuevaLinea=today()+' | '+etiqueta+texto;
   var historialNuevo=nuevaLinea+(c.historial?('\n'+c.historial):'');
   enviarAlScript(url,{action:'setHistorial',cliente:{nombre:nombre,valor:historialNuevo}})
     .then(function(res){
       if(!res||res.ok===false) throw new Error((res&&res.error)||'el script rechazó el cambio');
       c.historial=historialNuevo;
+      input.value='';
       abrirInfoCliente(nombre);
     })
     .catch(function(e){ alert('❌ No se pudo guardar la nota.\n\n'+(e&&e.message?e.message:e)); });
@@ -2497,7 +2511,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v28 · 2026-10-28';
+var APP_VERSION='v29 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');

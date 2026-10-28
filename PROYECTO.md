@@ -60,7 +60,7 @@ T  Nota
 U  ID App                 llave de sincronización (la escribe la app)
 ```
 
-### Clientes (23 columnas, filas 6–805)
+### Clientes (24 columnas, filas 6–805)
 
 ```
 A  ID Cliente        FÓRMULA — CL-0001, CL-0002...
@@ -80,13 +80,15 @@ L–T                  FÓRMULAS: Primera Compra, Antigüedad, Última Compra,
 U  ID App
 V  Seguimiento       manual: Contactado 1/2/3 veces, Perdido (añadida v14, CLI_ANCHO_LECTURA)
 W  Cumpleaños        manual: fecha aaaa-mm-dd, formato forzado a texto (añadida v21)
+X  Historial de contacto y ventas   manual: texto libre, una nota por línea
+                     ("aaaa-mm-dd | texto", más nueva primero) — añadida v28
 ```
 
 **B..K es lo único que `sincronizarClientes()`/`guardarCliente()` escriben en bloque
-(`CLI.ancho=10`).** V y W se escriben cada una por su cuenta, por nombre, con una
-celda a la vez (`guardarSeguimiento()`, `guardarCumple()`) — nunca se les amplía
-`CLI.ancho`, para no arriesgar las columnas de fórmula L–U si algún día se
-escribe de más por error.
+(`CLI.ancho=10`).** V, W y X se escriben cada una por su cuenta, por nombre, con
+una celda a la vez (`guardarSeguimiento()`, `guardarCumple()`, `guardarHistorial()`)
+— nunca se les amplía `CLI.ancho`, para no arriesgar las columnas de fórmula L–U
+si algún día se escribe de más por error.
 
 **Parámetros:** `N3` = días para marcar INACTIVO (60). `Q3` = mes en curso (automático).
 
@@ -669,6 +671,45 @@ clientes de la lista en cada render sería mucho más lento.
   existiendo igual que antes (agregar mensajero, ver saldo, registrar
   pago) — se puede abrir desde **Configuración → 👤 Mensajeros → Ver
   mensajeros**. No se tocó nada de los datos ni de Google Sheets.
+
+**Historial de contacto y ventas en la ficha de cliente (v28, 2026-10-28).**
+Rafael pidió poder anotar cuándo se contactó a un cliente o se le hizo
+alguna acción de marketing/ventas, y también observaciones que el vendedor
+va recogiendo — todo guardado, en una sección aparte dentro de "ℹ️ Info".
+
+- Se unificó en un solo concepto: ambas cosas son "una nota con fecha"
+  (contactar a alguien y anotar lo que dijo son la misma acción). Nueva
+  columna **X** en Clientes: "Historial de contacto y ventas" (ver
+  estructura arriba), mismo patrón que Seguimiento/Cumpleaños — una celda
+  de texto, escrita entera cada vez, nunca tocada por el guardado en
+  bloque.
+- Formato: una nota por línea, `aaaa-mm-dd | texto`, más nueva arriba.
+  `guardarHistorial()` en el backend solo pisa la celda con lo que la app
+  ya mandó completo — el backend nunca intenta "agregarle una línea" por
+  su cuenta.
+- En la ficha de cliente: nueva sección "📇 Historial de contacto y
+  ventas" debajo de "📦 Pedidos", con la lista de notas
+  (`parseHistorialCliente()`) y un campo + botón "+ Agregar nota"
+  (`agregarHistorialCliente()`) que escribe la nota nueva encima de las
+  que ya había y vuelve a abrir la misma ficha para verla al momento.
+- **Hace falta redesplegar Apps Script** — `getClientes()` tiene que
+  empezar a mandar la columna X para que las notas lleguen a la app.
+
+**Botón específico para "Acción de venta" (v29, 2026-10-28).** Dentro de
+la misma sección de historial, Rafael pidió distinguir las acciones de
+venta del resto de las notas.
+
+- Ahora hay dos botones junto al campo de texto: "📝 Agregar nota" (general)
+  y "💰 Acción de venta". Ambos usan el mismo campo, solo cambia la
+  etiqueta con la que se guarda la línea.
+- Formato de línea sin cambios de fondo, solo un prefijo opcional:
+  `aaaa-mm-dd | [VENTA] texto` para una acción de venta,
+  `aaaa-mm-dd | texto` para una nota normal. `parseHistorialCliente()`
+  reconoce el prefijo y `agregarHistorialCliente(nombre, tipo)` lo escribe.
+- En la lista de la ficha, cada nota sale con una insignia — 💰 **Acción
+  de venta** o 📝 **Contacto** — para distinguirlas a simple vista.
+- No requiere redesplegar Apps Script esta vez: el backend sigue sin
+  mirar el contenido de la celda, solo la escribe completa.
 
 ### Pendiente inmediato
 
