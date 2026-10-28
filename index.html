@@ -416,6 +416,14 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         <button class="cfg-btn" onclick="probarNotificacionPush()">🔔 Enviar notificación de prueba</button>
       </div>
       <div class="card" style="margin-top:.75rem">
+        <div class="card-ttl">👤 Mensajeros</div>
+        <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
+          Ya no está en la barra de abajo, pero sigue aquí para agregar mensajeros
+          nuevos, ver su saldo y registrar pagos.
+        </p>
+        <button class="cfg-btn" onclick="showSection('mensajeros',this)">👤 Ver mensajeros</button>
+      </div>
+      <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">Cuenta</div>
         <button class="cfg-btn" onclick="cambiarPass()">🔐 Cambiar mi contraseña</button>
         <button class="cfg-btn" onclick="gestionarUsuarios()">👥 Gestionar usuarios</button>
@@ -430,7 +438,6 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <button class="tab active" onclick="showSection('envios',this)"><span class="tab-ico">📦</span><span>Envíos</span></button>
     <button class="tab" onclick="showSection('organizacion',this)"><span class="tab-ico">🗂️</span><span>Organización</span></button>
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
-    <button class="tab" onclick="showSection('mensajeros',this)"><span class="tab-ico">👤</span><span>Mensajeros</span></button>
     <button class="tab" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
     <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
@@ -2113,26 +2120,29 @@ function abrirInfoCliente(nombre){
     entregada:'<span class="bdg bdg-ok">Entregada</span>',devuelta:'<span class="bdg bdg-warn">Devuelta</span>',
     cancelada:'<span class="bdg" style="background:var(--err-bg);color:var(--err)">Cancelada</span>'};
 
-  // Preferir la frecuencia calculada de los pedidos reales (abajo) sobre la
-  // del Sheet: esta ultima necesita que Apps Script este redesplegado con
-  // Primera Compra/Compras Totales, y mientras eso no pase se queda en
-  // blanco aunque la lista de pedidos de esta misma ficha muestre varios.
-  var frecTodos=frecuenciaDesdeFechas(pedidos.map(function(r){ return fechaOperacion(r); }));
-  var frec=frecTodos!==null?frecTodos:frecuenciaDiasCliente(c);
-  var dCompra=diasHastaProximaCompra(c);
-  var dCumple=diasHastaCumple(c);
-
-  // Promedio de lo que manda este cliente: solo cuenta los pedidos donde el
-  // es quien envia (Cliente EeUu), no los que solo recibe en Cuba — y solo
-  // los que de verdad generaron un envio (nunca Cancelada: ese dinero no se
-  // movio).
+  // Frecuencia y proxima compra esperada: se calculan de SUS PROPIOS envios
+  // (donde el es quien manda, Cliente EeUu — "compra" en toda la app es
+  // eso), nunca de Primera/Ultima Compra del Sheet: asi coincide siempre
+  // con la lista de pedidos de esta misma ficha y no depende de tener Apps
+  // Script redesplegado. Solo si no hay ningun envio cargado en el
+  // telefono se cae en lo que haya calculado el Sheet, como ultimo respaldo.
   var enviosComoRemitente=pedidos.filter(function(r){
     return txt(r.cliente).toLowerCase().trim()===txt(nombre).toLowerCase().trim() && r.estado!=='cancelada';
   });
-  // Calculada de las fechas reales de ESTOS envios (no de Primera/Ultima Compra
-  // del Sheet): asi siempre coincide con la lista de pedidos de abajo y no
-  // depende de haber redesplegado Apps Script para tener Compras Totales.
-  var frecEnviado=frecuenciaDesdeFechas(enviosComoRemitente.map(function(r){ return fechaOperacion(r); }));
+  var fechasEnvios=enviosComoRemitente.map(function(r){ return fechaOperacion(r); });
+  var frec=frecuenciaDesdeFechas(fechasEnvios);
+  var dCompra=null;
+  if(frec!==null){
+    var ultimaIso=fechasEnvios.slice().sort().slice(-1)[0];
+    var hoy0=new Date(); hoy0.setHours(0,0,0,0);
+    var prox0=new Date(new Date(ultimaIso).getTime()+frec*86400000);
+    dCompra=Math.round((prox0-hoy0)/86400000);
+  } else {
+    frec=frecuenciaDiasCliente(c);
+    dCompra=diasHastaProximaCompra(c);
+  }
+  var dCumple=diasHastaCumple(c);
+  var frecEnviado=frec; // "cada cuanto envia" y "cada cuanto compra" son el mismo numero
   var promedioEnviado = enviosComoRemitente.length
     ? enviosComoRemitente.reduce(function(s,r){ return s+(parseFloat(r.depositar)||0); },0) / enviosComoRemitente.length
     : null;
@@ -2236,7 +2246,9 @@ function frecuenciaDesdeFechas(fechas){
 }
 
 // Dias que faltan (negativo = ya se pasó) para la proxima compra esperada,
-// segun la frecuencia de arriba contada desde la ultima compra real.
+// segun la frecuencia de arriba contada desde la ultima compra real. Usa
+// Primera/Ultima Compra del Sheet — solo sirve de respaldo cuando no hay
+// envios cargados en el telefono (ver datosCompraCliente, abajo).
 function diasHastaProximaCompra(c){
   var frec=frecuenciaDiasCliente(c);
   var ultima=parseFechaDMY(c.ultimaCompra);
@@ -2258,21 +2270,55 @@ function diasHastaCumple(c){
   return Math.round((prox-hoy)/86400000);
 }
 
+// Indice nombre(minusculas) -> fechas (aaaa-mm-dd) de sus envios reales como
+// Cliente EeUu, sin contar Canceladas. Se construye UNA VEZ por render de
+// la lista de Clientes (no por cada cliente): con cientos de operaciones y
+// cientos de clientes, recorrer db.envios de nuevo por cada tarjeta seria
+// mucho mas lento que un solo pase.
+function construirIndiceEnviosPorCliente(){
+  var idx={};
+  (db.envios||[]).forEach(function(r){
+    if(r.estado==='cancelada') return;
+    var nom=txt(r.cliente).toLowerCase().trim();
+    if(!nom) return;
+    (idx[nom]=idx[nom]||[]).push(fechaOperacion(r));
+  });
+  return idx;
+}
+
+// Frecuencia y proxima compra esperada de un cliente, preferiendo SIEMPRE
+// sus envios reales (el indice de arriba) sobre Primera/Ultima Compra del
+// Sheet — esa fórmula del Sheet solo se usa si no hay ningun envio suyo
+// cargado en este telefono. Asi "ya se pasó la fecha" se detecta aunque
+// Apps Script no se haya redesplegado todavia.
+function datosCompraCliente(c, idx){
+  var fechas = (idx && idx[txt(c.nombre).toLowerCase().trim()]) || [];
+  var frec = frecuenciaDesdeFechas(fechas);
+  if(frec!==null){
+    var ultimaIso=fechas.slice().sort().slice(-1)[0];
+    var hoy=new Date(); hoy.setHours(0,0,0,0);
+    var prox=new Date(new Date(ultimaIso).getTime()+frec*86400000);
+    return { frec:frec, diasProxima:Math.round((prox-hoy)/86400000) };
+  }
+  return { frec:frecuenciaDiasCliente(c), diasProxima:diasHastaProximaCompra(c) };
+}
+
 var VENTANA_AVISO_DIAS=7; // avisa desde una semana antes (y todo lo ya vencido)
 
-function esNotificable(c){
-  var dCompra=diasHastaProximaCompra(c);
-  if(dCompra!==null && dCompra<=VENTANA_AVISO_DIAS) return true;
+function esNotificable(c, idx){
+  var dp=datosCompraCliente(c, idx);
+  if(dp.diasProxima!==null && dp.diasProxima<=VENTANA_AVISO_DIAS) return true;
   var dCumple=diasHastaCumple(c);
   if(dCumple!==null && dCumple<=VENTANA_AVISO_DIAS) return true;
   return false;
 }
 
 // Insignias para el encabezado de la tarjeta: "le toca comprar" y/o cumpleaños cerca.
-function notifBadges(c){
+function notifBadges(c, idx){
   var out='';
-  var dCompra=diasHastaProximaCompra(c);
-  if(dCompra!==null && dCompra<=VENTANA_AVISO_DIAS){
+  var dp=datosCompraCliente(c, idx);
+  if(dp.diasProxima!==null && dp.diasProxima<=VENTANA_AVISO_DIAS){
+    var dCompra=dp.diasProxima;
     var txtCompra = dCompra<0 ? '🔔 Le toca comprar (hace '+(-dCompra)+'d)'
       : dCompra===0 ? '🔔 Le toca comprar hoy' : '🔔 Le toca comprar en '+dCompra+'d';
     out+='<span class="bdg bdg-pri">'+txtCompra+'</span>';
@@ -2328,8 +2374,14 @@ function renderClientes(){
   if(clienteFilter==='EeUu') all=all.filter(function(c){ return txt(c.reside).toLowerCase().indexOf('eeu')>=0||txt(c.reside).toLowerCase().indexOf('usa')>=0; });
   // Un cliente marcado Perdido ya no cuenta como Inactivo: es un estado aparte, no un subconjunto.
   if(clienteFilter==='Inactivos') all=all.filter(function(c){ return esInactivo(c)&&!esPerdido(c)&&txt(c.telefono).trim()!==''; });
+  // Indice de envios por cliente, construido una sola vez (ver
+  // construirIndiceEnviosPorCliente): asi "le toca comprar" se detecta de
+  // las fechas reales ya cargadas en el telefono, sin depender de que el
+  // Sheet tenga Primera/Ultima Compra (eso solo llega con Apps Script
+  // redesplegado).
+  var idxCompras=construirIndiceEnviosPorCliente();
   if(clienteFilter==='Perdidos') all=all.filter(esPerdido);
-  if(clienteFilter==='Notificaciones') all=all.filter(esNotificable);
+  if(clienteFilter==='Notificaciones') all=all.filter(function(c){ return esNotificable(c,idxCompras); });
   var enSeguimiento=(clienteFilter==='Inactivos'||clienteFilter==='Perdidos');
   var div=document.getElementById('list-clientes');
   if(!all.length){ div.innerHTML='<div class="empty"><div class="empty-ico">👥</div><div>No hay clientes que coincidan</div></div>'; return; }
@@ -2339,7 +2391,7 @@ function renderClientes(){
     var rBdg=c.reside==='Cuba'||c.reside==='cuba'?'<span class="bdg bdg-warn">Cuba</span>':'<span class="bdg bdg-pri">EeUu</span>';
     var estBdg=esPerdido(c)?'<span class="bdg" style="background:var(--err-bg);color:var(--err)">❌ Perdido</span>'
       :esInactivo(c)?'<span class="bdg bdg-warn">⚠️ Inactivo'+(isFinite(diasSinOperarNum(c))?' · '+c.diasSinOperar+'d':'')+'</span>':'';
-    estBdg+=notifBadges(c);
+    estBdg+=notifBadges(c,idxCompras);
     var seguimientoBox='';
     if(enSeguimiento&&c.fromSheets){
       var opciones=['','Contactado 1 vez','Contactado 2 veces','Contactado 3 veces','Perdido'];
@@ -2357,6 +2409,7 @@ function renderClientes(){
     // contacto directo que ahora sale en todas las tarjetas.
     var waNumero=telWhatsapp(c.telefono);
     var waBtn=(enSeguimiento&&waNumero)?'<a class="btn btn-ok btn-sm" style="display:block;text-align:center;text-decoration:none;margin-top:.5rem" target="_blank" rel="noopener" href="https://wa.me/'+waNumero+'?text='+encodeURIComponent(MSG_REACTIVACION)+'">📲 Escribir por WhatsApp</a>':'';
+    var datosCompra=datosCompraCliente(c,idxCompras);
     return '<div class="'+cls+'">'
       +'<div class="item-hdr"><div class="item-name">'+c.nombre+'</div><div style="display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end">'+rBdg+estBdg+'</div></div>'
       +'<div class="item-detail">'
@@ -2365,7 +2418,7 @@ function renderClientes(){
       +(c.contacto?'🤝 '+c.contacto:(''  ))
       +(c.canal?'<span class="bdg bdg-pri" style="font-size:.65rem;margin-left:.25rem">'+c.canal+'</span>':'')
       +(c.cumple?'<br>🎂 '+fmtDate(c.cumple):'')
-      +(frecuenciaDiasCliente(c)?'<br>🔁 Compra cada ~'+Math.round(frecuenciaDiasCliente(c))+' días':'')
+      +(datosCompra.frec?'<br>🔁 Compra cada ~'+Math.round(datosCompra.frec)+' días':'')
       +(c.nota?'<br>📝 '+c.nota:'')
       +(!c.fromSheets?'<br><span style="font-size:.7rem;color:var(--ok)">✓ Guardado localmente</span>':'')
       +'</div>'
@@ -2393,7 +2446,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v26 · 2026-10-28';
+var APP_VERSION='v27 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');

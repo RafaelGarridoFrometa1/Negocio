@@ -594,6 +594,82 @@ comprar, además de cumpleaños.
   frecuencia ("Envía en promedio $X cada ~Y días").
 - No requiere redesplegar Apps Script — es 100% `index.html`.
 
+**Arreglo: "cada cuánto tiempo" no salía en la ficha de cliente (v25,
+2026-10-28).** El "Envía en promedio $X" sí salía, pero sin el "cada ~Y
+días" — porque esa parte dependía de `frecuenciaDiasCliente(c)`, que a su
+vez necesita Primera Compra/Compras Totales del Sheet (campos que solo
+llegan si ya se redesplegó Apps Script con el cambio de v23). Si no se
+había redesplegado, o si el cliente tenía pocas compras registradas en el
+Sheet por otro motivo, esa parte simplemente no aparecía — aunque la
+misma ficha mostrara varios pedidos más abajo.
+
+Arreglo: nueva `frecuenciaDesdeFechas(fechas)` que calcula la frecuencia
+directo de las fechas reales de los pedidos que ya se tienen en mano (los
+mismos que se listan en la ficha), sin depender de que el Sheet haya
+calculado nada. Se usa en dos lugares de `abrirInfoCliente()`:
+- Para "Envía en promedio $X cada ~Y días": solo con los envíos donde el
+  cliente es quien manda (coherente con el promedio de arriba).
+- Para "🔁 Compra cada ~X días": con **todos** sus pedidos (enviados y
+  recibidos), usándola de preferencia sobre la del Sheet — y cayendo en
+  la del Sheet solo si no hay suficientes pedidos cargados en el teléfono.
+
+La frecuencia de cada **tarjeta** en la lista de Clientes (fuera de la
+ficha) sigue viniendo del Sheet sin cambios — ahí sí hace falta tenerlo
+redesplegado para que salga, porque calcularla ahí mismo para los ~430
+clientes de la lista en cada render sería mucho más lento.
+
+**WhatsApp directo en Clientes + editar filas en Organización (v26,
+2026-10-28).**
+
+- **Botón "📲 WhatsApp" en toda tarjeta de Clientes** con teléfono, no solo
+  en Inactivos/Perdidos. Abre el chat directo (`wa.me/<numero>`), sin
+  mensaje precargado — a diferencia del botón grande "📲 Escribir por
+  WhatsApp" que sigue existiendo solo en Inactivos/Perdidos y sí lleva el
+  mensaje de reactivación (`MSG_REACTIVACION`). Son dos botones con
+  propósitos distintos: uno para contactar sin más, otro para la
+  reactivación con guion ya escrito.
+- **Editar filas en Organización.** Cada fila de cualquiera de las 3
+  pestañas tiene ahora un botón ✏️ (`editarOrgRow()`) que abre el mismo
+  formulario de "+ Nuevo" con los datos de esa fila ya rellenados.
+  `guardarOrgRow()` distingue alta de edición por un campo oculto
+  (`org-edit-id`), nunca por si el formulario ya estaba abierto: al
+  editar se pisan los campos del formulario sin tocar `id`/`no`/`enviado`
+  de la fila original.
+- Ninguno de los dos cambios toca el backend.
+
+**Notificaciones de "le toca comprar" ahora son del telefono, no del Sheet
++ se quita la pestaña de Mensajeros de la barra (v27, 2026-10-28).**
+
+- Rafael reportó que clientes a los que ya se les pasó la fecha esperada
+  de compra no estaban saliendo en "🔔 Notificaciones". Causa: esa
+  detección (`esNotificable()`/`notifBadges()`) usaba
+  `diasHastaProximaCompra(c)`, que depende de Primera Compra/Compras
+  Totales del Sheet — lo mismo que ya había fallado en la ficha de
+  cliente (v25) y por la misma razón: sin Apps Script redesplegado (o si
+  el Sheet no tiene esos datos por otro motivo), simplemente no hay nada
+  que mostrar, aunque el teléfono ya tenga los envíos reales de ese
+  cliente cargados.
+  - Arreglo: `construirIndiceEnviosPorCliente()` recorre `db.envios` **una
+    sola vez por render** (no por cada cliente — con cientos de
+    operaciones y cientos de clientes sería mucho más lento repetirlo) y
+    arma un índice nombre → fechas de sus envíos reales. `
+    datosCompraCliente(c, idx)` calcula frecuencia y próxima compra de
+    ese índice, cayendo en el cálculo del Sheet solo si el cliente no
+    tiene ningún envío cargado en el teléfono. `esNotificable()`,
+    `notifBadges()` y la línea "🔁 Compra cada ~X días" de cada tarjeta
+    usan esto ahora.
+  - La ficha de cliente (`abrirInfoCliente()`, v25) ya hacía algo parecido
+    pero con una pequeña inconsistencia: la frecuencia mostrada podía
+    venir de *todos* los pedidos (enviados y recibidos) mientras que
+    "próxima compra" seguía viniendo del Sheet. Se unificó: ambas vienen
+    ahora de los mismos envíos (donde el cliente es quien manda), igual
+    que en la lista.
+- **Se quitó "Mensajeros" de la barra de abajo** (ahora son 6 pestañas en
+  vez de 7 — también ayuda a que no vaya tan apretada). La página sigue
+  existiendo igual que antes (agregar mensajero, ver saldo, registrar
+  pago) — se puede abrir desde **Configuración → 👤 Mensajeros → Ver
+  mensajeros**. No se tocó nada de los datos ni de Google Sheets.
+
 ### Pendiente inmediato
 
 - Confirmar que el backend real en script.google.com tiene pegado
