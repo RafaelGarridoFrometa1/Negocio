@@ -60,7 +60,7 @@ T  Nota
 U  ID App                 llave de sincronización (la escribe la app)
 ```
 
-### Clientes (21 columnas, filas 6–805)
+### Clientes (23 columnas, filas 6–805)
 
 ```
 A  ID Cliente        FÓRMULA — CL-0001, CL-0002...
@@ -70,7 +70,7 @@ D  Email
 E  Direccion
 F  Municipio
 G  Reside
-H  Con Quien Tiene Contacto
+H  Con Quien Tiene Contacto   (mostrado en la app como "Con quién tiene relación")
 I  Decision de Compra
 J  Canal
 K  Nota
@@ -78,7 +78,15 @@ L–T                  FÓRMULAS: Primera Compra, Antigüedad, Última Compra,
                      Días sin Operar, Compras del Mes, Compras Totales,
                      Volumen, Ganancia Generada, Estado
 U  ID App
+V  Seguimiento       manual: Contactado 1/2/3 veces, Perdido (añadida v14, CLI_ANCHO_LECTURA)
+W  Cumpleaños        manual: fecha aaaa-mm-dd, formato forzado a texto (añadida v21)
 ```
+
+**B..K es lo único que `sincronizarClientes()`/`guardarCliente()` escriben en bloque
+(`CLI.ancho=10`).** V y W se escriben cada una por su cuenta, por nombre, con una
+celda a la vez (`guardarSeguimiento()`, `guardarCumple()`) — nunca se les amplía
+`CLI.ancho`, para no arriesgar las columnas de fórmula L–U si algún día se
+escribe de más por error.
 
 **Parámetros:** `N3` = días para marcar INACTIVO (60). `Q3` = mes en curso (automático).
 
@@ -422,6 +430,105 @@ los dos arreglos a la vez. Recordatorio: **la única copia confiable de lo
 que "ya quedó arreglado" es lo que está subido en GitHub** — si una sesión
 termina sin que Rafael suba el archivo entregado, ese cambio no existe
 todavía aunque el chat diga que sí se hizo.
+
+**Tres arreglos reportados por Rafael + Observación editable (v20,
+2026-10-28).** Validado antes con una vista previa en artefacto, como pidió
+("primero muéstrame los cambios... y luego los subimos").
+
+- **Ganancia negativa en Cuba → EeUu.** `Ganancia = Depositar − Entrega −
+  Costo Mens` es una fórmula fija en el Sheet (columna J) que no distingue
+  dónde se cobra el margen. Para operaciones con "Donde se cobra" = Cuba,
+  el margen vive en el lado contrario (en vez de cobrarse "aquí" se cobra
+  "allá") y la resta sale al revés. Arreglo en dos partes:
+  - `index.html`: nueva función `calcularGanancia(dep,ent,cmen,cobro)` —
+    si `cobro==='Cuba'` resta `Entrega−Depositar−CostoMens` en vez de
+    `Depositar−Entrega−CostoMens`. Usada en `calcOp()` (vista previa en el
+    formulario, ahora recalcula también al cambiar "Donde se cobra" — se
+    le agregó el `onchange` que le faltaba) y en `saveOp()`.
+  - **Pendiente que haga Rafael en el Sheet** (esto no se sube por
+    GitHub): reemplazar la fórmula de la columna J, fila por fila o con
+    autorelleno, por `=IF(D5="Cuba", H5-G5-I5, G5-H5-I5)` (ajustando el
+    número de fila). Sin este cambio, las operaciones ya sincronizadas
+    seguirán mostrando la Ganancia vieja (negativa) porque esa columna es
+    una fórmula del libro, no algo que escriba la app.
+- **Operaciones "Entregada" que volvían a "Pendiente" solas.**
+  `deEstado()` en el backend exigía coincidencia EXACTA ("Entregada", con
+  mayúscula y sin espacios) contra el texto de la celda; cualquier
+  variación — un espacio de más al escribir a mano en el Sheet, por
+  ejemplo — hacía que no reconociera nada y devolviera 'pendiente' por
+  defecto. La próxima sincronización pisaba el estado local correcto con
+  ese 'pendiente' equivocado. Arreglo: `deEstado()` ahora busca por
+  fragmento (minúsculas, sin espacios/guiones bajos), igual que
+  `normEstado()` ya hacía del lado de escritura — solo cae en 'pendiente'
+  cuando de verdad no reconoce ninguna palabra clave.
+- **Sincronización lenta.** `doSync()` (el botón "Sincronizar") reenviaba
+  TODO `db.envios` en bloques de 40 cada vez que se pulsaba, sin importar
+  si ya estaba subido — con cientos de operaciones eso es mucho tráfico
+  innecesario. Ahora solo manda lo que está en `db.pendientes` (la cola
+  de pendientes de la v17). La seguridad de que "nada se pierde" sigue
+  intacta porque `marcarFaltantesComoPendientes()` (ya existente) detecta
+  y repara solo cualquier operación atascada al bajar datos del Sheet. Se
+  tuvo cuidado de no vaciar `db.pendientes` entero al terminar — solo se
+  quitan los IDs que de verdad se acaban de mandar, por si
+  `marcarFaltantesComoPendientes()` agregó algo nuevo mientras tanto.
+- **Observación editable en Organización.** La celda de Observación de
+  cualquier fila ahora es tocable (`editarOrgObs()`, usa `prompt()`) para
+  cambiarla después de creada la fila.
+
+**Aviso: el backend volvió a desordenarse.** Al revisar el repo para esta
+ronda, `negocio-contabilidad.gs` había vuelto a aparecer como
+`negociocontabilidad.gs` (sin guión, versión 3.8 — vieja) y el obsoleto
+`script_google_apps.gs` había vuelto a aparecer también — el mismo
+problema documentado arriba, otra vez. Se reconstruyó `negocio-
+contabilidad.gs` desde la copia embebida en `index.html` (que sí estaba al
+día, versión 4.0) y se borraron los dos archivos viejos. **Por eso esta
+ronda sí hace falta redesplegar Apps Script** — el fix de `deEstado()`
+vive ahí.
+
+**Editar clientes reales del Sheet + Cumpleaños (v21, 2026-10-28).** Rafael
+pidió poder editar la info de los clientes y agregar con quién tiene
+relación y fecha de cumpleaños.
+
+- **El botón "Editar" existía en el código pero nunca se mostraba** para
+  los 427 clientes reales (los que vienen de `sheetsClientes`): la
+  condición `!c.fromSheets` solo lo dejaba ver en clientes guardados
+  únicamente en este teléfono. Además `editCliente(id)` buscaba por `id`
+  en `db.clientes` — y los clientes del Sheet no tienen `id` local,
+  `getClientes()` nunca lo manda. Doble motivo por el que editar un
+  cliente real no hacía nada.
+  - Arreglo: el botón "Editar" ahora sale siempre. `editCliente()` recibe
+    el **nombre**, no un id, y busca con `findClientByName()` (local
+    primero, luego Sheet) — la misma función que ya usa el autocompletado
+    de Envíos.
+  - Al guardar: si el cliente es de Sheets (`cliente-origen==='sheet'`),
+    se actualiza allá por nombre (`sincronizarClientes()`/`guardarCliente()`
+    ya matchean por nombre, no por id) y **no se crea una copia en
+    `db.clientes`** — si no, quedaría duplicado en el almacenamiento local
+    aunque `renderClientes()` no lo muestre dos veces.
+  - "Borrar" se deja igual, solo para clientes locales: no hay forma segura
+    de borrar una fila del Sheet desde aquí (filas con fórmulas, protegidas
+    a propósito), e intentarlo sobre un cliente de Sheets no haría nada
+    porque `deleteCliente()` filtra `db.clientes`, donde ese cliente nunca
+    estuvo.
+- **"Con quién tiene relación"**: se reusa el campo que ya existía
+  ("Con Quien Tiene Contacto", columna H) — solo se le cambió la etiqueta
+  en la app para que coincida con cómo lo pide Rafael. No es un campo
+  nuevo, no cambia nada en el Sheet.
+- **Fecha de cumpleaños**: campo nuevo, columna **W** de Clientes (ver
+  estructura arriba). Se guarda con `guardarCumple()` en el backend, una
+  celda a la vez por nombre — igual patrón que `guardarSeguimiento()` —
+  **forzando el formato de la celda a texto (`'@'`) antes de escribir**,
+  para que Sheets no la "reconozca" como fecha de verdad y la muestre
+  después en dd/mm/aaaa (eso rompería el `<input type="date">` de la app,
+  que exige aaaa-mm-dd). `getClientes()` igual trae una función
+  `cumpleAIso()` de red de seguridad para convertir de vuelta si alguna
+  celda vieja quedara en ese formato.
+  - **Pendiente de Rafael, en el Sheet:** agregarle el encabezado
+    "Cumpleaños" a la celda W5 (es solo rótulo, la app no lo necesita para
+    funcionar, pero ayuda a que se entienda la columna al mirarla).
+- Se corrigió además que el botón "+ Nuevo" de Clientes no limpiaba el
+  formulario antes de abrirlo (`clearClienteForm()` no se llamaba) — podía
+  arrastrar datos de la última edición a un cliente que se creyera nuevo.
 
 ### Pendiente inmediato
 

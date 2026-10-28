@@ -366,7 +366,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <div class="section" id="sec-clientes">
       <div class="sec-hdr">
         <div class="sec-ttl">Clientes</div>
-        <button class="btn btn-ok btn-sm" onclick="openModal('modal-cliente')">+ Nuevo</button>
+        <button class="btn btn-ok btn-sm" onclick="clearClienteForm();openModal('modal-cliente')">+ Nuevo</button>
       </div>
       <div class="tmini">
         <button class="tmi on" onclick="filterClientes('todos',this)">Todos</button>
@@ -475,7 +475,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       </div>
       <div class="fgroup">
         <label class="flabel">Donde se cobra</label>
-        <select class="finput" id="op-cobro">
+        <select class="finput" id="op-cobro" onchange="calcOp()">
           <option value="EeUu">EeUu</option>
           <option value="Cuba">Cuba</option>
         </select>
@@ -639,6 +639,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <button class="modal-close" onclick="closeModal('modal-cliente')">×</button>
   <div class="modal-ttl" id="cliente-modal-ttl">Nuevo cliente</div>
   <input type="hidden" id="cliente-id">
+  <input type="hidden" id="cliente-origen">
 
   <div class="op-card">
     <div class="op-card-ttl">👤 Datos personales</div>
@@ -678,7 +679,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <div class="op-card">
     <div class="op-card-ttl">🤝 Referencia y canal</div>
     <div class="frow">
-      <div class="fgroup"><label class="flabel">Con quién tiene contacto</label><input type="text" class="finput" id="cli-contacto" placeholder="Nombre del referido..."></div>
+      <div class="fgroup"><label class="flabel">Con quién tiene relación</label><input type="text" class="finput" id="cli-contacto" placeholder="Referido por, familiar de..."></div>
       <div class="fgroup"><label class="flabel">Canal</label>
         <select class="finput" id="cli-canal">
           <option value="">— Seleccionar —</option>
@@ -687,6 +688,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         </select>
       </div>
     </div>
+    <div class="fgroup"><label class="flabel">Fecha de cumpleaños</label><input type="date" class="finput" id="cli-cumple"></div>
     <div class="fgroup">
       <label class="flabel">Decisión de compra</label>
       <div style="display:flex;gap:1.5rem;padding:.5rem 0">
@@ -965,11 +967,22 @@ function setChk(boxId, lblId, valor){
 }
 
 // ══ CALC ══
+// Donde se cobra el margen decide el orden de la resta. Normalmente se cobra
+// en EeUu (Cantidad a Depositar es la cantidad grande, con margen incluido),
+// pero cuando "Donde se cobra" es Cuba (tipico de las operaciones Cuba ->
+// EeUu) el margen se cobra alla: Entrega pasa a ser la cantidad grande y
+// Depositar la chica. Sin este ajuste, esas operaciones salian con la
+// ganancia en negativo aunque el negocio sí estuviera ganando.
+function calcularGanancia(dep, ent, cmen, cobro){
+  return cobro==='Cuba' ? (ent-dep-cmen) : (dep-ent-cmen);
+}
+
 function calcOp(){
   var dep=parseFloat(document.getElementById('op-dep').value)||0;
   var ent=parseFloat(document.getElementById('op-ent').value)||0;
   var cmen=parseFloat(document.getElementById('op-mens').value)||0;
-  var gan=dep-ent-cmen;
+  var cobro=document.getElementById('op-cobro').value;
+  var gan=calcularGanancia(dep,ent,cmen,cobro);
   document.getElementById('op-r-gan').textContent = fmtMoney(gan);
   document.getElementById('op-r-gcu').textContent = fmtMoney(gan/2);
 }
@@ -1142,7 +1155,8 @@ function saveOp(){
   var dep = parseFloat(document.getElementById('op-dep').value)||0;
   var ent = parseFloat(document.getElementById('op-ent').value)||0;
   var cmen= parseFloat(document.getElementById('op-mens').value)||0;
-  var gan = dep-ent-cmen;
+  var cobroVal = document.getElementById('op-cobro').value;
+  var gan = calcularGanancia(dep,ent,cmen,cobroVal);
   var obj = {
     id: eid||uid(),
     cliente:    document.getElementById('dd-usa').value.trim(),
@@ -1699,6 +1713,16 @@ function enviarOrgRow(tab,id){
   openModal('modal-op');
 }
 
+function editarOrgObs(tab,id){
+  var r = db.organizacion[tab].find(function(x){ return x.id===id; });
+  if(!r) return;
+  var nueva = prompt('Observación:', r.obs||'');
+  if(nueva===null) return; // canceló
+  r.obs = nueva.trim();
+  saveDB();
+  renderOrganizacion();
+}
+
 function renderOrganizacion(){
   var wrap = document.getElementById('org-tbl-wrap');
   if(!wrap) return; // seccion todavia no esta en el DOM (no deberia pasar, defensivo)
@@ -1739,7 +1763,8 @@ function renderOrganizacion(){
         body += '<td class="chkcell '+(r.captura?'yes':'no')+'" onclick="toggleOrgCaptura(\''+orgTab+'\',\''+r.id+'\')">'+(r.captura?'X':'—')+'</td>'
               + '<td class="chkcell '+(r.confirm?'yes':'no')+'" onclick="toggleOrgConfirm(\''+orgTab+'\',\''+r.id+'\')">'+(r.confirm?'X':'—')+'</td>';
       }
-      body += '<td class="obs">'+txt(r.obs)+'</td>'
+      body += '<td class="obs" style="cursor:pointer" onclick="editarOrgObs(\''+orgTab+'\',\''+r.id+'\')" title="Tocar para editar">'
+        +(txt(r.obs)||'<span style="color:var(--g3)">— tocar para añadir —</span>')+'</td>'
         +'<td>'+(r.enviado
             ? '<span class="org-sent-bdg">✅ Enviado</span>'
             : '<button class="org-send-btn" onclick="enviarOrgRow(\''+orgTab+'\',\''+r.id+'\')">📤 Enviar</button>')+'</td>'
@@ -1887,6 +1912,7 @@ function populateMensSelects(){
 // ══ CLIENTES ══
 function saveCliente(){
   var cid=document.getElementById('cliente-id').value;
+  var origen=document.getElementById('cliente-origen').value;
   var nombre=document.getElementById('cli-nombre').value.trim();
   if(!nombre){ alert('El nombre es obligatorio.'); return; }
   var obj={
@@ -1898,14 +1924,33 @@ function saveCliente(){
     reside:document.getElementById('cli-reside').value,
     contacto:document.getElementById('cli-contacto').value.trim(),
     canal:document.getElementById('cli-canal').value,
+    cumple:document.getElementById('cli-cumple').value,
     decision:document.querySelector('input[name="cli-dec"]:checked').value,
     nota:document.getElementById('cli-nota').value.trim(),
     creado:cid?(db.clientes.find(function(c){ return c.id===cid; })||{}).creado||today():today()
   };
+  // Cliente que viene del Sheet (los 427 reales, sin id local): se actualiza
+  // alla por nombre, SIN crear una copia en db.clientes — si no, quedaria
+  // duplicado (uno en el Sheet, otro local) aunque no se vea por el filtro
+  // de nombres repetidos de renderClientes().
+  if(origen==='sheet'){
+    saveClienteToSheets(obj).then(function(){
+      if(obj.cumple) guardarCumpleCliente(obj.nombre, obj.cumple);
+      return loadSheetsClientes();
+    }).then(function(){
+      clearClienteForm();
+      closeModal('modal-cliente');
+      renderClientes();
+      alert('✅ Cliente actualizado en Google Sheets.');
+    });
+    return;
+  }
   if(cid){ var idx=db.clientes.findIndex(function(c){ return c.id===cid; }); db.clientes[idx]=obj; }
   else db.clientes.unshift(obj);
   saveDB();
-  saveClienteToSheets(obj);
+  saveClienteToSheets(obj).then(function(){
+    if(obj.cumple) guardarCumpleCliente(obj.nombre, obj.cumple);
+  });
   clearClienteForm();
   closeModal('modal-cliente');
   renderClientes();
@@ -1913,18 +1958,26 @@ function saveCliente(){
 }
 
 function clearClienteForm(){
-  ['cli-nombre','cli-tel','cli-email','cli-dir','cli-contacto','cli-nota'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['cli-nombre','cli-tel','cli-email','cli-dir','cli-contacto','cli-nota','cli-cumple'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('cli-municipio').value='';
   document.getElementById('cli-reside').value='Cuba';
   document.getElementById('cli-canal').value='';
   document.getElementById('cli-dec-no').checked=true;
   document.getElementById('cliente-id').value='';
+  document.getElementById('cliente-origen').value='';
   document.getElementById('cliente-modal-ttl').textContent='Nuevo cliente';
 }
 
-function editCliente(id){
-  var c=db.clientes.find(function(x){ return x.id===id; }); if(!c) return;
-  document.getElementById('cliente-id').value=c.id;
+// Recibe el NOMBRE, no un id: los 427 clientes reales que vienen del Sheet
+// no tienen id local (getClientes() no lo manda), asi que la unica llave
+// confiable para encontrarlos — y para que sincronizarClientes() los
+// reconozca al guardar — es el nombre. findClientByName() ya busca primero
+// en local y despues en el Sheet, en ese orden.
+function editCliente(nombre){
+  var c=findClientByName(nombre); if(!c) return;
+  var esLocal=!!c.id;
+  document.getElementById('cliente-id').value=esLocal?c.id:'';
+  document.getElementById('cliente-origen').value=esLocal?'local':'sheet';
   document.getElementById('cli-nombre').value=c.nombre||'';
   document.getElementById('cli-tel').value=c.telefono||'';
   document.getElementById('cli-email').value=c.email||'';
@@ -1933,6 +1986,7 @@ function editCliente(id){
   document.getElementById('cli-reside').value=c.reside||'Cuba';
   document.getElementById('cli-contacto').value=c.contacto||'';
   document.getElementById('cli-canal').value=c.canal||'';
+  document.getElementById('cli-cumple').value=c.cumple||'';
   if(c.decision==='si') document.getElementById('cli-dec-si').checked=true;
   else document.getElementById('cli-dec-no').checked=true;
   document.getElementById('cli-nota').value=c.nota||'';
@@ -2042,15 +2096,16 @@ function renderClientes(){
       +(c.municipio?'📍 '+c.municipio+(c.direccion?' · '+c.direccion:'')+'<br>':'')
       +(c.contacto?'🤝 '+c.contacto:(''  ))
       +(c.canal?'<span class="bdg bdg-pri" style="font-size:.65rem;margin-left:.25rem">'+c.canal+'</span>':'')
+      +(c.cumple?'<br>🎂 '+fmtDate(c.cumple):'')
       +(c.nota?'<br>📝 '+c.nota:'')
       +(!c.fromSheets?'<br><span style="font-size:.7rem;color:var(--ok)">✓ Guardado localmente</span>':'')
       +'</div>'
       +seguimientoBox
       +waBtn
-      +(!c.fromSheets?'<div class="item-actions">'
-        +'<button class="btn btn-out btn-sm" onclick="editCliente(\''+c.id+'\')">Editar</button>'
-        +'<button class="btn btn-err btn-sm" onclick="deleteCliente(\''+c.id+'\')">Borrar</button>'
-        +'</div>':'')
+      +'<div class="item-actions">'
+        +'<button class="btn btn-out btn-sm" onclick="editCliente(\''+c.nombre.replace(/'/g,"\\'")+'\')">Editar</button>'
+        +(!c.fromSheets?'<button class="btn btn-err btn-sm" onclick="deleteCliente(\''+c.id+'\')">Borrar</button>':'')
+        +'</div>'
       +'</div>';
   }).join('');
   if(!q&&clienteFilter==='todos'&&sheetsClientes.length){
@@ -2067,7 +2122,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v19 · 2026-10-24';
+var APP_VERSION='v21 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -2193,9 +2248,16 @@ function doSync(){
   if(!navigator.onLine){ alert('Sin conexión. Los datos están guardados localmente.'); return; }
 
   db.envios=db.envios||[]; db.clientes=db.clientes||[];
-  db.mensajeros=db.mensajeros||[]; db.pagos=db.pagos||[];
+  db.mensajeros=db.mensajeros||[]; db.pagos=db.pagos||[]; db.pendientes=db.pendientes||[];
 
-  var envios=db.envios.map(function(r){
+  // Solo se manda lo PENDIENTE, no todo db.envios: con cientos de operaciones,
+  // reenviarlas todas de golpe cada vez es lo que hacia tan lenta "Sincronizar".
+  // Lo que falte de verdad (p.ej. una operacion atascada de antes) lo detecta
+  // y repara solo marcarFaltantesComoPendientes() al bajar los datos del Sheet,
+  // mas abajo — asi no se pierde la red de seguridad, solo se deja de pagar el
+  // costo de resubir cientos de filas sin falta cada vez que se toca el boton.
+  var porIdEnvio={}; db.envios.forEach(function(r){ porIdEnvio[r.id]=r; });
+  var envios=db.pendientes.map(function(id){ return porIdEnvio[id]; }).filter(Boolean).map(function(r){
     var m=db.mensajeros.find(function(x){ return x.id===r.mensajero; });
     return Object.assign({},r,{mensajeroNombre:m?m.nombre:''});
   });
@@ -2250,13 +2312,16 @@ function doSync(){
   var p = total ? paso()
                 : mandar({action:'sync',data:{envios:[],mensajeros:db.mensajeros,
                                               clientes:db.clientes,pagos:pagos}}).then(comprobar);
+  var idsEnviados = envios.map(function(r){ return r.id; });
   p.then(function(){
     // Despues de subir lo de este telefono, se bajan TODAS las operaciones
     // del Sheet: asi lo que registraron otros telefonos tambien aparece aqui.
+    // Esto tambien puede volver a marcar pendientes otras filas (si detecta
+    // algo atascado) — por eso abajo NO se vacia pendientes entero, solo se
+    // quitan los ids que de verdad se acaban de mandar en este sync.
     return loadSheetsOperaciones();
   }).then(function(){
-    // Se acaba de subir TODO db.envios de golpe: ya no queda nada pendiente.
-    db.pendientes=[]; saveDB(); actualizarBadgePendientes();
+    quitarPendientes(idsEnviados);
     setSyncTexto('Sincronizar');
     updateDot(true);
     alert('✅ Sincronizado'+(usarGet?' (por GET)':'')+'.\n\n'+
@@ -2353,9 +2418,19 @@ function mezclarOperacionesRemotas(lista){
 
 function saveClienteToSheets(c){
   var url=gsUrl();
-  if(!url||!navigator.onLine) return;
-  enviarAlScript(url,{action:'saveCliente',cliente:c})
+  if(!url||!navigator.onLine) return Promise.resolve();
+  return enviarAlScript(url,{action:'saveCliente',cliente:c})
     .catch(function(e){ console.warn('No se pudo guardar el cliente en Sheets:',e); });
+}
+
+// Igual que guardarSeguimientoCliente(): una celda sola (columna W), aparte
+// del guardado en bloque de arriba, para no arriesgar las columnas de
+// formula escribiendo de mas en sincronizarClientes().
+function guardarCumpleCliente(nombre, valor){
+  var url=gsUrl();
+  if(!url||!navigator.onLine) return;
+  enviarAlScript(url,{action:'setCumple',cliente:{nombre:nombre,valor:valor}})
+    .catch(function(e){ console.warn('No se pudo guardar el cumpleaños:',e); });
 }
 
 // \u2550\u2550 ENV\u00cdO INDIVIDUAL DE OPERACIONES: COLA DE PENDIENTES \u2550\u2550
@@ -2479,7 +2554,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 3.9
+ * MI NEGOCIO - Backend Apps Script  ·  version 4.1
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -2560,7 +2635,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '3.9',
+        return json({ ok: true, message: 'Script activo', version: '4.1',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -2571,6 +2646,8 @@ function manejar(e) {
         return json(guardarCliente(datos.cliente || datos));
       case 'setSeguimiento':
         return json(guardarSeguimiento(datos.cliente || datos));
+      case 'setCumple':
+        return json(guardarCumple(datos.cliente || datos));
       case 'sync':
         return json(sincronizar(datos.data || datos));
 
@@ -2725,9 +2802,9 @@ function construirNota(d) {
 // ============================================================
 
 // Lee mas columnas de las que CLI.ancho abarca (que es solo para las escrituras,
-// A..K): hasta la V (Seguimiento), sin tocar CLI.ancho para no arriesgar las
+// A..K): hasta la W (Cumpleanos), sin tocar CLI.ancho para no arriesgar las
 // formulas de las columnas L..U al escribir.
-var CLI_ANCHO_LECTURA = 21; // B..V
+var CLI_ANCHO_LECTURA = 22; // B..W
 
 function getClientes() {
   var sh = hoja(CLI.hoja);
@@ -2742,7 +2819,8 @@ function getClientes() {
       contacto: v[i][6], decision: v[i][7], canal: v[i][8], nota: v[i][9],
       diasSinOperar: v[i][13],  // columna O
       estado: v[i][18],         // columna T (Activo/Inactivo, formula del libro)
-      seguimiento: v[i][20]     // columna V (manual: 1/2/3 veces contactado, Perdido)
+      seguimiento: v[i][20],    // columna V (manual: 1/2/3 veces contactado, Perdido)
+      cumple: cumpleAIso(v[i][21])  // columna W (manual: fecha de cumpleanos)
     });
   }
   return out;
@@ -2819,10 +2897,18 @@ function desarmarNota(texto) {
 
 function deSiNo(v) { return String(v || '').trim().toLowerCase() === 'si'; }
 
+// Antes esto exigia coincidencia EXACTA ("Entregada", con mayuscula y sin
+// espacios de mas) y si no coincidia caia siempre en 'pendiente' — un tipeo
+// o un espacio de mas al editar el Estado a mano en el Sheet bastaba para
+// que la operacion volviera a aparecer como pendiente en la app aunque ya
+// estuviera entregada. Ahora busca por fragmento, igual que normEstado().
 function deEstado(v) {
-  var mapa = { 'Pendiente': 'pendiente', 'En camino': 'en_camino', 'Entregada': 'entregada',
-               'Devuelta': 'devuelta', 'Cancelada': 'cancelada' };
-  return mapa[String(v || '').trim()] || 'pendiente';
+  var s = String(v || '').toLowerCase().replace(/[_\s]+/g, '');
+  if (s.indexOf('encamino') !== -1) return 'en_camino';
+  if (s.indexOf('entregad') !== -1) return 'entregada';
+  if (s.indexOf('devuelt') !== -1) return 'devuelta';
+  if (s.indexOf('cancel') !== -1) return 'cancelada';
+  return 'pendiente';
 }
 
 function getBeneficiarios() {
@@ -2895,6 +2981,37 @@ function guardarSeguimiento(d) {
     }
   }
   throw new Error('No se encontró un cliente con ese nombre: ' + nombre);
+}
+
+/** Igual que guardarSeguimiento() pero en la columna W (Cumpleanos). Separado
+ *  del guardado en bloque para no tocar CLI.ancho ni arriesgar las formulas. */
+function guardarCumple(d) {
+  var nombre = String((d && d.nombre) || '').trim();
+  if (!nombre) throw new Error('Falta el nombre del cliente.');
+  var valor = String((d && d.valor) || '').trim();
+  var sh = hoja(CLI.hoja);
+  var n = CLI.ultima - CLI.primera + 1;
+  var nombres = sh.getRange(CLI.primera, CLI.colNombre, n, 1).getValues();
+  for (var i = 0; i < n; i++) {
+    if (String(nombres[i][0] || '').trim().toLowerCase() === nombre.toLowerCase()) {
+      // Formato texto ('@') ANTES de escribir: si no, Sheets puede reconocer
+      // "2026-03-15" como fecha de verdad y mostrarla despues en dd/mm/aaaa,
+      // rompiendo el <input type="date"> de la app (que exige aaaa-mm-dd).
+      var celda = sh.getRange(CLI.primera + i, 23); // columna W
+      celda.setNumberFormat('@').setValue(valor);
+      return { ok: true, fila: CLI.primera + i };
+    }
+  }
+  throw new Error('No se encontró un cliente con ese nombre: ' + nombre);
+}
+
+/** Red de seguridad: si una celda W vieja quedo como fecha de verdad (dd/mm/aaaa
+ *  de la hora en que se escribio antes de forzar el formato texto), se devuelve
+ *  igual en aaaa-mm-dd para que el <input type="date"> de la app la entienda. */
+function cumpleAIso(s) {
+  var m = String(s || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return String(s || '').trim();
+  return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
 }
 
 function guardarBeneficiario(d) {
