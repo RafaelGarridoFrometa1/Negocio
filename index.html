@@ -2179,11 +2179,62 @@ function abrirInfoCliente(nombre){
           +'</div></div>';
       }).join('');
 
+  var notas=parseHistorialCliente(c);
+  var listaHistorial = !notas.length
+    ? '<div class="empty" style="padding:1rem"><div class="empty-ico">📇</div><div>Sin notas todavía</div></div>'
+    : notas.map(function(n){
+        return '<div class="item" style="padding:.6rem .75rem">'
+          +'<div class="item-detail">'+(n.fecha?'📅 '+fmtDate(n.fecha)+'<br>':'')+txt(n.texto)+'</div></div>';
+      }).join('');
+
   document.getElementById('info-cliente-ttl').textContent=c.nombre;
   document.getElementById('info-cliente-body').innerHTML=datos
     +'<div class="op-card-ttl" style="margin-top:1rem">📦 Pedidos ('+pedidos.length+')</div>'
-    +listaPedidos;
+    +listaPedidos
+    +'<div class="op-card" style="margin-top:1rem">'
+      +'<div class="op-card-ttl">📇 Historial de contacto y ventas</div>'
+      +'<div id="hist-cliente-lista">'+listaHistorial+'</div>'
+      +'<div class="fgroup" style="margin-top:.6rem">'
+        +'<label class="flabel">Nueva nota</label>'
+        +'<input type="text" class="finput" id="hist-nueva-nota" placeholder="Ej: Contactado por WhatsApp, interesado en diciembre">'
+      +'</div>'
+      +'<button class="btn btn-pri btn-sm" onclick="agregarHistorialCliente(\''+c.nombre.replace(/'/g,"\\'")+'\')">+ Agregar nota</button>'
+    +'</div>';
   openModal('modal-cliente-info');
+}
+
+// El historial se guarda en una sola celda como texto, una nota por linea:
+// "aaaa-mm-dd | texto". Mas nueva primero. parseHistorialCliente() lo separa
+// de vuelta en {fecha, texto} para pintarlo.
+function parseHistorialCliente(c){
+  return String(c.historial||'').split('\n').map(function(l){ return l.trim(); }).filter(Boolean).map(function(l){
+    var i=l.indexOf('|');
+    if(i===-1) return {fecha:'', texto:l};
+    return {fecha:l.slice(0,i).trim(), texto:l.slice(i+1).trim()};
+  });
+}
+
+// Agrega una nota nueva ENCIMA de las que ya había (nunca se pierde nada de
+// lo escrito antes) y manda la celda entera al Sheet — igual patron que
+// guardarCumpleCliente(). Al terminar se vuelve a abrir la misma ficha para
+// que se vea la nota recien guardada sin tener que cerrar y volver a entrar.
+function agregarHistorialCliente(nombre){
+  var input=document.getElementById('hist-nueva-nota');
+  var texto=input.value.trim();
+  if(!texto){ alert('Escribe algo antes de guardar.'); return; }
+  var url=gsUrl();
+  if(!url||!navigator.onLine){ alert('Sin conexión: no se pudo guardar la nota.'); return; }
+  var c=findClientByName(nombre);
+  if(!c) return;
+  var nuevaLinea=today()+' | '+texto;
+  var historialNuevo=nuevaLinea+(c.historial?('\n'+c.historial):'');
+  enviarAlScript(url,{action:'setHistorial',cliente:{nombre:nombre,valor:historialNuevo}})
+    .then(function(res){
+      if(!res||res.ok===false) throw new Error((res&&res.error)||'el script rechazó el cambio');
+      c.historial=historialNuevo;
+      abrirInfoCliente(nombre);
+    })
+    .catch(function(e){ alert('❌ No se pudo guardar la nota.\n\n'+(e&&e.message?e.message:e)); });
 }
 
 function filterClientes(f,btn){
@@ -2446,7 +2497,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v27 · 2026-10-28';
+var APP_VERSION='v28 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -2878,7 +2929,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 4.2
+ * MI NEGOCIO - Backend Apps Script  ·  version 4.3
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -2959,7 +3010,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '4.2',
+        return json({ ok: true, message: 'Script activo', version: '4.3',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -2972,6 +3023,8 @@ function manejar(e) {
         return json(guardarSeguimiento(datos.cliente || datos));
       case 'setCumple':
         return json(guardarCumple(datos.cliente || datos));
+      case 'setHistorial':
+        return json(guardarHistorial(datos.cliente || datos));
       case 'sync':
         return json(sincronizar(datos.data || datos));
 
@@ -3126,9 +3179,9 @@ function construirNota(d) {
 // ============================================================
 
 // Lee mas columnas de las que CLI.ancho abarca (que es solo para las escrituras,
-// A..K): hasta la W (Cumpleanos), sin tocar CLI.ancho para no arriesgar las
-// formulas de las columnas L..U al escribir.
-var CLI_ANCHO_LECTURA = 22; // B..W
+// A..K): hasta la X (Historial de contacto), sin tocar CLI.ancho para no
+// arriesgar las formulas de las columnas L..U al escribir.
+var CLI_ANCHO_LECTURA = 23; // B..X
 
 function getClientes() {
   var sh = hoja(CLI.hoja);
@@ -3148,7 +3201,8 @@ function getClientes() {
       comprasTotales: v[i][15], // columna Q (formula)
       estado: v[i][18],         // columna T (Activo/Inactivo, formula del libro)
       seguimiento: v[i][20],    // columna V (manual: 1/2/3 veces contactado, Perdido)
-      cumple: cumpleAIso(v[i][21])  // columna W (manual: fecha de cumpleanos)
+      cumple: cumpleAIso(v[i][21]), // columna W (manual: fecha de cumpleanos)
+      historial: v[i][22]      // columna X (manual: historial de contacto/marketing, una linea por nota)
     });
   }
   return out;
@@ -3340,6 +3394,26 @@ function cumpleAIso(s) {
   var m = String(s || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (!m) return String(s || '').trim();
   return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+}
+
+/** Igual patron que guardarCumple(), en la columna X (Historial de contacto
+ *  y ventas). La app manda el texto YA completo (la nota nueva encima de las
+ *  viejas, una por linea) — aqui solo se pisa la celda entera, nunca se
+ *  intenta "agregar una linea" desde el backend. */
+function guardarHistorial(d) {
+  var nombre = String((d && d.nombre) || '').trim();
+  if (!nombre) throw new Error('Falta el nombre del cliente.');
+  var valor = String((d && d.valor) || '');
+  var sh = hoja(CLI.hoja);
+  var n = CLI.ultima - CLI.primera + 1;
+  var nombres = sh.getRange(CLI.primera, CLI.colNombre, n, 1).getValues();
+  for (var i = 0; i < n; i++) {
+    if (String(nombres[i][0] || '').trim().toLowerCase() === nombre.toLowerCase()) {
+      sh.getRange(CLI.primera + i, 24).setValue(valor); // columna X
+      return { ok: true, fila: CLI.primera + i };
+    }
+  }
+  throw new Error('No se encontró un cliente con ese nombre: ' + nombre);
 }
 
 function guardarBeneficiario(d) {
