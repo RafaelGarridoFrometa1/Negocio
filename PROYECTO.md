@@ -577,6 +577,23 @@ comprar, además de cumpleaños.
   tiene que empezar a mandar; sin redesplegar, esas dos llegan vacías y
   "🔁 Compra cada ~X días" no aparece en ninguna tarjeta.
 
+**Ficha de cliente con historial de pedidos (v24, 2026-10-28).** Botón
+"ℹ️ Info" nuevo en cada tarjeta de Clientes (`abrirInfoCliente()`).
+
+- Muestra todos los datos del cliente (teléfono, email, dirección,
+  municipio, relación, canal, cumpleaños, seguimiento, días sin operar,
+  frecuencia de compra) y, debajo, el **historial completo de pedidos**
+  donde aparece — buscado en `db.envios` por nombre, tanto si es quien
+  envía (Cliente EeUu) como si es quien recibe (Cliente Cuba) — con fecha
+  real (`fechaOperacion()`), tipo, montos, mensajero y estado. No pide
+  nada nuevo al backend: todo viene de datos que la app ya tenía
+  cargados.
+- **Promedio enviado**: de los pedidos donde el cliente es quien envía
+  (no cuenta los que solo recibe, ni las Canceladas — ese dinero nunca se
+  movió), promedio de "Cantidad a Depositar", mostrado junto con la
+  frecuencia ("Envía en promedio $X cada ~Y días").
+- No requiere redesplegar Apps Script — es 100% `index.html`.
+
 ### Pendiente inmediato
 
 - Confirmar que el backend real en script.google.com tiene pegado

@@ -725,6 +725,15 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
 </div>
 </div>
 
+<!-- ══ MODAL: INFO CLIENTE ══ -->
+<div class="modal-bg" id="modal-cliente-info">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-cliente-info')">×</button>
+  <div class="modal-ttl" id="info-cliente-ttl">Cliente</div>
+  <div id="info-cliente-body"></div>
+</div>
+</div>
+
 <!-- ══ MODAL: CONSOLIDACIÓN MENSUAL ══ -->
 <div class="modal-bg" id="modal-consolidacion">
 <div class="modal">
@@ -2052,6 +2061,76 @@ function deleteCliente(id){
   saveDB(); renderClientes();
 }
 
+// Ficha completa de un cliente: todos sus datos + el historial de pedidos
+// donde aparece, ya sea como quien envía (Cliente EeUu) o quien recibe
+// (Cliente Cuba). Se busca en db.envios (ya mezclado con lo que trae el
+// Sheet), no hace falta pedir nada nuevo al backend.
+function abrirInfoCliente(nombre){
+  var c=findClientByName(nombre);
+  if(!c){ alert('No se encontró ese cliente.'); return; }
+  var pedidos=db.envios.filter(function(r){
+    return txt(r.cliente).toLowerCase().trim()===txt(nombre).toLowerCase().trim()
+        || txt(r.clienteCuba).toLowerCase().trim()===txt(nombre).toLowerCase().trim();
+  }).sort(function(a,b){ return fechaOperacion(b).localeCompare(fechaOperacion(a)); });
+
+  var estadoMap={pendiente:'<span class="bdg bdg-warn">Pendiente</span>',en_camino:'<span class="bdg bdg-pri">En camino</span>',
+    entregada:'<span class="bdg bdg-ok">Entregada</span>',devuelta:'<span class="bdg bdg-warn">Devuelta</span>',
+    cancelada:'<span class="bdg" style="background:var(--err-bg);color:var(--err)">Cancelada</span>'};
+
+  var frec=frecuenciaDiasCliente(c);
+  var dCompra=diasHastaProximaCompra(c);
+  var dCumple=diasHastaCumple(c);
+
+  // Promedio de lo que manda este cliente: solo cuenta los pedidos donde el
+  // es quien envia (Cliente EeUu), no los que solo recibe en Cuba — y solo
+  // los que de verdad generaron un envio (nunca Cancelada: ese dinero no se
+  // movio).
+  var enviosComoRemitente=pedidos.filter(function(r){
+    return txt(r.cliente).toLowerCase().trim()===txt(nombre).toLowerCase().trim() && r.estado!=='cancelada';
+  });
+  var promedioEnviado = enviosComoRemitente.length
+    ? enviosComoRemitente.reduce(function(s,r){ return s+(parseFloat(r.depositar)||0); },0) / enviosComoRemitente.length
+    : null;
+
+  var datos='<div class="op-card">'
+    +'<div class="op-card-ttl">📋 Datos</div>'
+    +'<div class="item-detail">'
+    +(c.telefono?'📱 '+c.telefono+'<br>':'')
+    +(c.email?'✉️ '+c.email+'<br>':'')
+    +(c.municipio||c.direccion?'📍 '+(c.municipio||'')+(c.direccion?' · '+c.direccion:'')+'<br>':'')
+    +'🌎 Reside en '+(c.reside||'—')+'<br>'
+    +(c.contacto?'🤝 Relación: '+c.contacto+'<br>':'')
+    +(c.canal?'📣 Canal: '+c.canal+'<br>':'')
+    +(c.cumple?'🎂 Cumpleaños: '+fmtDate(c.cumple)+(dCumple!==null?' ('+(dCumple===0?'¡hoy!':'en '+dCumple+'d'):'')+'<br>':'')
+    +(c.seguimiento?'📞 Seguimiento: '+c.seguimiento+'<br>':'')
+    +(isFinite(diasSinOperarNum(c))?'⏳ Días sin operar: '+c.diasSinOperar+'<br>':'')
+    +(frec?'🔁 Compra cada ~'+Math.round(frec)+' días'+(dCompra!==null?' (próxima: '+(dCompra<0?'hace '+(-dCompra)+'d':dCompra===0?'hoy':'en '+dCompra+'d')+')':'')+'<br>':'')
+    +(promedioEnviado!==null?'💵 Envía en promedio '+fmtMoney(promedioEnviado)+(frec?' cada ~'+Math.round(frec)+' días':'')+' ('+enviosComoRemitente.length+' envío'+(enviosComoRemitente.length===1?'':'s')+')<br>':'')
+    +(c.nota?'📝 '+c.nota:'')
+    +'</div></div>';
+
+  var listaPedidos = !pedidos.length
+    ? '<div class="empty"><div class="empty-ico">📭</div><div>Sin pedidos registrados con este nombre</div></div>'
+    : pedidos.map(function(r){
+        var rol = txt(r.cliente).toLowerCase().trim()===txt(nombre).toLowerCase().trim() ? 'Envía' : 'Recibe';
+        var mens = db.mensajeros.find(function(m){ return m.id===r.mensajero; });
+        return '<div class="item">'
+          +'<div class="item-hdr"><div class="item-name">'+fmtDiaLargo(fechaOperacion(r))+'</div>'+(estadoMap[r.estado]||'')+'</div>'
+          +'<div class="item-detail">'
+          +'🔁 '+(r.tipo||'')+' · '+rol+'<br>'
+          +'💰 Depositar: '+fmtMoney(r.depositar)+' · Entrega: '+fmtMoney(r.entrega)+' · Mensajería: '+fmtMoney(r.costoMens)+'<br>'
+          +(mens?'👤 Mensajero: '+mens.nombre+'<br>':'')
+          +(r.notas?'📝 '+r.notas:'')
+          +'</div></div>';
+      }).join('');
+
+  document.getElementById('info-cliente-ttl').textContent=c.nombre;
+  document.getElementById('info-cliente-body').innerHTML=datos
+    +'<div class="op-card-ttl" style="margin-top:1rem">📦 Pedidos ('+pedidos.length+')</div>'
+    +listaPedidos;
+  openModal('modal-cliente-info');
+}
+
 function filterClientes(f,btn){
   clienteFilter=f;
   document.querySelectorAll('#sec-clientes .tmi').forEach(function(b){ b.classList.remove('on'); });
@@ -2231,6 +2310,7 @@ function renderClientes(){
       +seguimientoBox
       +waBtn
       +'<div class="item-actions">'
+        +'<button class="btn btn-out btn-sm" onclick="abrirInfoCliente(\''+c.nombre.replace(/'/g,"\\'")+'\')">ℹ️ Info</button>'
         +'<button class="btn btn-out btn-sm" onclick="editCliente(\''+c.nombre.replace(/'/g,"\\'")+'\')">Editar</button>'
         +(!c.fromSheets?'<button class="btn btn-err btn-sm" onclick="deleteCliente(\''+c.id+'\')">Borrar</button>':'')
         +'</div>'
@@ -2250,7 +2330,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v23 · 2026-10-28';
+var APP_VERSION='v24 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
