@@ -530,6 +530,25 @@ relación y fecha de cumpleaños.
   formulario antes de abrirlo (`clearClienteForm()` no se llamaba) — podía
   arrastrar datos de la última edición a un cliente que se creyera nuevo.
 
+**Consolidación "Por cliente" (v22, 2026-10-28).** Hasta ahora Consolidación
+solo daba una lista plana de operaciones del mes. Rafael pidió poder verla
+también agrupada por cliente: el nombre y las operaciones que hizo en ese
+periodo.
+
+- Dos pestañas en el modal: "Por operación" (el comportamiento de siempre,
+  sin cambios) y "Por cliente" (nueva).
+- "Por cliente" agrupa por **Cliente reside en EeUu** (quien pide el
+  envío, no el destinatario en Cuba) y ordena los nombres alfabéticamente.
+  Cada sección trae: `CLIENTE: <nombre> · N operaciones · Total
+  depositado: $X`, seguido de sus filas (mismas columnas que siempre,
+  menos "Cliente reside en EeUu" — ya es el encabezado de la sección, no
+  hace falta repetirlo en cada fila).
+- `armarConsolidacionPorOperacion()`/`armarConsolidacionPorCliente()` son
+  las dos funciones que construyen las líneas finales;
+  `generarConsolidacion()` solo decide cuál llamar según la pestaña activa
+  (`consModo`). Mismo origen de datos de siempre (`getOperaciones()` fresco
+  del Sheet) — no cambia nada del lado del backend.
+
 ### Pendiente inmediato
 
 - Confirmar que el backend real en script.google.com tiene pegado

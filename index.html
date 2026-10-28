@@ -730,6 +730,10 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <button class="modal-close" onclick="closeModal('modal-consolidacion')">×</button>
   <div class="modal-ttl">📋 Consolidación mensual</div>
   <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem">Trae todas las operaciones del mes elegido directo de la hoja de Google Sheets (no de este teléfono), listas para copiar y pegar.</p>
+  <div class="tmini">
+    <button class="tmi on" onclick="filterConsModo('operacion',this)">Por operación</button>
+    <button class="tmi" onclick="filterConsModo('cliente',this)">Por cliente</button>
+  </div>
   <div class="fgroup"><label class="flabel">Mes</label><input type="month" class="finput" id="cons-mes"></div>
   <button class="btn btn-pri" onclick="generarConsolidacion()">Generar</button>
   <textarea class="finput" id="cons-txt" rows="10" readonly style="font-family:monospace;font-size:.7rem;line-height:1.4;margin-top:.75rem" placeholder="Aquí aparecerán las operaciones del mes..."></textarea>
@@ -1494,12 +1498,72 @@ function renderDashboard(){
 // todavia no llegaron (por eso existe la cola de pendientes de mas arriba).
 var CONS_ENCABEZADO=['OpeNumero','Dia','Tipo','Donde se cobra la ganancia',
   'Cliente reside en EeUu','Cliente en Cuba','Cantidad a Depositar','Entrega','Costo Mens'];
+// Mismas columnas, sin "Cliente reside en EeUu": en el modo "Por cliente" ese
+// nombre ya es el encabezado de la sección, no hace falta repetirlo en cada fila.
+var CONS_ENCABEZADO_CLIENTE=['OpeNumero','Dia','Tipo','Donde se cobra la ganancia',
+  'Cliente en Cuba','Cantidad a Depositar','Entrega','Costo Mens'];
+
+var consModo='operacion';
+function filterConsModo(modo,btn){
+  consModo=modo;
+  document.querySelectorAll('#modal-consolidacion .tmini .tmi').forEach(function(b){ b.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+}
 
 function abrirConsolidacion(){
   var hoy=new Date();
   document.getElementById('cons-mes').value=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2);
   document.getElementById('cons-txt').value='';
   openModal('modal-consolidacion');
+}
+
+function filaOperacionCons(r){
+  return [
+    r.opeNumero||'',
+    r.creado?fmtDate(r.creado):'',
+    r.tipo||'',
+    r.cobro||'',
+    r.cliente||'',
+    r.clienteCuba||'',
+    (parseFloat(r.depositar)||0).toFixed(2),
+    (parseFloat(r.entrega)||0).toFixed(2),
+    (parseFloat(r.costoMens)||0).toFixed(2)
+  ];
+}
+
+// Modo "Por operación": una fila por operación, todas juntas — el formato de siempre.
+function armarConsolidacionPorOperacion(filas){
+  var lineas=[CONS_ENCABEZADO.join('\t')];
+  filas.forEach(function(r){ lineas.push(filaOperacionCons(r).join('\t')); });
+  return lineas;
+}
+
+// Modo "Por cliente": agrupa por "Cliente reside en EeUu" (quien pide el envío),
+// una sección por cliente con sus operaciones del mes y un resumen (cantidad y
+// total depositado). El nombre no se repite en cada fila porque ya es el
+// encabezado de su sección.
+function armarConsolidacionPorCliente(filas){
+  var porCliente={};
+  filas.forEach(function(r){
+    var nom=txt(r.cliente).trim()||'(Sin cliente)';
+    if(!porCliente[nom]) porCliente[nom]=[];
+    porCliente[nom].push(r);
+  });
+  var nombres=Object.keys(porCliente).sort(function(a,b){ return a.localeCompare(b,'es'); });
+  var lineas=[];
+  nombres.forEach(function(nom,i){
+    var ops=porCliente[nom];
+    var total=ops.reduce(function(s,r){ return s+(parseFloat(r.depositar)||0); },0);
+    if(i>0) lineas.push('');
+    lineas.push('CLIENTE: '+nom+'  ·  '+ops.length+' operación'+(ops.length===1?'':'es')+'  ·  Total depositado: $'+total.toFixed(2));
+    lineas.push(CONS_ENCABEZADO_CLIENTE.join('\t'));
+    ops.forEach(function(r){
+      var fila=filaOperacionCons(r);
+      fila.splice(4,1); // quita "Cliente reside en EeUu": ya esta en el encabezado de la seccion
+      lineas.push(fila.join('\t'));
+    });
+  });
+  return lineas;
 }
 
 function generarConsolidacion(){
@@ -1521,20 +1585,7 @@ function generarConsolidacion(){
         if(a.creado!==b.creado) return (a.creado||'').localeCompare(b.creado||'');
         return (parseFloat(a.opeNumero)||0)-(parseFloat(b.opeNumero)||0);
       });
-      var lineas=[CONS_ENCABEZADO.join('\t')];
-      filas.forEach(function(r){
-        lineas.push([
-          r.opeNumero||'',
-          r.creado?fmtDate(r.creado):'',
-          r.tipo||'',
-          r.cobro||'',
-          r.cliente||'',
-          r.clienteCuba||'',
-          (parseFloat(r.depositar)||0).toFixed(2),
-          (parseFloat(r.entrega)||0).toFixed(2),
-          (parseFloat(r.costoMens)||0).toFixed(2)
-        ].join('\t'));
-      });
+      var lineas = consModo==='cliente' ? armarConsolidacionPorCliente(filas) : armarConsolidacionPorOperacion(filas);
       area.value=lineas.join('\n');
     })
     .catch(function(e){
@@ -2122,7 +2173,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v21 · 2026-10-28';
+var APP_VERSION='v22 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
