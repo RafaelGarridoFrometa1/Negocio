@@ -530,6 +530,53 @@ relación y fecha de cumpleaños.
   formulario antes de abrirlo (`clearClienteForm()` no se llamaba) — podía
   arrastrar datos de la última edición a un cliente que se creyera nuevo.
 
+**Consolidación "Por cliente" (v22, 2026-10-28).** Hasta ahora Consolidación
+solo daba una lista plana de operaciones del mes. Rafael pidió poder verla
+también agrupada por cliente: el nombre y las operaciones que hizo en ese
+periodo.
+
+- Dos pestañas en el modal: "Por operación" (el comportamiento de siempre,
+  sin cambios) y "Por cliente" (nueva).
+- "Por cliente" agrupa por **Cliente reside en EeUu** (quien pide el
+  envío, no el destinatario en Cuba) y ordena los nombres alfabéticamente.
+  Cada sección trae: `CLIENTE: <nombre> · N operaciones · Total
+  depositado: $X`, seguido de sus filas (mismas columnas que siempre,
+  menos "Cliente reside en EeUu" — ya es el encabezado de la sección, no
+  hace falta repetirlo en cada fila).
+- `armarConsolidacionPorOperacion()`/`armarConsolidacionPorCliente()` son
+  las dos funciones que construyen las líneas finales;
+  `generarConsolidacion()` solo decide cuál llamar según la pestaña activa
+  (`consModo`). Mismo origen de datos de siempre (`getOperaciones()` fresco
+  del Sheet) — no cambia nada del lado del backend.
+
+**Frecuencia de compra y pestaña de Notificaciones (v23, 2026-10-28).**
+Rafael pidió ver cada cuánto compra cada cliente, y una pestaña nueva junto
+a Cuba/EeUu/Inactivos/Perdidos que avise cuándo a un cliente "le toca"
+comprar, además de cumpleaños.
+
+- `getClientes()` ahora también lee **Primera Compra** (col. L) y
+  **Compras Totales** (col. Q), además de la ya leída **Última Compra**
+  (col. N) — las tres son fórmulas que el libro ya calculaba solo, no se
+  tocó el Sheet para esto.
+- `frecuenciaDiasCliente(c)` reparte los días entre Primera y Última
+  Compra entre `comprasTotales − 1` → promedio de días entre compras.
+  Devuelve `null` (nunca inventa un número) si hay menos de 2 compras o
+  faltan fechas. Se muestra en cada tarjeta: "🔁 Compra cada ~X días".
+- `diasHastaProximaCompra(c)`: Última Compra + esa frecuencia, comparado
+  con hoy. Negativo = ya se pasó la fecha esperada.
+- `diasHastaCumple(c)`: días hasta el próximo cumpleaños (si ya pasó este
+  año, cuenta para el que viene).
+- **Pestaña "🔔 Notificaciones"**: junto a Cuba/EeUu/Inactivos/Perdidos.
+  Muestra clientes con la compra esperada vencida o a ≤7 días
+  (`VENTANA_AVISO_DIAS`), o con el cumpleaños a ≤7 días. Cada tarjeta que
+  cae ahí (y también en los demás filtros, para que se vea en cualquier
+  pestaña) lleva una insignia 🔔/🎂 explicando por qué.
+- El cálculo (frecuencia, próxima compra, cumpleaños) es todo del lado de
+  la app — pero **sí hace falta redesplegar Apps Script**, porque
+  Primera Compra y Compras Totales son campos nuevos que `getClientes()`
+  tiene que empezar a mandar; sin redesplegar, esas dos llegan vacías y
+  "🔁 Compra cada ~X días" no aparece en ninguna tarjeta.
+
 ### Pendiente inmediato
 
 - Confirmar que el backend real en script.google.com tiene pegado

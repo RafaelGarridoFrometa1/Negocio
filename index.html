@@ -374,6 +374,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         <button class="tmi" onclick="filterClientes('EeUu',this)">En EeUu</button>
         <button class="tmi" onclick="filterClientes('Inactivos',this)">⚠️ Inactivos</button>
         <button class="tmi" onclick="filterClientes('Perdidos',this)">❌ Perdidos</button>
+        <button class="tmi" onclick="filterClientes('Notificaciones',this)">🔔 Notificaciones</button>
       </div>
       <input class="search-inp" id="srch-clientes" placeholder="🔍 Buscar cliente..." oninput="renderClientes()">
       <div id="list-clientes"></div>
@@ -730,6 +731,10 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <button class="modal-close" onclick="closeModal('modal-consolidacion')">×</button>
   <div class="modal-ttl">📋 Consolidación mensual</div>
   <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem">Trae todas las operaciones del mes elegido directo de la hoja de Google Sheets (no de este teléfono), listas para copiar y pegar.</p>
+  <div class="tmini">
+    <button class="tmi on" onclick="filterConsModo('operacion',this)">Por operación</button>
+    <button class="tmi" onclick="filterConsModo('cliente',this)">Por cliente</button>
+  </div>
   <div class="fgroup"><label class="flabel">Mes</label><input type="month" class="finput" id="cons-mes"></div>
   <button class="btn btn-pri" onclick="generarConsolidacion()">Generar</button>
   <textarea class="finput" id="cons-txt" rows="10" readonly style="font-family:monospace;font-size:.7rem;line-height:1.4;margin-top:.75rem" placeholder="Aquí aparecerán las operaciones del mes..."></textarea>
@@ -1494,12 +1499,72 @@ function renderDashboard(){
 // todavia no llegaron (por eso existe la cola de pendientes de mas arriba).
 var CONS_ENCABEZADO=['OpeNumero','Dia','Tipo','Donde se cobra la ganancia',
   'Cliente reside en EeUu','Cliente en Cuba','Cantidad a Depositar','Entrega','Costo Mens'];
+// Mismas columnas, sin "Cliente reside en EeUu": en el modo "Por cliente" ese
+// nombre ya es el encabezado de la sección, no hace falta repetirlo en cada fila.
+var CONS_ENCABEZADO_CLIENTE=['OpeNumero','Dia','Tipo','Donde se cobra la ganancia',
+  'Cliente en Cuba','Cantidad a Depositar','Entrega','Costo Mens'];
+
+var consModo='operacion';
+function filterConsModo(modo,btn){
+  consModo=modo;
+  document.querySelectorAll('#modal-consolidacion .tmini .tmi').forEach(function(b){ b.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+}
 
 function abrirConsolidacion(){
   var hoy=new Date();
   document.getElementById('cons-mes').value=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2);
   document.getElementById('cons-txt').value='';
   openModal('modal-consolidacion');
+}
+
+function filaOperacionCons(r){
+  return [
+    r.opeNumero||'',
+    r.creado?fmtDate(r.creado):'',
+    r.tipo||'',
+    r.cobro||'',
+    r.cliente||'',
+    r.clienteCuba||'',
+    (parseFloat(r.depositar)||0).toFixed(2),
+    (parseFloat(r.entrega)||0).toFixed(2),
+    (parseFloat(r.costoMens)||0).toFixed(2)
+  ];
+}
+
+// Modo "Por operación": una fila por operación, todas juntas — el formato de siempre.
+function armarConsolidacionPorOperacion(filas){
+  var lineas=[CONS_ENCABEZADO.join('\t')];
+  filas.forEach(function(r){ lineas.push(filaOperacionCons(r).join('\t')); });
+  return lineas;
+}
+
+// Modo "Por cliente": agrupa por "Cliente reside en EeUu" (quien pide el envío),
+// una sección por cliente con sus operaciones del mes y un resumen (cantidad y
+// total depositado). El nombre no se repite en cada fila porque ya es el
+// encabezado de su sección.
+function armarConsolidacionPorCliente(filas){
+  var porCliente={};
+  filas.forEach(function(r){
+    var nom=txt(r.cliente).trim()||'(Sin cliente)';
+    if(!porCliente[nom]) porCliente[nom]=[];
+    porCliente[nom].push(r);
+  });
+  var nombres=Object.keys(porCliente).sort(function(a,b){ return a.localeCompare(b,'es'); });
+  var lineas=[];
+  nombres.forEach(function(nom,i){
+    var ops=porCliente[nom];
+    var total=ops.reduce(function(s,r){ return s+(parseFloat(r.depositar)||0); },0);
+    if(i>0) lineas.push('');
+    lineas.push('CLIENTE: '+nom+'  ·  '+ops.length+' operación'+(ops.length===1?'':'es')+'  ·  Total depositado: $'+total.toFixed(2));
+    lineas.push(CONS_ENCABEZADO_CLIENTE.join('\t'));
+    ops.forEach(function(r){
+      var fila=filaOperacionCons(r);
+      fila.splice(4,1); // quita "Cliente reside en EeUu": ya esta en el encabezado de la seccion
+      lineas.push(fila.join('\t'));
+    });
+  });
+  return lineas;
 }
 
 function generarConsolidacion(){
@@ -1521,20 +1586,7 @@ function generarConsolidacion(){
         if(a.creado!==b.creado) return (a.creado||'').localeCompare(b.creado||'');
         return (parseFloat(a.opeNumero)||0)-(parseFloat(b.opeNumero)||0);
       });
-      var lineas=[CONS_ENCABEZADO.join('\t')];
-      filas.forEach(function(r){
-        lineas.push([
-          r.opeNumero||'',
-          r.creado?fmtDate(r.creado):'',
-          r.tipo||'',
-          r.cobro||'',
-          r.cliente||'',
-          r.clienteCuba||'',
-          (parseFloat(r.depositar)||0).toFixed(2),
-          (parseFloat(r.entrega)||0).toFixed(2),
-          (parseFloat(r.costoMens)||0).toFixed(2)
-        ].join('\t'));
-      });
+      var lineas = consModo==='cliente' ? armarConsolidacionPorCliente(filas) : armarConsolidacionPorOperacion(filas);
       area.value=lineas.join('\n');
     })
     .catch(function(e){
@@ -2022,6 +2074,79 @@ function esInactivo(c){
 }
 function diasSinOperarNum(c){ var n=parseInt(c.diasSinOperar,10); return isNaN(n)?Infinity:n; }
 
+// ══ FRECUENCIA DE COMPRA Y NOTIFICACIONES ══
+// "Primera Compra" y "Ultima Compra" vienen del Sheet como texto dd/mm/aaaa
+// (formulas del libro, igual que la columna Dia de Operaciones).
+function parseFechaDMY(s){
+  var m=String(s||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m) return null;
+  return new Date(parseInt(m[3],10), parseInt(m[2],10)-1, parseInt(m[1],10));
+}
+
+// Promedio de dias entre compras, repartiendo todo el periodo (Primera a
+// Ultima Compra) entre el numero de compras menos una. Necesita al menos
+// 2 compras y las dos fechas — si no hay suficiente historial, no se calcula
+// (null), nunca se inventa un numero.
+function frecuenciaDiasCliente(c){
+  var total=parseInt(c.comprasTotales,10)||0;
+  if(total<2) return null;
+  var d1=parseFechaDMY(c.primeraCompra), d2=parseFechaDMY(c.ultimaCompra);
+  if(!d1||!d2) return null;
+  var dias=Math.round((d2-d1)/86400000);
+  if(dias<=0) return null;
+  return dias/(total-1);
+}
+
+// Dias que faltan (negativo = ya se pasó) para la proxima compra esperada,
+// segun la frecuencia de arriba contada desde la ultima compra real.
+function diasHastaProximaCompra(c){
+  var frec=frecuenciaDiasCliente(c);
+  var ultima=parseFechaDMY(c.ultimaCompra);
+  if(!frec||!ultima) return null;
+  var hoy=new Date(); hoy.setHours(0,0,0,0);
+  var prox=new Date(ultima.getTime()+frec*86400000);
+  return Math.round((prox-hoy)/86400000);
+}
+
+// Dias que faltan para el proximo cumpleanos (siempre hacia adelante: si ya
+// paso este año, cuenta para el año que viene).
+function diasHastaCumple(c){
+  if(!c.cumple) return null;
+  var p=String(c.cumple).split('-');
+  if(p.length<3) return null;
+  var hoy=new Date(); hoy.setHours(0,0,0,0);
+  var prox=new Date(hoy.getFullYear(), parseInt(p[1],10)-1, parseInt(p[2],10));
+  if(prox<hoy) prox.setFullYear(hoy.getFullYear()+1);
+  return Math.round((prox-hoy)/86400000);
+}
+
+var VENTANA_AVISO_DIAS=7; // avisa desde una semana antes (y todo lo ya vencido)
+
+function esNotificable(c){
+  var dCompra=diasHastaProximaCompra(c);
+  if(dCompra!==null && dCompra<=VENTANA_AVISO_DIAS) return true;
+  var dCumple=diasHastaCumple(c);
+  if(dCumple!==null && dCumple<=VENTANA_AVISO_DIAS) return true;
+  return false;
+}
+
+// Insignias para el encabezado de la tarjeta: "le toca comprar" y/o cumpleaños cerca.
+function notifBadges(c){
+  var out='';
+  var dCompra=diasHastaProximaCompra(c);
+  if(dCompra!==null && dCompra<=VENTANA_AVISO_DIAS){
+    var txtCompra = dCompra<0 ? '🔔 Le toca comprar (hace '+(-dCompra)+'d)'
+      : dCompra===0 ? '🔔 Le toca comprar hoy' : '🔔 Le toca comprar en '+dCompra+'d';
+    out+='<span class="bdg bdg-pri">'+txtCompra+'</span>';
+  }
+  var dCumple=diasHastaCumple(c);
+  if(dCumple!==null && dCumple<=VENTANA_AVISO_DIAS){
+    var txtCumple = dCumple===0 ? '🎂 ¡Cumple hoy!' : '🎂 Cumple en '+dCumple+'d';
+    out+='<span class="bdg" style="background:#fce7f3;color:#be185d">'+txtCumple+'</span>';
+  }
+  return out;
+}
+
 // Limpia el telefono y le pone codigo de pais para el enlace de WhatsApp.
 // 8 digitos -> movil cubano (+53). 10 digitos -> EEUU (+1). Si no calza en
 // ningun patron conocido, se omite el boton en vez de armar un enlace roto.
@@ -2066,6 +2191,7 @@ function renderClientes(){
   // Un cliente marcado Perdido ya no cuenta como Inactivo: es un estado aparte, no un subconjunto.
   if(clienteFilter==='Inactivos') all=all.filter(function(c){ return esInactivo(c)&&!esPerdido(c)&&txt(c.telefono).trim()!==''; });
   if(clienteFilter==='Perdidos') all=all.filter(esPerdido);
+  if(clienteFilter==='Notificaciones') all=all.filter(esNotificable);
   var enSeguimiento=(clienteFilter==='Inactivos'||clienteFilter==='Perdidos');
   var div=document.getElementById('list-clientes');
   if(!all.length){ div.innerHTML='<div class="empty"><div class="empty-ico">👥</div><div>No hay clientes que coincidan</div></div>'; return; }
@@ -2075,6 +2201,7 @@ function renderClientes(){
     var rBdg=c.reside==='Cuba'||c.reside==='cuba'?'<span class="bdg bdg-warn">Cuba</span>':'<span class="bdg bdg-pri">EeUu</span>';
     var estBdg=esPerdido(c)?'<span class="bdg" style="background:var(--err-bg);color:var(--err)">❌ Perdido</span>'
       :esInactivo(c)?'<span class="bdg bdg-warn">⚠️ Inactivo'+(isFinite(diasSinOperarNum(c))?' · '+c.diasSinOperar+'d':'')+'</span>':'';
+    estBdg+=notifBadges(c);
     var seguimientoBox='';
     if(enSeguimiento&&c.fromSheets){
       var opciones=['','Contactado 1 vez','Contactado 2 veces','Contactado 3 veces','Perdido'];
@@ -2097,6 +2224,7 @@ function renderClientes(){
       +(c.contacto?'🤝 '+c.contacto:(''  ))
       +(c.canal?'<span class="bdg bdg-pri" style="font-size:.65rem;margin-left:.25rem">'+c.canal+'</span>':'')
       +(c.cumple?'<br>🎂 '+fmtDate(c.cumple):'')
+      +(frecuenciaDiasCliente(c)?'<br>🔁 Compra cada ~'+Math.round(frecuenciaDiasCliente(c))+' días':'')
       +(c.nota?'<br>📝 '+c.nota:'')
       +(!c.fromSheets?'<br><span style="font-size:.7rem;color:var(--ok)">✓ Guardado localmente</span>':'')
       +'</div>'
@@ -2122,7 +2250,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v21 · 2026-10-28';
+var APP_VERSION='v23 · 2026-10-28';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -2554,7 +2682,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 4.1
+ * MI NEGOCIO - Backend Apps Script  ·  version 4.2
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -2635,7 +2763,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '4.1',
+        return json({ ok: true, message: 'Script activo', version: '4.2',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -2817,7 +2945,11 @@ function getClientes() {
       nombre: v[i][0], telefono: v[i][1], email: v[i][2],
       direccion: v[i][3], municipio: v[i][4], reside: v[i][5],
       contacto: v[i][6], decision: v[i][7], canal: v[i][8], nota: v[i][9],
+      primeraCompra: v[i][10],  // columna L (formula)
+      ultimaCompra: v[i][12],   // columna N (formula) — con estas dos y comprasTotales
+                                // la app calcula cada cuanto compra, sin tocar el libro
       diasSinOperar: v[i][13],  // columna O
+      comprasTotales: v[i][15], // columna Q (formula)
       estado: v[i][18],         // columna T (Activo/Inactivo, formula del libro)
       seguimiento: v[i][20],    // columna V (manual: 1/2/3 veces contactado, Perdido)
       cumple: cumpleAIso(v[i][21])  // columna W (manual: fecha de cumpleanos)

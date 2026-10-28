@@ -1,5 +1,5 @@
 /**
- * MI NEGOCIO - Backend Apps Script  ·  version 4.1
+ * MI NEGOCIO - Backend Apps Script  ·  version 4.2
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -80,7 +80,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '4.1',
+        return json({ ok: true, message: 'Script activo', version: '4.2',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -262,7 +262,11 @@ function getClientes() {
       nombre: v[i][0], telefono: v[i][1], email: v[i][2],
       direccion: v[i][3], municipio: v[i][4], reside: v[i][5],
       contacto: v[i][6], decision: v[i][7], canal: v[i][8], nota: v[i][9],
+      primeraCompra: v[i][10],  // columna L (formula)
+      ultimaCompra: v[i][12],   // columna N (formula) — con estas dos y comprasTotales
+                                // la app calcula cada cuanto compra, sin tocar el libro
       diasSinOperar: v[i][13],  // columna O
+      comprasTotales: v[i][15], // columna Q (formula)
       estado: v[i][18],         // columna T (Activo/Inactivo, formula del libro)
       seguimiento: v[i][20],    // columna V (manual: 1/2/3 veces contactado, Perdido)
       cumple: cumpleAIso(v[i][21])  // columna W (manual: fecha de cumpleanos)
