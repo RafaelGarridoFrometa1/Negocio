@@ -711,6 +711,31 @@ venta del resto de las notas.
 - No requiere redesplegar Apps Script esta vez: el backend sigue sin
   mirar el contenido de la celda, solo la escribe completa.
 
+**Bug grave: marcar "Entregada" se revertía a "Pendiente" al sincronizar
+(v30, 2026-10-31).** Rafael reportó que el botón rápido "✓ Entregada" de
+la lista de Envíos (no el formulario completo de Editar) dejaba de surtir
+efecto apenas tocaba "Sincronizar". Causa encontrada leyendo el código:
+
+- `markEntregada(id)` cambiaba `r.estado` y guardaba local
+  (`saveDB()`), pero **nunca llamaba a `marcarPendiente()`**. Esto venía
+  de antes de la v20, pero no se notaba porque hasta entonces
+  "Sincronizar" reenviaba TODO `db.envios` siempre, pasara lo que
+  pasara con la cola de pendientes.
+- Desde la v20 (sincronización rápida, solo manda `db.pendientes`), un
+  cambio que nunca entra a esa cola **nunca se sube** — y al terminar de
+  sincronizar, `loadSheetsOperaciones()` trae de vuelta lo que todavía
+  dice el Sheet (Pendiente, porque el push nunca llegó) y
+  `mezclarOperacionesRemotas()` lo pisa encima del cambio local. De ahí
+  el "lo marco Entregada y Sincronizar me lo vuelve a poner Pendiente".
+- Arreglo: `markEntregada()` ahora llama `marcarPendiente(id)` y
+  `empujarPendientes()`, igual que `saveOp()`.
+- **Nota para el futuro:** cualquier función que cambie un campo de una
+  operación y solo haga `saveDB()` sin pasar por `marcarPendiente()`
+  tiene este mismo riesgo desde la v20. `deleteOp()` tiene una limitación
+  parecida pero distinta: borra local nada más, nunca le dice al Sheet
+  que borre la fila — eso no se ha reportado como problema, pero es bueno
+  tenerlo presente.
+
 ### Pendiente inmediato
 
 - Confirmar que el backend real en script.google.com tiene pegado

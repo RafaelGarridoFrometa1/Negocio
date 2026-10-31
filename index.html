@@ -1298,7 +1298,17 @@ function deleteOp(id){
 
 function markEntregada(id){
   var r=db.envios.find(function(x){ return x.id===id; }); if(!r) return;
-  r.estado='entregada'; saveDB(); renderAll();
+  r.estado='entregada';
+  saveDB();
+  // Sin esto, el cambio se quedaba solo en el telefono: "Sincronizar" ya no
+  // reenvia todo db.envios (desde que solo manda lo pendiente, para que no
+  // sea tan lento), asi que si este boton no entra a la cola de pendientes
+  // nunca sube — y al bajar de la hoja, el "Pendiente" viejo pisa este
+  // cambio local. Ese era el bug: marcar Entregada y que "Sincronizar" lo
+  // volviera a poner Pendiente.
+  marcarPendiente(id);
+  empujarPendientes();
+  renderAll();
 }
 
 // ══ RESUMEN MENSAJERO ══
@@ -2511,7 +2521,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v29 · 2026-10-28';
+var APP_VERSION='v30 · 2026-10-31';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
