@@ -736,6 +736,26 @@ efecto apenas tocaba "Sincronizar". Causa encontrada leyendo el código:
   que borre la fila — eso no se ha reportado como problema, pero es bueno
   tenerlo presente.
 
+**"Con quién tiene relación" ahora acepta varios clientes (v31,
+2026-10-31).** Antes era un solo texto libre; Rafael pidió poder
+relacionar un cliente con varios otros.
+
+- **Sin columna nueva ni cambios en el backend**: sigue siendo la misma
+  columna H de siempre, solo que ahora guarda una lista de nombres
+  separados por coma (`nombresDeContacto()`/`renderRelacionTags()`). Un
+  valor viejo de un solo nombre sigue funcionando igual, es una lista de
+  un elemento.
+- En el formulario de cliente, el campo de texto se cambió por una caja
+  de "pastillas" + buscador (`cli-contacto-buscar`, mismo patrón de
+  autocompletado que Envíos/Organización): se escribe, se elige un
+  cliente de la lista, se agrega como pastilla con una `×` para
+  quitarla. Nunca ofrece al cliente relacionarse consigo mismo ni repetir
+  uno ya agregado.
+- En la ficha de cliente (`ℹ️ Info`), cada nombre relacionado sale como
+  una pastilla **tocable**: al tocarla, abre la ficha de ESE cliente —
+  se puede navegar de relación en relación sin cerrar el modal.
+- No requiere redesplegar Apps Script.
+
 ### Pendiente inmediato
 
 - Confirmar que el backend real en script.google.com tiene pegado

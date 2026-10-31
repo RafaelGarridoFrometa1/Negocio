@@ -688,7 +688,16 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <div class="op-card">
     <div class="op-card-ttl">🤝 Referencia y canal</div>
     <div class="frow">
-      <div class="fgroup"><label class="flabel">Con quién tiene relación</label><input type="text" class="finput" id="cli-contacto" placeholder="Referido por, familiar de..."></div>
+      <div class="fgroup">
+        <label class="flabel">Con quién tiene relación</label>
+        <div id="cli-contacto-chips" style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.4rem"></div>
+        <input type="hidden" id="cli-contacto">
+        <div class="dd-wrap">
+          <input type="text" class="finput" id="cli-contacto-buscar" placeholder="Buscar cliente para relacionar..." autocomplete="off"
+            oninput="filterContactoDD()" onfocus="openContactoDD()" onblur="setTimeout(function(){closeContactoDD()},200)">
+          <div class="dd-list" id="ddl-contacto"></div>
+        </div>
+      </div>
       <div class="fgroup"><label class="flabel">Canal</label>
         <select class="finput" id="cli-canal">
           <option value="">— Seleccionar —</option>
@@ -2072,7 +2081,7 @@ function saveCliente(){
 }
 
 function clearClienteForm(){
-  ['cli-nombre','cli-tel','cli-email','cli-dir','cli-contacto','cli-nota','cli-cumple'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['cli-nombre','cli-tel','cli-email','cli-dir','cli-contacto','cli-contacto-buscar','cli-nota','cli-cumple'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('cli-municipio').value='';
   document.getElementById('cli-reside').value='Cuba';
   document.getElementById('cli-canal').value='';
@@ -2080,6 +2089,76 @@ function clearClienteForm(){
   document.getElementById('cliente-id').value='';
   document.getElementById('cliente-origen').value='';
   document.getElementById('cliente-modal-ttl').textContent='Nuevo cliente';
+  renderContactoChips();
+}
+
+// ══ "CON QUIÉN TIENE RELACIÓN": VARIOS CLIENTES, NO UNO SOLO ══
+//
+// Se guarda en la MISMA columna H de siempre ("contacto"), como lista de
+// nombres separados por coma — no hizo falta ninguna columna nueva ni tocar
+// el backend. La caja de abajo (chips + buscador) solo es una forma mas
+// comoda de armar y editar esa lista de nombres.
+function nombresDeContacto(valor){
+  return String(valor||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+}
+
+// Para mostrar en la ficha de cliente (ℹ️ Info): cada nombre relacionado
+// sale como una pastilla tocable que abre la ficha de ESE cliente.
+function renderRelacionTags(valor){
+  return nombresDeContacto(valor).map(function(n){
+    return '<span class="bdg bdg-pri" style="cursor:pointer" onclick="abrirInfoCliente(\''+n.replace(/'/g,"\\'")+'\')">'+txt(n)+'</span>';
+  }).join(' ');
+}
+
+function renderContactoChips(){
+  var nombres=nombresDeContacto(document.getElementById('cli-contacto').value);
+  document.getElementById('cli-contacto-chips').innerHTML=nombres.map(function(n){
+    return '<span class="bdg bdg-pri">'+txt(n)+' <span style="cursor:pointer;font-weight:700" onclick="quitarContactoChip(\''+n.replace(/'/g,"\\'")+'\')">×</span></span>';
+  }).join('');
+}
+
+function agregarContactoChip(nombre){
+  var hid=document.getElementById('cli-contacto');
+  var nombres=nombresDeContacto(hid.value);
+  if(nombres.some(function(n){ return n.toLowerCase()===nombre.toLowerCase(); })) return; // ya esta en la lista
+  nombres.push(nombre);
+  hid.value=nombres.join(', ');
+  renderContactoChips();
+}
+
+function quitarContactoChip(nombre){
+  var hid=document.getElementById('cli-contacto');
+  var nombres=nombresDeContacto(hid.value).filter(function(n){ return n.toLowerCase()!==nombre.toLowerCase(); });
+  hid.value=nombres.join(', ');
+  renderContactoChips();
+}
+
+function openContactoDD(){ filterContactoDD(); }
+function closeContactoDD(){ document.getElementById('ddl-contacto').classList.remove('open'); }
+
+function filterContactoDD(){
+  var q=txt(document.getElementById('cli-contacto-buscar').value).toLowerCase().trim();
+  var list=document.getElementById('ddl-contacto');
+  var yaElegidos=nombresDeContacto(document.getElementById('cli-contacto').value).map(function(n){ return n.toLowerCase(); });
+  var miNombre=txt(document.getElementById('cli-nombre').value).toLowerCase().trim();
+  var names=getAllClientNames().filter(function(n){
+    var nl=txt(n).toLowerCase();
+    return yaElegidos.indexOf(nl)===-1 && nl!==miNombre; // nunca ofrecer repetidos ni relacionarse con si mismo
+  });
+  var filtered=q?names.filter(function(n){ return txt(n).toLowerCase().indexOf(q)>=0; }):names;
+  list.innerHTML='';
+  if(!filtered.length){
+    var emp=document.createElement('div'); emp.className='dd-empty';
+    emp.textContent='Sin resultados';
+    list.appendChild(emp);
+    list.classList.add('open'); return;
+  }
+  filtered.slice(0,30).forEach(function(c){
+    var d=document.createElement('div'); d.className='dd-item'; d.textContent=c;
+    d.onmousedown=function(e){ e.preventDefault(); agregarContactoChip(c); document.getElementById('cli-contacto-buscar').value=''; closeContactoDD(); };
+    list.appendChild(d);
+  });
+  list.classList.add('open');
 }
 
 // Recibe el NOMBRE, no un id: los 427 clientes reales que vienen del Sheet
@@ -2099,6 +2178,8 @@ function editCliente(nombre){
   document.getElementById('cli-municipio').value=c.municipio||'';
   document.getElementById('cli-reside').value=c.reside||'Cuba';
   document.getElementById('cli-contacto').value=c.contacto||'';
+  document.getElementById('cli-contacto-buscar').value='';
+  renderContactoChips();
   document.getElementById('cli-canal').value=c.canal||'';
   document.getElementById('cli-cumple').value=c.cumple||'';
   if(c.decision==='si') document.getElementById('cli-dec-si').checked=true;
@@ -2164,7 +2245,7 @@ function abrirInfoCliente(nombre){
     +(c.email?'✉️ '+c.email+'<br>':'')
     +(c.municipio||c.direccion?'📍 '+(c.municipio||'')+(c.direccion?' · '+c.direccion:'')+'<br>':'')
     +'🌎 Reside en '+(c.reside||'—')+'<br>'
-    +(c.contacto?'🤝 Relación: '+c.contacto+'<br>':'')
+    +(c.contacto?'🤝 Relación: '+renderRelacionTags(c.contacto)+'<br>':'')
     +(c.canal?'📣 Canal: '+c.canal+'<br>':'')
     +(c.cumple?'🎂 Cumpleaños: '+fmtDate(c.cumple)+(dCumple!==null?' ('+(dCumple===0?'¡hoy!':'en '+dCumple+'d'):'')+'<br>':'')
     +(c.seguimiento?'📞 Seguimiento: '+c.seguimiento+'<br>':'')
@@ -2521,7 +2602,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v30 · 2026-10-31';
+var APP_VERSION='v31 · 2026-10-31';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
