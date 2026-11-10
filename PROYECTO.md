@@ -756,7 +756,73 @@ relacionar un cliente con varios otros.
   se puede navegar de relación en relación sin cerrar el modal.
 - No requiere redesplegar Apps Script.
 
+**Portal Conecta: nueva web para que los clientes hagan sus pedidos
+solos (v32, 2026-11-07).** Hasta ahora toda la app (`index.html`) era
+para Rafael/Daniela. Esto es un producto nuevo y separado: una página
+propia para que CADA CLIENTE entre con su usuario y contraseña, pida
+sus envíos y les dé seguimiento, sin tener que llamar ni escribir.
+
+- **Archivos nuevos, carpeta `portal/`**: `index.html` (toda la app del
+  cliente), `sw.js` (service worker propio, mismo patrón "red primero
+  para el HTML" que el de la app principal), `manifest.json` (PWA
+  instalable aparte), `logo-conecta.png` (logo real de la marca, sacado
+  de Drive), `icon-192.png`/`icon-512.png` (ícono de la app).
+- **Usa el MISMO backend** (`negocio-contabilidad.gs`, mismo libro,
+  misma implementación de Apps Script) — no hay que crear un script
+  nuevo ni un segundo despliegue. Se agregaron 7 acciones nuevas al
+  switch de `manejar()`: `portalLogin`, `portalPedidos`,
+  `portalCrearPedido`, `portalMarcarPago`, `portalFamiliares`,
+  `portalGuardarFamiliar`, `portalBorrarFamiliar`.
+- **3 hojas nuevas, se crean solas** la primera vez que se usan
+  (`hojaPortal()` las crea con encabezados si no existen — no hace
+  falta crearlas a mano):
+  - `Portal_Clientes`: Usuario, Contraseña, Nombre, Telefono. Rafael
+    tiene que llenar esta a mano con un usuario/contraseña por cliente
+    real. Es texto plano, no hay cifrado — suficiente para este
+    negocio, pero no es nivel bancario; que quede claro.
+  - `Portal_Pedidos`: lo que piden los clientes desde el portal. **A
+    propósito NO cae directo en "Operaciones"**: queda aquí para que
+    Rafael/Daniela lo revisen y lo pasen a Envíos ellos mismos desde la
+    app normal. Así ningún cliente escribe nunca directo en el libro de
+    contabilidad real. Columnas: ID, Fecha, Usuario, Destinatario,
+    Telefono, Municipio, Monto, Recibido, Nota, Estado, Pagado,
+    FechaPago, Comprobante (link a Drive). El Estado se puede escribir
+    a mano ahí mismo (Pendiente/En camino/Entregada/Cancelada) y el
+    portal lo lee con el mismo `deEstado()` tolerante a mayúsculas/typos
+    que ya usa Operaciones.
+  - `Portal_Familiares`: destinatarios guardados por cada cliente
+    (Usuario, Nombre, Telefono, Municipio, Direccion), para que no
+    tengan que escribir los datos cada vez.
+- **Comprobante de pago real**: la imagen que adjunta el cliente se
+  redimensiona en el teléfono (máx. 1280px, JPEG) antes de mandarse, se
+  sube a una carpeta de Drive llamada "Conecta - Comprobantes de pago"
+  (se crea sola) con acceso "cualquiera con el link puede ver", y el
+  link queda en la columna Comprobante de `Portal_Pedidos` — click y se
+  ve la foto.
+- **Pago después de la entrega**: cuando un pedido pasa a "Entregada",
+  al cliente le aparece un botón "Enviar el pago ahora" con los datos de
+  cobro (editable en `DATOS_PAGO` dentro de `portal/index.html`) y un
+  botón "Ya envié el pago" que marca Pagado=Sí y la fecha.
+- **Calculadora** (sin login, cálculo 100% del lado del cliente): el
+  cliente pone cuánto quiere que reciba su familiar y el municipio de
+  entrega, y ve el desglose (conversión + mensajería) y el total a
+  enviar. Un botón "Enviar este pedido" pasa directo a Nuevo pedido con
+  esos datos ya puestos.
+- **Config a mano antes de subir**, todo arriba del todo en
+  `portal/index.html`: `SCRIPT_URL` (la misma URL /exec de Apps
+  Script), `TASA_CAMBIO`, `WHATSAPP_NUMERO`, `DATOS_PAGO`,
+  `MUNICIPIOS` (nombre + costo de mensajería de cada uno).
+
 ### Pendiente inmediato
+
+- **Portal Conecta recién creado, falta activarlo**: pegar el
+  `negocio-contabilidad.gs` nuevo (v4.4) en Apps Script y redesplegar,
+  completar los 4 valores de configuración en `portal/index.html`
+  (`SCRIPT_URL`, `WHATSAPP_NUMERO`, `DATOS_PAGO`, revisar
+  `TASA_CAMBIO`/`MUNICIPIOS`), subir la carpeta `portal/` completa a
+  GitHub, y agregar a mano en la hoja `Portal_Clientes` un
+  usuario/contraseña por cada cliente real al que se le quiera dar
+  acceso.
 
 - Confirmar que el backend real en script.google.com tiene pegado
   `negocio-contabilidad.gs` con `CLI_ANCHO_LECTURA`/`setSeguimiento` (las
