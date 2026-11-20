@@ -56,6 +56,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:.6rem .25rem;gap:.2rem;border:none;background:none;color:var(--g4);font-size:.6rem;cursor:pointer}
 .tab.active{color:var(--pri)}
 .tab-ico{font-size:1.3rem}
+.tab{min-width:0}
+.tab span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── CARDS / ITEMS ── */
 .card{background:#fff;border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1rem;margin-bottom:.75rem}
@@ -355,8 +357,8 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <!-- CUENTAS DEL PORTAL DE CLIENTES -->
     <div class="section" id="sec-portal">
       <div class="sec-hdr">
-        <div class="sec-ttl">Cuentas del portal</div>
-        <button class="btn btn-ok btn-sm" onclick="abrirNuevaCuentaPortal('')">+ Nueva</button>
+        <div class="sec-ttl">Cuentas y contraseñas de clientes</div>
+        <button class="btn btn-ok btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="abrirNuevaCuentaPortal('')">+ Nueva</button>
       </div>
       <div class="card" id="portal-clave-box" style="display:none">
         <div class="card-ttl">Clave de administrador</div>
@@ -457,7 +459,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
           Crea el usuario y la contraseña de cada cliente para el portal Conecta,
           cámbialas, bórralas y mándales el acceso por WhatsApp.
         </p>
-        <button class="cfg-btn" onclick="showSection('portal',this)">🔐 Gestionar cuentas de clientes</button>
+        <button class="cfg-btn" onclick="showSection('portal',document.getElementById('tab-portal'))">🔐 Gestionar cuentas de clientes</button>
         <a class="cfg-btn" style="display:block;text-decoration:none" href="https://rafaelgarridofrometa1.github.io/Negocio/portal/" target="_blank" rel="noopener">🌐 Abrir el portal de clientes</a>
       </div>
       <div class="card" style="margin-top:.75rem">
@@ -477,6 +479,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
     <button class="tab" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
+    <button class="tab" id="tab-portal" onclick="showSection('portal',this)"><span class="tab-ico">🔐</span><span>Cuentas</span></button>
     <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
   </div>
 </div>
@@ -2885,7 +2888,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v33 · 2026-11-20';
+var APP_VERSION='v34 · 2026-11-20';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
