@@ -780,7 +780,7 @@ window.onerror = function(msg, src, linea){
     procesarComprobante().then(function(comprobanteBase64){
       return pedirBackend('portalCrearPedido', {
         usuario: session.usuario, destinatario: nombre, telefono: telefono, municipio: municipio,
-        monto: monto, recibido: recibido, nota: nota, comprobanteBase64: comprobanteBase64 || ''
+        direccion: direccion, monto: monto, recibido: recibido, nota: nota, comprobanteBase64: comprobanteBase64 || ''
       });
     }).then(function(res){
       btn.disabled = false; btn.textContent = 'Enviar pedido';
