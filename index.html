@@ -57,7 +57,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tab.active{color:var(--pri)}
 .tab-ico{font-size:1.3rem}
 .tab{min-width:0}
-.tab span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab span:nth-child(2){max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab{position:relative}
+.tab-badge{position:absolute;top:.25rem;left:50%;margin-left:.45rem;background:var(--err);color:#fff;border-radius:10px;font-size:.6rem;font-weight:700;min-width:1.05rem;padding:0 .3rem;line-height:1.05rem;text-align:center}
 
 /* ── CARDS / ITEMS ── */
 .card{background:#fff;border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.1);padding:1rem;margin-bottom:.75rem}
@@ -354,11 +356,11 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       <div id="list-mensajeros"></div>
     </div>
 
-    <!-- CUENTAS DEL PORTAL DE CLIENTES -->
+    <!-- PORTAL DE CLIENTES: PEDIDOS Y CUENTAS -->
     <div class="section" id="sec-portal">
       <div class="sec-hdr">
-        <div class="sec-ttl">Cuentas y contraseñas de clientes</div>
-        <button class="btn btn-ok btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="abrirNuevaCuentaPortal('')">+ Nueva</button>
+        <div class="sec-ttl">Portal de clientes</div>
+        <button class="btn btn-out btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="recargarPortal()">🔄 Actualizar</button>
       </div>
       <div class="card" id="portal-clave-box" style="display:none">
         <div class="card-ttl">Clave de administrador</div>
@@ -371,6 +373,19 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         <button class="btn btn-pri" onclick="guardarClavePortal()">Entrar</button>
       </div>
       <div id="portal-body">
+        <div class="tmini">
+          <button class="tmi on" id="portal-vista-pedidos" onclick="vistaPortal('pedidos')">🛒 Pedidos</button>
+          <button class="tmi" id="portal-vista-cuentas" onclick="vistaPortal('cuentas')">🔐 Cuentas y contraseñas</button>
+        </div>
+        <div id="portal-pedidos-box">
+          <div class="tmini">
+            <button class="tmi on" id="pp-f-nuevos" onclick="filtroPedidosPortal('nuevos')">Por pasar a Envíos</button>
+            <button class="tmi" id="pp-f-todos" onclick="filtroPedidosPortal('todos')">Todos</button>
+          </div>
+          <div id="list-portal-pedidos"></div>
+        </div>
+        <div id="portal-cuentas-box" style="display:none">
+        <button class="cfg-btn" onclick="abrirNuevaCuentaPortal('')">➕ Nueva cuenta</button>
         <div id="portal-resumen" style="font-size:.85rem;color:var(--g6);margin-bottom:.6rem"></div>
         <button class="cfg-btn" id="portal-btn-todos" onclick="crearCuentasTodosPortal()" style="display:none"></button>
         <div class="tmini">
@@ -379,6 +394,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         </div>
         <input class="search-inp" id="srch-portal" placeholder="🔍 Buscar cliente o usuario..." oninput="renderCuentasPortal()">
         <div id="list-portal"></div>
+        </div>
       </div>
     </div>
 
@@ -454,12 +470,12 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         <button class="cfg-btn" onclick="showSection('mensajeros',this)">👤 Ver mensajeros</button>
       </div>
       <div class="card" style="margin-top:.75rem">
-        <div class="card-ttl">🔐 Cuentas del portal de clientes</div>
+        <div class="card-ttl">🌐 Portal de clientes</div>
         <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
-          Crea el usuario y la contraseña de cada cliente para el portal Conecta,
-          cámbialas, bórralas y mándales el acceso por WhatsApp.
+          Pedidos que hacen los clientes desde el portal Conecta, y sus cuentas y
+          contraseñas. También está en la pestaña "Portal" de abajo.
         </p>
-        <button class="cfg-btn" onclick="showSection('portal',document.getElementById('tab-portal'))">🔐 Gestionar cuentas de clientes</button>
+        <button class="cfg-btn" onclick="showSection('portal',document.getElementById('tab-portal'))">🌐 Abrir pedidos y cuentas del portal</button>
         <a class="cfg-btn" style="display:block;text-decoration:none" href="https://rafaelgarridofrometa1.github.io/Negocio/portal/" target="_blank" rel="noopener">🌐 Abrir el portal de clientes</a>
       </div>
       <div class="card" style="margin-top:.75rem">
@@ -479,7 +495,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
     <button class="tab" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
-    <button class="tab" id="tab-portal" onclick="showSection('portal',this)"><span class="tab-ico">🔐</span><span>Cuentas</span></button>
+    <button class="tab" id="tab-portal" onclick="showSection('portal',this)"><span class="tab-ico">🌐</span><span>Portal</span><span class="tab-badge" id="badge-portal" style="display:none"></span></button>
     <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
   </div>
 </div>
@@ -1010,6 +1026,9 @@ function initApp(){
   // Red de seguridad adicional: reintenta solas cada pocos minutos, por si el
   // reintento al reconectar tambien fallo (p.ej. el script tardo en responder).
   setInterval(function(){ if(navigator.onLine) empujarPendientes(); }, 3*60*1000);
+  // Contador de pedidos nuevos del portal en la pestaña "Portal".
+  if(claveAdminPortal()) cargarPedidosPortal();
+  setInterval(function(){ if(navigator.onLine && claveAdminPortal()) cargarPedidosPortal(); }, 5*60*1000);
 }
 
 function renderAll(){
@@ -1025,7 +1044,7 @@ function showSection(name, btn){
   btn.classList.add('active');
   if(name==='clientes'){ renderClientes(); loadSheetsClientes(); }
   if(name==='dashboard') renderDashboard();
-  if(name==='portal') cargarCuentasPortal();
+  if(name==='portal') recargarPortal();
 }
 
 // ══ MODALS ══
@@ -1297,6 +1316,13 @@ function saveOp(){
     saveDB();
     renderOrganizacion();
   }
+  if(window._portalBridge){
+    var pb=window._portalBridge;
+    window._portalBridge=null;
+    llamarAdminPortal('adminVincularPedidoPortal',{id:pb.id, operacion:obj.id})
+      .then(function(){ cargarPedidosPortal(); })
+      .catch(function(err){ alert('La operación se guardó, pero no se pudo marcar el pedido del portal como pasado a Envíos: '+mensajeErrorPortal(err)); });
+  }
   mostrarResumenMensajero(obj);
   closeModal('modal-op');
   clearOpForm();
@@ -1305,6 +1331,7 @@ function saveOp(){
 
 function clearOpForm(){
   window._orgBridge=null;
+  window._portalBridge=null;
   var campos=['op-id','dd-usa','dd-cuba','op-telefono','op-direccion','op-notas','op-dep','op-ent','op-mens','op-hora'];
   campos.forEach(function(c){ document.getElementById(c).value=''; });
   document.getElementById('op-fecha').value=today();
@@ -2591,7 +2618,7 @@ function guardarClavePortal(){
   if(c.length<4){ alert('La clave debe tener al menos 4 caracteres.'); return; }
   try{ localStorage.setItem(PORTAL_ADMIN_KEY,c); }catch(e){}
   document.getElementById('portal-clave-inp').value='';
-  cargarCuentasPortal();
+  recargarPortal();
 }
 
 /** Mensaje entendible para un error del script. Si la clave es mala, la olvida y la vuelve a pedir. */
@@ -2602,7 +2629,7 @@ function mensajeErrorPortal(err){
     mostrarClavePortal(true);
   }
   if(/Accion no reconocida/i.test(m))
-    m='Tu Apps Script todavía no tiene la versión 4.5. Pega el negocio-contabilidad.gs nuevo y haz una "Nueva versión" de la implementación.';
+    m='Tu Apps Script todavía no tiene la versión 4.6. Pega el negocio-contabilidad.gs nuevo y haz una "Nueva versión" de la implementación.';
   return m||'Error desconocido.';
 }
 
@@ -2765,6 +2792,150 @@ function autocompletarTelCuentaPortal(){
   if(c && !tel.value) tel.value=c.telefono||'';
 }
 
+// ── Pedidos que llegan del portal ──
+// Se leen de la hoja Portal_Pedidos. "Pasar a Envíos" abre el formulario de
+// Nueva operación ya rellenado; al guardarla, el pedido queda enlazado a esa
+// operación (saveOp -> adminVincularPedidoPortal) y desde ahí el cliente ve en
+// el portal el estado real de la operación.
+var portalPedidos=[], portalVista='pedidos', portalFiltroPedidos='nuevos';
+var PORTAL_ESTADOS={pendiente:'Pendiente', en_camino:'En camino', entregada:'Entregada', cancelada:'Cancelada'};
+
+function vistaPortal(v){
+  portalVista=v;
+  document.getElementById('portal-vista-pedidos').classList.toggle('on',v==='pedidos');
+  document.getElementById('portal-vista-cuentas').classList.toggle('on',v==='cuentas');
+  document.getElementById('portal-pedidos-box').style.display=v==='pedidos'?'block':'none';
+  document.getElementById('portal-cuentas-box').style.display=v==='cuentas'?'block':'none';
+  recargarPortal();
+}
+
+function recargarPortal(){
+  if(!claveAdminPortal()){ mostrarClavePortal(true); return Promise.resolve(); }
+  mostrarClavePortal(false);
+  return portalVista==='cuentas' ? cargarCuentasPortal() : cargarPedidosPortal(true);
+}
+
+function filtroPedidosPortal(f){
+  portalFiltroPedidos=f;
+  document.getElementById('pp-f-nuevos').classList.toggle('on',f==='nuevos');
+  document.getElementById('pp-f-todos').classList.toggle('on',f==='todos');
+  renderPedidosPortal();
+}
+
+function pedidoPortalPorPasar(p){ return !p.operacion && p.estado!=='cancelada'; }
+
+function actualizarBadgePortal(){
+  var n=portalPedidos.filter(pedidoPortalPorPasar).length;
+  var b=document.getElementById('badge-portal');
+  b.textContent=n>99?'99+':n;
+  b.style.display=n?'block':'none';
+}
+
+/** conAviso: mostrar "Cargando…" y los errores en la lista (cuando se abre la pestaña). */
+function cargarPedidosPortal(conAviso){
+  if(!claveAdminPortal()) return Promise.resolve();
+  var list=document.getElementById('list-portal-pedidos');
+  if(conAviso && !portalPedidos.length) list.innerHTML='<div class="empty">Cargando pedidos…</div>';
+  return llamarAdminPortal('adminPedidosPortal').then(function(res){
+    portalPedidos=res.pedidos||[];
+    actualizarBadgePortal();
+    renderPedidosPortal();
+  }).catch(function(err){
+    if(!conAviso) return;
+    var m=mensajeErrorPortal(err);
+    list.innerHTML='<div class="empty">No se pudieron cargar los pedidos.<br>'+escPortal(m)+'</div>';
+    if(/clave/i.test(m)) alert(m);
+  });
+}
+
+function renderPedidosPortal(){
+  var list=document.getElementById('list-portal-pedidos');
+  var lista=portalPedidos.map(function(p,i){ return {p:p,i:i}; })
+    .filter(function(x){ return portalFiltroPedidos==='todos' || pedidoPortalPorPasar(x.p); });
+  if(!lista.length){
+    list.innerHTML='<div class="empty"><div class="empty-ico">🛒</div>'
+      +(portalFiltroPedidos==='todos'?'Todavía no hay pedidos del portal.':'No hay pedidos nuevos por pasar a Envíos.')+'</div>';
+    return;
+  }
+  list.innerHTML=lista.map(function(x){
+    var p=x.p, i=x.i;
+    var est=PORTAL_ESTADOS[p.estado]||'Pendiente';
+    var bdgEst=p.estado==='entregada'?'bdg-ok':(p.estado==='cancelada'?'bdg-warn':'bdg-pri');
+    var waCli=telWhatsapp(p.clienteTelefono);
+    var acciones;
+    if(p.operacion){
+      acciones='<div style="font-size:.8rem;color:var(--ok);font-weight:600;margin-bottom:.4rem">✅ Ya está en Envíos — el cliente ve el estado de la operación</div>';
+    } else {
+      acciones='<div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.4rem">'
+        +(p.estado!=='cancelada'?'<button class="btn btn-ok btn-sm" onclick="pasarPedidoPortalAEnvios('+i+')">➕ Pasar a Envíos</button>':'')
+        +'<select class="finput" style="width:auto;padding:.35rem 2rem .35rem .6rem;font-size:.8rem" onchange="estadoPedidoPortal('+i+',this.value)">'
+        +Object.keys(PORTAL_ESTADOS).map(function(k){ return '<option value="'+k+'"'+(k===p.estado?' selected':'')+'>'+PORTAL_ESTADOS[k]+'</option>'; }).join('')
+        +'</select></div>';
+    }
+    return '<div class="card">'
+      +'<div style="display:flex;justify-content:space-between;gap:.5rem;align-items:flex-start;margin-bottom:.35rem">'
+        +'<div style="min-width:0"><div style="font-weight:700">'+escPortal(p.cliente)+' → '+escPortal(p.destinatario)+'</div>'
+        +'<div style="font-size:.75rem;color:var(--g5)">'+escPortal(p.fecha)+' · '+escPortal(p.id)+'</div></div>'
+        +'<div style="display:flex;flex-direction:column;gap:.25rem;align-items:flex-end;flex-shrink:0">'
+          +'<span class="bdg '+bdgEst+'">'+est+'</span>'
+          +(p.pagado?'<span class="bdg bdg-ok">💵 Pagó'+(p.pagadoFecha?' '+escPortal(p.pagadoFecha):'')+'</span>':'')
+        +'</div></div>'
+      +'<div style="font-size:.85rem;color:var(--g7);line-height:1.6;margin-bottom:.5rem">'
+        +'Recibe <strong>$'+(Number(p.recibido)||0).toFixed(2)+'</strong> · el cliente envía <strong>$'+(Number(p.monto)||0).toFixed(2)+'</strong><br>'
+        +'📍 '+escPortal(p.municipio||'—')+(p.direccion?' · '+escPortal(p.direccion):'')+'<br>'
+        +(p.telefono?'📞 '+escPortal(p.telefono)+'<br>':'')
+        +(p.nota?'📝 '+escPortal(p.nota)+'<br>':'')
+        +(p.comprobante?'<a href="'+escPortal(p.comprobante)+'" target="_blank" rel="noopener">🧾 Ver comprobante de pago</a>':'')
+      +'</div>'
+      +acciones
+      +(waCli?'<a class="btn btn-out btn-sm" style="text-decoration:none;display:inline-block" target="_blank" rel="noopener" href="https://wa.me/'+waCli+'">📲 Escribir a '+escPortal(txt(p.cliente).split(' ')[0])+'</a>':'')
+      +'</div>';
+  }).join('');
+}
+
+function estadoPedidoPortal(i, estado){
+  var p=portalPedidos[i]; if(!p) return;
+  llamarAdminPortal('adminEstadoPedidoPortal',{id:p.id, estado:estado})
+    .then(function(){ p.estado=estado; actualizarBadgePortal(); renderPedidosPortal(); })
+    .catch(function(err){ alert('No se pudo cambiar el estado: '+mensajeErrorPortal(err)); renderPedidosPortal(); });
+}
+
+/** "Plaza, Boyeros, Cerro" -> "Plaza": el primer municipio de la app que aparece en el texto del portal. */
+function municipioAppDesdePortal(m){
+  function norm(x){ return txt(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+  var s=norm(m).replace(/diez de octubre/g,'10 de octubre');
+  var best='', pos=Infinity;
+  Array.prototype.forEach.call(document.getElementById('op-municipio').options, function(o){
+    if(!o.value) return;
+    var at=s.indexOf(norm(o.value));
+    if(at!==-1 && at<pos){ pos=at; best=o.value; }
+  });
+  return best;
+}
+
+function pasarPedidoPortalAEnvios(i){
+  var p=portalPedidos[i]; if(!p) return;
+  clearOpForm();
+  document.getElementById('dd-usa').value=p.cliente||'';
+  document.getElementById('dd-cuba').value=p.destinatario||'';
+  document.getElementById('op-telefono').value=p.telefono||'';
+  document.getElementById('op-direccion').value=p.direccion||'';
+  var mun=municipioAppDesdePortal(p.municipio);
+  if(mun) document.getElementById('op-municipio').value=mun;
+  if(p.recibido) document.getElementById('op-ent').value=p.recibido;
+  calcularDeposito();
+  // Lo que el portal le dijo al cliente que enviara es lo que va a depositar.
+  if(p.monto){ document.getElementById('op-dep').value=p.monto; opDepAuto=false; calcOp(); }
+  document.getElementById('op-notas').value=['Pedido del portal '+p.id,
+    (!mun||/recoger/i.test(p.municipio))?'Municipio en el portal: '+p.municipio:'',
+    p.nota?'Nota del cliente: '+p.nota:'',
+    p.pagado?'El cliente marcó que ya pagó'+(p.pagadoFecha?' ('+p.pagadoFecha+')':''):''
+  ].filter(Boolean).join(' · ');
+  window._portalBridge={id:p.id};
+  document.getElementById('op-modal-ttl').textContent='Nueva operación (del portal)';
+  openModal('modal-op');
+}
+
 function guardarNuevaCuentaPortal(){
   var nombre=document.getElementById('cp-nombre').value.trim();
   if(!nombre){ alert('Escribe el nombre del cliente.'); return; }
@@ -2888,7 +3059,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v34 · 2026-11-20';
+var APP_VERSION='v35 · 2026-11-20';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -3320,7 +3491,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 4.5
+ * MI NEGOCIO - Backend Apps Script  ·  version 4.6
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -3401,7 +3572,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '4.5',
+        return json({ ok: true, message: 'Script activo', version: '4.6',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -3449,6 +3620,9 @@ function manejar(e) {
       case 'adminCrearCuentasTodos':      return json(adminCrearCuentasTodos(datos));
       case 'adminActualizarCuentaPortal': return json(adminActualizarCuentaPortal(datos));
       case 'adminBorrarCuentaPortal':     return json(adminBorrarCuentaPortal(datos));
+      case 'adminPedidosPortal':          return json(adminPedidosPortal(datos));
+      case 'adminEstadoPedidoPortal':     return json(adminEstadoPedidoPortal(datos));
+      case 'adminVincularPedidoPortal':   return json(adminVincularPedidoPortal(datos));
 
       // --- notificaciones push (ntfy) ---
       case 'probarNtfy':
@@ -4574,21 +4748,65 @@ function portalFechaIso(v) {
   return String(v || '');
 }
 
+// Columnas de Portal_Pedidos. N y O se agregaron despues (v4.6): las hojas
+// creadas antes no las tienen en el encabezado, asi que se ponen solas.
+var ENC_PORTAL_PEDIDOS = ['ID', 'Fecha', 'Usuario', 'Destinatario', 'Telefono', 'Municipio', 'Monto',
+                          'Recibido', 'Nota', 'Estado', 'Pagado', 'FechaPago', 'Comprobante',
+                          'Direccion', 'Operacion App'];
+var PP_DIRECCION = 14, PP_OPERACION = 15;
+
+function hojaPortalPedidos() {
+  var sh = hojaPortal('Portal_Pedidos', ENC_PORTAL_PEDIDOS);
+  var enc = sh.getRange(1, PP_DIRECCION, 1, 2).getValues()[0];
+  if (!String(enc[0] || '') || !String(enc[1] || '')) {
+    sh.getRange(1, PP_DIRECCION, 1, 2).setValues([[ENC_PORTAL_PEDIDOS[13], ENC_PORTAL_PEDIDOS[14]]]);
+  }
+  return sh;
+}
+
+/**
+ * Estado de cada operacion por su ID App (columna U de Operaciones). Cuando un
+ * pedido del portal se pasa a Envios queda enlazado a su operacion, y desde
+ * ahi el cliente ve el estado REAL de la operacion (lo que se marque en la app),
+ * sin tener que cambiarlo dos veces.
+ */
+function estadosOperacionesPorId() {
+  var n = OP.ultima - OP.primera + 1;
+  var v = hoja(OP.hoja).getRange(OP.primera, OP.estado, n, OP.idApp - OP.estado + 1).getDisplayValues();
+  var mapa = {};
+  for (var i = 0; i < v.length; i++) {
+    var id = String(v[i][OP.idApp - OP.estado] || '').trim();
+    if (id) mapa[id] = deEstado(v[i][0]);
+  }
+  return mapa;
+}
+
+/** Fila de Portal_Pedidos -> objeto. estadosOps: resultado de estadosOperacionesPorId(). */
+function filaPedidoPortal(f, estadosOps) {
+  var operacion = String(f[PP_OPERACION - 1] || '').trim();
+  var estado = deEstado(f[9]);
+  if (operacion && estadosOps && estadosOps[operacion]) estado = estadosOps[operacion];
+  return {
+    id: String(f[0]), fecha: portalFechaIso(f[1]), usuario: String(f[2] || '').trim().toLowerCase(),
+    destinatario: f[3], telefono: f[4], municipio: f[5],
+    monto: Number(f[6]) || 0, recibido: Number(f[7]) || 0, nota: f[8],
+    estado: estado, pagado: String(f[10] || '').toLowerCase() === 'si',
+    pagadoFecha: portalFechaIso(f[11]), comprobante: f[12] || '',
+    direccion: String(f[PP_DIRECCION - 1] || ''), operacion: operacion
+  };
+}
+
 function portalPedidos(d) {
   var usuario = String(d.usuario || '').trim().toLowerCase();
-  var sh = hojaPortal('Portal_Pedidos', ['ID', 'Fecha', 'Usuario', 'Destinatario', 'Telefono',
-                       'Municipio', 'Monto', 'Recibido', 'Nota', 'Estado', 'Pagado', 'FechaPago', 'Comprobante']);
-  var datos = sh.getDataRange().getValues();
-  var pedidos = [];
+  var datos = hojaPortalPedidos().getDataRange().getValues();
+  var estadosOps = null, pedidos = [];
   for (var i = 1; i < datos.length; i++) {
     var f = datos[i];
     if (String(f[2] || '').trim().toLowerCase() !== usuario) continue;
-    pedidos.push({
-      id: f[0], fecha: portalFechaIso(f[1]), destinatario: f[3], telefono: f[4], municipio: f[5],
-      monto: Number(f[6]) || 0, recibido: Number(f[7]) || 0, nota: f[8],
-      estado: deEstado(f[9]), pagado: String(f[10] || '').toLowerCase() === 'si',
-      pagadoFecha: portalFechaIso(f[11]), comprobante: f[12] || ''
-    });
+    if (!estadosOps && String(f[PP_OPERACION - 1] || '').trim()) estadosOps = estadosOperacionesPorId();
+    var p = filaPedidoPortal(f, estadosOps);
+    delete p.operacion; delete p.usuario;
+    pedidos.push(p);
   }
   pedidos.sort(function (a, b) { return (b.fecha || '').localeCompare(a.fecha || ''); });
   return { ok: true, pedidos: pedidos };
@@ -4598,8 +4816,7 @@ function portalCrearPedido(d) {
   var usuario = String(d.usuario || '').trim().toLowerCase();
   if (!usuario) return { ok: false, error: 'Falta usuario.' };
   if (!d.destinatario) return { ok: false, error: 'Falta el destinatario.' };
-  var sh = hojaPortal('Portal_Pedidos', ['ID', 'Fecha', 'Usuario', 'Destinatario', 'Telefono',
-                       'Municipio', 'Monto', 'Recibido', 'Nota', 'Estado', 'Pagado', 'FechaPago', 'Comprobante']);
+  var sh = hojaPortalPedidos();
   var id = 'PD-' + new Date().getTime();
   var hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   var comprobanteUrl = '';
@@ -4618,7 +4835,23 @@ function portalCrearPedido(d) {
   sh.getRange(fila, 10).setValue('Pendiente');
   sh.getRange(fila, 11).setValue('No');
   if (comprobanteUrl) sh.getRange(fila, 13).setValue(comprobanteUrl);
+  if (d.direccion) sh.getRange(fila, PP_DIRECCION).setValue(String(d.direccion));
+  avisarPedidoPortal(usuario, d);
   return { ok: true, id: id };
+}
+
+/** Aviso al celular (ntfy) de que entro un pedido por el portal. Nunca rompe el pedido. */
+function avisarPedidoPortal(usuario, d) {
+  try {
+    var nombre = usuario;
+    var c = leerCuentasPortal().cuentas;
+    for (var i = 0; i < c.length; i++) if (c[i].usuario.toLowerCase() === usuario) { nombre = c[i].nombre || usuario; break; }
+    enviarNtfy('🛒 Nuevo pedido del portal',
+               nombre + ' -> ' + (d.destinatario || '') + ': recibe $' + (Number(d.recibido) || 0) +
+               ' (envia $' + (Number(d.monto) || 0) + ') · ' + (d.municipio || ''));
+  } catch (err) {
+    Logger.log('Aviso de pedido no enviado: ' + err);
+  }
 }
 
 /** Decodifica un data-URL (data:image/png;base64,....) y lo guarda en Drive. Devuelve la URL. */
@@ -4838,6 +5071,61 @@ function adminActualizarCuentaPortal(d) {
     return { ok: true, cuenta: { usuario: cu.usuario, contrasena: cu.contrasena, nombre: cu.nombre, telefono: cu.telefono } };
   }
   return { ok: false, error: 'No existe la cuenta "' + usuario + '".' };
+}
+
+/** Todos los pedidos del portal, con el nombre del cliente, para la app de Negocio. */
+function adminPedidosPortal(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var datos = hojaPortalPedidos().getDataRange().getValues();
+  var cuentas = {}, c = leerCuentasPortal().cuentas;
+  for (var k = 0; k < c.length; k++) cuentas[c[k].usuario.toLowerCase()] = c[k];
+  // Direccion de los pedidos viejos (antes de la columna N): la del familiar guardado.
+  var fam = {}, fv = hojaPortal('Portal_Familiares', ['Usuario', 'Nombre', 'Telefono', 'Municipio', 'Direccion']).getDataRange().getValues();
+  for (var j = 1; j < fv.length; j++) {
+    fam[String(fv[j][0] || '').trim().toLowerCase() + '|' + normalizarTexto(fv[j][1])] = String(fv[j][4] || '');
+  }
+  var estadosOps = estadosOperacionesPorId();
+  var pedidos = [];
+  for (var i = 1; i < datos.length; i++) {
+    if (!String(datos[i][0] || '').trim()) continue;
+    var p = filaPedidoPortal(datos[i], estadosOps);
+    var cu = cuentas[p.usuario] || {};
+    p.cliente = cu.nombre || p.usuario;
+    p.clienteTelefono = cu.telefono || '';
+    if (!p.direccion) p.direccion = fam[p.usuario + '|' + normalizarTexto(p.destinatario)] || '';
+    p.orden = i;
+    pedidos.push(p);
+  }
+  pedidos.sort(function (a, b) { return (b.fecha || '').localeCompare(a.fecha || '') || b.orden - a.orden; });
+  return { ok: true, pedidos: pedidos };
+}
+
+function filaDePedidoPortal(sh, id) {
+  var ids = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+  for (var i = 1; i < ids.length; i++) if (String(ids[i][0]) === String(id)) return i + 1;
+  return 0;
+}
+
+/** Cambia a mano el estado de un pedido que todavia no se paso a Envios. */
+function adminEstadoPedidoPortal(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var etiquetas = { pendiente: 'Pendiente', en_camino: 'En camino', entregada: 'Entregada', cancelada: 'Cancelada' };
+  var etiqueta = etiquetas[deEstado(d.estado)];
+  var sh = hojaPortalPedidos();
+  var fila = filaDePedidoPortal(sh, d.id);
+  if (!fila) return { ok: false, error: 'No existe el pedido ' + d.id + '.' };
+  sh.getRange(fila, 10).setValue(etiqueta);
+  return { ok: true };
+}
+
+/** Enlaza un pedido del portal con la operacion que se creo en Envios. */
+function adminVincularPedidoPortal(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var sh = hojaPortalPedidos();
+  var fila = filaDePedidoPortal(sh, d.id);
+  if (!fila) return { ok: false, error: 'No existe el pedido ' + d.id + '.' };
+  sh.getRange(fila, PP_OPERACION).setNumberFormat('@').setValue(String(d.operacion || ''));
+  return { ok: true };
 }
 
 function adminBorrarCuentaPortal(d) {
