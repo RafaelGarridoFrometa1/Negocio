@@ -352,6 +352,34 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       <div id="list-mensajeros"></div>
     </div>
 
+    <!-- CUENTAS DEL PORTAL DE CLIENTES -->
+    <div class="section" id="sec-portal">
+      <div class="sec-hdr">
+        <div class="sec-ttl">Cuentas del portal</div>
+        <button class="btn btn-ok btn-sm" onclick="abrirNuevaCuentaPortal('')">+ Nueva</button>
+      </div>
+      <div class="card" id="portal-clave-box" style="display:none">
+        <div class="card-ttl">Clave de administrador</div>
+        <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
+          Protege las contraseñas de tus clientes. <strong>La primera vez</strong>, la clave que
+          escribas aquí queda guardada en tu script. Después, tú y Daniela tienen que usar
+          esa misma clave en cada celular. Mínimo 4 caracteres.
+        </p>
+        <div class="fgroup"><input type="password" class="finput" id="portal-clave-inp" placeholder="Clave de administrador"></div>
+        <button class="btn btn-pri" onclick="guardarClavePortal()">Entrar</button>
+      </div>
+      <div id="portal-body">
+        <div id="portal-resumen" style="font-size:.85rem;color:var(--g6);margin-bottom:.6rem"></div>
+        <button class="cfg-btn" id="portal-btn-todos" onclick="crearCuentasTodosPortal()" style="display:none"></button>
+        <div class="tmini">
+          <button class="tmi on" id="portal-tab-con" onclick="filtroPortal('con')">Con cuenta</button>
+          <button class="tmi" id="portal-tab-sin" onclick="filtroPortal('sin')">Sin cuenta</button>
+        </div>
+        <input class="search-inp" id="srch-portal" placeholder="🔍 Buscar cliente o usuario..." oninput="renderCuentasPortal()">
+        <div id="list-portal"></div>
+      </div>
+    </div>
+
 
     <!-- DASHBOARD -->
     <div class="section" id="sec-dashboard">
@@ -422,6 +450,15 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
           nuevos, ver su saldo y registrar pagos.
         </p>
         <button class="cfg-btn" onclick="showSection('mensajeros',this)">👤 Ver mensajeros</button>
+      </div>
+      <div class="card" style="margin-top:.75rem">
+        <div class="card-ttl">🔐 Cuentas del portal de clientes</div>
+        <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
+          Crea el usuario y la contraseña de cada cliente para el portal Conecta,
+          cámbialas, bórralas y mándales el acceso por WhatsApp.
+        </p>
+        <button class="cfg-btn" onclick="showSection('portal',this)">🔐 Gestionar cuentas de clientes</button>
+        <a class="cfg-btn" style="display:block;text-decoration:none" href="https://rafaelgarridofrometa1.github.io/Negocio/portal/" target="_blank" rel="noopener">🌐 Abrir el portal de clientes</a>
       </div>
       <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">Cuenta</div>
@@ -620,6 +657,22 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <div class="fgroup"><label class="flabel">Nombre *</label><input type="text" class="finput" id="mens-nombre" placeholder="Nombre del mensajero"></div>
   <div class="fgroup"><label class="flabel">Teléfono</label><input type="tel" class="finput" id="mens-tel" placeholder="+53..."></div>
   <button class="btn btn-pri" onclick="saveMens()">Guardar</button>
+</div>
+</div>
+
+<!-- ══ MODAL: NUEVA CUENTA DEL PORTAL ══ -->
+<div class="modal-bg" id="modal-cuenta-portal">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-cuenta-portal')">×</button>
+  <div class="modal-ttl">Nueva cuenta del portal</div>
+  <div class="fgroup"><label class="flabel">Cliente *</label>
+    <input type="text" class="finput" id="cp-nombre" list="cp-nombres" placeholder="Escribe o elige un cliente" oninput="autocompletarTelCuentaPortal()">
+    <datalist id="cp-nombres"></datalist>
+  </div>
+  <div class="fgroup"><label class="flabel">Teléfono (para mandarle el acceso)</label><input type="tel" class="finput" id="cp-tel" placeholder="+1 305... / +53 5..."></div>
+  <div class="fgroup"><label class="flabel">Usuario</label><input type="text" class="finput" id="cp-usuario" placeholder="Vacío = se crea solo (nombre.apellido)" autocapitalize="off"></div>
+  <div class="fgroup"><label class="flabel">Contraseña</label><input type="text" class="finput" id="cp-clave" placeholder="Vacío = 6 números al azar" autocapitalize="off"></div>
+  <button class="btn btn-pri" id="cp-guardar" onclick="guardarNuevaCuentaPortal()">Crear cuenta</button>
 </div>
 </div>
 
@@ -969,6 +1022,7 @@ function showSection(name, btn){
   btn.classList.add('active');
   if(name==='clientes'){ renderClientes(); loadSheetsClientes(); }
   if(name==='dashboard') renderDashboard();
+  if(name==='portal') cargarCuentasPortal();
 }
 
 // ══ MODALS ══
@@ -2494,9 +2548,238 @@ function telWhatsapp(tel){
   var d=String(tel||'').replace(/\D/g,'');
   if(!d) return '';
   if(d.length===8) return '53'+d;
-  if(d.length===10) return '1'+d;
+  if(d.length===10) return /^53[57]/.test(d) ? d : '1'+d; // 535/537 = Cuba ya con su 53, no un area de EE.UU.
   if(d.length>=11 && (d.indexOf('53')===0||d.indexOf('1')===0)) return d;
   return '';
+}
+
+// ══ CUENTAS DEL PORTAL DE CLIENTES ══
+// Las acciones admin* del script piden una clave de administrador, porque la
+// URL del script es publica (esta dentro del portal). Se guarda solo en este
+// celular; la primera clave que se usa queda fijada en el script.
+var PORTAL_PUBLICO_URL='https://rafaelgarridofrometa1.github.io/Negocio/portal/';
+var PORTAL_ADMIN_KEY='negocio_portal_admin';
+var portalCuentas=[], portalSinCuenta=[], portalFiltro='con';
+
+function claveAdminPortal(){ try{ return localStorage.getItem(PORTAL_ADMIN_KEY)||''; }catch(e){ return ''; } }
+function escPortal(s){
+  return txt(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+
+function llamarAdminPortal(accion, datos){
+  var url=gsUrl();
+  if(!url) return Promise.reject(new Error('Primero configura la URL del script en Configuración.'));
+  var cuerpo=Object.assign({action:accion, claveAdmin:claveAdminPortal()}, datos||{});
+  return enviarAlScript(url,cuerpo)
+    .catch(function(){ return enviarPorGet(url,cuerpo); })
+    .then(function(res){
+      if(!res||res.ok===false) throw new Error(txt(res&&res.error).replace(/^Error:\s*/,'')||'El script no respondió.');
+      return res;
+    });
+}
+
+function mostrarClavePortal(mostrar){
+  document.getElementById('portal-clave-box').style.display=mostrar?'block':'none';
+  document.getElementById('portal-body').style.display=mostrar?'none':'block';
+}
+
+function guardarClavePortal(){
+  var c=document.getElementById('portal-clave-inp').value.trim();
+  if(c.length<4){ alert('La clave debe tener al menos 4 caracteres.'); return; }
+  try{ localStorage.setItem(PORTAL_ADMIN_KEY,c); }catch(e){}
+  document.getElementById('portal-clave-inp').value='';
+  cargarCuentasPortal();
+}
+
+/** Mensaje entendible para un error del script. Si la clave es mala, la olvida y la vuelve a pedir. */
+function mensajeErrorPortal(err){
+  var m=txt(err&&err.message);
+  if(/clave de administrador/i.test(m)){
+    try{ localStorage.removeItem(PORTAL_ADMIN_KEY); }catch(e){}
+    mostrarClavePortal(true);
+  }
+  if(/Accion no reconocida/i.test(m))
+    m='Tu Apps Script todavía no tiene la versión 4.5. Pega el negocio-contabilidad.gs nuevo y haz una "Nueva versión" de la implementación.';
+  return m||'Error desconocido.';
+}
+
+function cargarCuentasPortal(){
+  if(!claveAdminPortal()){ mostrarClavePortal(true); return Promise.resolve(); }
+  mostrarClavePortal(false);
+  document.getElementById('list-portal').innerHTML='<div class="empty">Cargando cuentas…</div>';
+  return llamarAdminPortal('adminCuentasPortal').then(function(res){
+    portalCuentas=res.cuentas||[]; portalSinCuenta=res.sinCuenta||[];
+    renderCuentasPortal();
+  }).catch(function(err){
+    var m=mensajeErrorPortal(err);
+    document.getElementById('list-portal').innerHTML='<div class="empty">No se pudieron cargar las cuentas.<br>'+escPortal(m)+'</div>';
+    if(/clave/i.test(m)) alert(m);
+  });
+}
+
+function filtroPortal(f){
+  portalFiltro=f;
+  document.getElementById('portal-tab-con').classList.toggle('on',f==='con');
+  document.getElementById('portal-tab-sin').classList.toggle('on',f==='sin');
+  renderCuentasPortal();
+}
+
+function mensajeAccesoPortal(c){
+  return 'Hola '+txt(c.nombre).split(' ')[0]+'! Ya puedes hacer y seguir tus envíos desde el portal de Conecta:\n'
+    +PORTAL_PUBLICO_URL+'\nUsuario: '+c.usuario+'\nContraseña: '+c.contrasena;
+}
+
+function renderCuentasPortal(){
+  var q=(document.getElementById('srch-portal').value||'').toLowerCase().trim();
+  document.getElementById('portal-resumen').textContent=portalCuentas.length+' con cuenta · '+portalSinCuenta.length+' sin cuenta';
+  var bt=document.getElementById('portal-btn-todos');
+  bt.style.display=portalSinCuenta.length?'block':'none';
+  bt.textContent='⚡ Crear cuenta a los '+portalSinCuenta.length+' clientes que no tienen';
+  var html='';
+  if(portalFiltro==='con'){
+    portalCuentas.forEach(function(c,i){
+      if(q && (txt(c.nombre)+' '+c.usuario).toLowerCase().indexOf(q)===-1) return;
+      var wa=telWhatsapp(c.telefono);
+      html+='<div class="card">'
+        +'<div style="font-weight:700">'+escPortal(c.nombre||'(sin nombre)')+'</div>'
+        +'<div style="font-size:.85rem;color:var(--g6);margin:.3rem 0 .6rem;line-height:1.6">'
+          +'Usuario: <strong>'+escPortal(c.usuario)+'</strong><br>'
+          +'Contraseña: <strong>'+escPortal(c.contrasena)+'</strong>'
+          +(c.telefono?'<br>Tel: '+escPortal(c.telefono):'')
+        +'</div>'
+        +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">'
+          +(wa?'<a class="btn btn-ok btn-sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/'+wa+'?text='+encodeURIComponent(mensajeAccesoPortal(c))+'">📲 Enviar acceso</a>'
+              :'<button class="btn btn-out btn-sm" onclick="copiarAccesoPortal('+i+')">📋 Copiar acceso</button>')
+          +'<button class="btn btn-out btn-sm" onclick="nuevaContrasenaPortal('+i+')">🔑 Nueva contraseña</button>'
+          +'<button class="btn btn-out btn-sm" onclick="telefonoCuentaPortal('+i+')">✏️ Teléfono</button>'
+          +'<button class="btn btn-err btn-sm" onclick="borrarCuentaPortal('+i+')">🗑 Borrar</button>'
+        +'</div></div>';
+    });
+    if(!html) html='<div class="empty">'+(portalCuentas.length?'Ningún cliente coincide con la búsqueda.':'Todavía no hay cuentas. Usa "+ Nueva" o el botón de crear a todos.')+'</div>';
+  } else {
+    portalSinCuenta.forEach(function(c,i){
+      if(q && c.nombre.toLowerCase().indexOf(q)===-1) return;
+      html+='<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">'
+        +'<div style="min-width:0"><div style="font-weight:600">'+escPortal(c.nombre)+'</div>'
+        +'<div style="font-size:.8rem;color:var(--g5)">'+escPortal(c.telefono||'Sin teléfono')+'</div></div>'
+        +'<button class="btn btn-ok btn-sm" style="flex-shrink:0" onclick="crearCuentaRapidaPortal('+i+')">Crear cuenta</button></div>';
+    });
+    if(!html) html='<div class="empty">'+(portalSinCuenta.length?'Ningún cliente coincide con la búsqueda.':'Todos tus clientes ya tienen cuenta. 🎉')+'</div>';
+  }
+  document.getElementById('list-portal').innerHTML=html;
+}
+
+/** Tras crear una cuenta: muestra su tarjeta en "Con cuenta" para mandar el acceso. */
+function mostrarCuentaCreadaPortal(cuenta){
+  document.getElementById('srch-portal').value=cuenta.usuario;
+  portalFiltro='con';
+  return cargarCuentasPortal().then(function(){
+    filtroPortal('con');
+    alert('Cuenta creada para '+cuenta.nombre+'.\n\nUsuario: '+cuenta.usuario+'\nContraseña: '+cuenta.contrasena
+      +'\n\nToca "📲 Enviar acceso" en su tarjeta para mandárselo por WhatsApp.');
+  });
+}
+
+function crearCuentaRapidaPortal(i){
+  var c=portalSinCuenta[i]; if(!c) return;
+  llamarAdminPortal('adminCrearCuentaPortal',{nombre:c.nombre, telefono:c.telefono})
+    .then(function(res){ return mostrarCuentaCreadaPortal(res.cuenta); })
+    .catch(function(err){ alert('No se pudo crear la cuenta: '+mensajeErrorPortal(err)); });
+}
+
+function crearCuentasTodosPortal(){
+  var n=portalSinCuenta.length; if(!n) return;
+  if(!confirm('Se va a crear usuario y contraseña a '+n+' clientes que todavía no tienen cuenta. ¿Seguir?')) return;
+  var bt=document.getElementById('portal-btn-todos');
+  bt.disabled=true; bt.textContent='Creando cuentas…';
+  llamarAdminPortal('adminCrearCuentasTodos').then(function(res){
+    bt.disabled=false;
+    document.getElementById('srch-portal').value='';
+    portalFiltro='con';
+    return cargarCuentasPortal().then(function(){
+      filtroPortal('con');
+      alert('Listo: '+res.creadas+' cuentas creadas.\n\nAhora mándale el acceso a cada uno con "📲 Enviar acceso".');
+    });
+  }).catch(function(err){
+    bt.disabled=false; renderCuentasPortal();
+    alert('No se pudieron crear: '+mensajeErrorPortal(err));
+  });
+}
+
+function copiarAccesoPortal(i){
+  var c=portalCuentas[i]; if(!c) return;
+  var msg=mensajeAccesoPortal(c);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(msg).then(function(){ alert('Acceso copiado. Pégalo en el chat del cliente.'); })
+      .catch(function(){ prompt('Copia este mensaje:', msg); });
+  } else prompt('Copia este mensaje:', msg);
+}
+
+function actualizarCuentaPortal(i, cambios, aviso){
+  var c=portalCuentas[i]; if(!c) return;
+  llamarAdminPortal('adminActualizarCuentaPortal', Object.assign({usuario:c.usuario}, cambios))
+    .then(function(res){
+      portalCuentas[i]=res.cuenta; renderCuentasPortal();
+      if(aviso) alert(aviso(res.cuenta));
+    })
+    .catch(function(err){ alert('No se pudo guardar: '+mensajeErrorPortal(err)); });
+}
+
+function nuevaContrasenaPortal(i){
+  var c=portalCuentas[i]; if(!c) return;
+  if(!confirm('¿Darle una contraseña nueva a '+c.nombre+'? La de ahora dejará de funcionar.')) return;
+  actualizarCuentaPortal(i, {generarContrasena:true}, function(cu){
+    return 'Nueva contraseña de '+cu.nombre+': '+cu.contrasena+'\n\nMándasela con "📲 Enviar acceso".';
+  });
+}
+
+function telefonoCuentaPortal(i){
+  var c=portalCuentas[i]; if(!c) return;
+  var t=prompt('Teléfono de '+c.nombre+' (con código de país si no es de EE.UU. ni de Cuba):', c.telefono||'');
+  if(t===null) return;
+  actualizarCuentaPortal(i, {telefono:t.trim()});
+}
+
+function borrarCuentaPortal(i){
+  var c=portalCuentas[i]; if(!c) return;
+  if(!confirm('¿Borrar la cuenta de '+c.nombre+' ('+c.usuario+')? Ya no podrá entrar al portal.')) return;
+  llamarAdminPortal('adminBorrarCuentaPortal',{usuario:c.usuario})
+    .then(function(){ return cargarCuentasPortal(); })
+    .catch(function(err){ alert('No se pudo borrar: '+mensajeErrorPortal(err)); });
+}
+
+function abrirNuevaCuentaPortal(){
+  if(!claveAdminPortal()){ mostrarClavePortal(true); alert('Primero escribe la clave de administrador.'); return; }
+  document.getElementById('cp-nombres').innerHTML=portalSinCuenta.map(function(c){ return '<option value="'+escPortal(c.nombre)+'">'; }).join('');
+  ['cp-nombre','cp-tel','cp-usuario','cp-clave'].forEach(function(id){ document.getElementById(id).value=''; });
+  openModal('modal-cuenta-portal');
+}
+
+function autocompletarTelCuentaPortal(){
+  var n=document.getElementById('cp-nombre').value.trim().toLowerCase();
+  var c=portalSinCuenta.filter(function(x){ return x.nombre.toLowerCase()===n; })[0];
+  var tel=document.getElementById('cp-tel');
+  if(c && !tel.value) tel.value=c.telefono||'';
+}
+
+function guardarNuevaCuentaPortal(){
+  var nombre=document.getElementById('cp-nombre').value.trim();
+  if(!nombre){ alert('Escribe el nombre del cliente.'); return; }
+  var bt=document.getElementById('cp-guardar');
+  bt.disabled=true; bt.textContent='Creando…';
+  llamarAdminPortal('adminCrearCuentaPortal',{
+    nombre:nombre,
+    telefono:document.getElementById('cp-tel').value.trim(),
+    usuario:document.getElementById('cp-usuario').value.trim(),
+    contrasena:document.getElementById('cp-clave').value.trim()
+  }).then(function(res){
+    bt.disabled=false; bt.textContent='Crear cuenta';
+    closeModal('modal-cuenta-portal');
+    return mostrarCuentaCreadaPortal(res.cuenta);
+  }).catch(function(err){
+    bt.disabled=false; bt.textContent='Crear cuenta';
+    alert('No se pudo crear la cuenta: '+mensajeErrorPortal(err));
+  });
 }
 
 function guardarSeguimientoCliente(nombre, valor){
@@ -2602,7 +2885,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v32 · 2026-11-07';
+var APP_VERSION='v33 · 2026-11-20';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -3034,7 +3317,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 4.4
+ * MI NEGOCIO - Backend Apps Script  ·  version 4.5
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -3115,7 +3398,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '4.4',
+        return json({ ok: true, message: 'Script activo', version: '4.5',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -3156,6 +3439,13 @@ function manejar(e) {
       case 'portalFamiliares':      return json(portalFamiliares(datos));
       case 'portalGuardarFamiliar': return json(portalGuardarFamiliar(datos));
       case 'portalBorrarFamiliar':  return json(portalBorrarFamiliar(datos));
+
+      // --- cuentas del portal (desde la app de Negocio, con clave de administrador) ---
+      case 'adminCuentasPortal':          return json(adminCuentasPortal(datos));
+      case 'adminCrearCuentaPortal':      return json(adminCrearCuentaPortal(datos));
+      case 'adminCrearCuentasTodos':      return json(adminCrearCuentasTodos(datos));
+      case 'adminActualizarCuentaPortal': return json(adminActualizarCuentaPortal(datos));
+      case 'adminBorrarCuentaPortal':     return json(adminBorrarCuentaPortal(datos));
 
       // --- notificaciones push (ntfy) ---
       case 'probarNtfy':
@@ -4402,6 +4692,162 @@ function portalBorrarFamiliar(d) {
     }
   }
   return { ok: true };
+}
+
+// ============================================================
+// CUENTAS DEL PORTAL: administracion desde la app de Negocio
+//
+// La URL del script es publica (esta dentro de portal/index.html), asi que
+// estas acciones, que muestran contrasenas, piden una clave de administrador.
+// La primera clave que se use queda guardada en las propiedades del script
+// (no en el libro ni en GitHub); desde ahi solo esa clave sirve. Para
+// cambiarla: Configuracion del proyecto -> Propiedades del script ->
+// borrar CLAVE_ADMIN_PORTAL, y la siguiente clave que se use queda guardada.
+// ============================================================
+
+var ENC_PORTAL_CLIENTES = ['Usuario', 'Contraseña', 'Nombre', 'Telefono'];
+
+function verificarAdminPortal(clave) {
+  clave = String(clave || '');
+  if (clave.length < 4) throw new Error('Falta la clave de administrador (minimo 4 caracteres).');
+  var props = PropertiesService.getScriptProperties();
+  var guardada = props.getProperty('CLAVE_ADMIN_PORTAL');
+  if (!guardada) { props.setProperty('CLAVE_ADMIN_PORTAL', clave); return; }
+  if (guardada !== clave) throw new Error('Clave de administrador incorrecta.');
+}
+
+/** minusculas, sin acentos ni espacios dobles: para comparar nombres. */
+function normalizarTexto(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+                        .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** "María José Pérez Gómez" -> "maria.perez" (primer nombre + primer apellido). */
+function baseUsuario(nombre) {
+  var p = normalizarTexto(nombre).replace(/[^a-z0-9 ]/g, '').split(' ').filter(String);
+  if (!p.length) return 'cliente';
+  if (p.length === 1) return p[0];
+  // 4+ palabras = dos nombres y dos apellidos: el primer apellido es la tercera.
+  return p[0] + '.' + (p.length >= 4 ? p[2] : p[1]);
+}
+
+function usuarioLibre(base, usados) {
+  var u = base, k = 2;
+  while (usados[u]) { u = base + k; k++; }
+  usados[u] = true;
+  return u;
+}
+
+function contrasenaAleatoria() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+/** Lee Portal_Clientes: cuentas, fila de cada una, usuarios y nombres ya usados. */
+function leerCuentasPortal() {
+  var sh = hojaPortal('Portal_Clientes', ENC_PORTAL_CLIENTES);
+  var v = sh.getDataRange().getDisplayValues();
+  var cuentas = [], usados = {}, conCuenta = {};
+  for (var i = 1; i < v.length; i++) {
+    var u = String(v[i][0] || '').trim();
+    if (!u) continue;
+    cuentas.push({ fila: i + 1, usuario: u, contrasena: String(v[i][1] || ''),
+                   nombre: String(v[i][2] || ''), telefono: String(v[i][3] || '') });
+    usados[u.toLowerCase()] = true;
+    conCuenta[normalizarTexto(v[i][2])] = true;
+  }
+  return { sh: sh, cuentas: cuentas, usados: usados, conCuenta: conCuenta };
+}
+
+/** Clientes del registro A de "Clientes" que todavia no tienen cuenta. */
+function clientesSinCuentaPortal(conCuenta) {
+  var v = hoja(CLI.hoja).getRange(CLI.primera, 2, CLI.ultima - CLI.primera + 1, 2).getDisplayValues();
+  var out = [], vistos = {};
+  for (var i = 0; i < v.length; i++) {
+    var nombre = String(v[i][0] || '').replace(/\s+/g, ' ').trim();
+    if (!nombre || /ejemplo|prueba/i.test(nombre)) continue;
+    var k = normalizarTexto(nombre);
+    if (conCuenta[k] || vistos[k]) continue;
+    vistos[k] = true;
+    out.push({ nombre: nombre, telefono: String(v[i][1] || '').trim() });
+  }
+  return out;
+}
+
+function escribirCuentasPortal(sh, filas) {
+  var desde = sh.getLastRow() + 1;
+  var rango = sh.getRange(desde, 1, filas.length, 4);
+  rango.setNumberFormat('@');   // texto: un telefono con + no se vuelve #ERROR!
+  rango.setValues(filas);
+}
+
+function adminCuentasPortal(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var c = leerCuentasPortal();
+  return { ok: true, cuentas: c.cuentas, sinCuenta: clientesSinCuentaPortal(c.conCuenta) };
+}
+
+function adminCrearCuentaPortal(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var nombre = String(d.nombre || '').replace(/\s+/g, ' ').trim();
+  if (!nombre) return { ok: false, error: 'Falta el nombre del cliente.' };
+  var c = leerCuentasPortal();
+  if (c.conCuenta[normalizarTexto(nombre)]) return { ok: false, error: nombre + ' ya tiene cuenta.' };
+
+  var usuario = String(d.usuario || '').trim().toLowerCase().replace(/\s+/g, '.');
+  if (usuario) {
+    if (!/^[a-z0-9._-]+$/.test(usuario)) return { ok: false, error: 'El usuario solo puede tener letras sin acentos, numeros, punto y guion.' };
+    if (c.usados[usuario]) return { ok: false, error: 'El usuario "' + usuario + '" ya existe. Elige otro.' };
+  } else {
+    usuario = usuarioLibre(baseUsuario(nombre), c.usados);
+  }
+  var contrasena = String(d.contrasena || '').trim() || contrasenaAleatoria();
+  var telefono = String(d.telefono || '').trim();
+  escribirCuentasPortal(c.sh, [[usuario, contrasena, nombre, telefono]]);
+  return { ok: true, cuenta: { usuario: usuario, contrasena: contrasena, nombre: nombre, telefono: telefono } };
+}
+
+function adminCrearCuentasTodos(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var c = leerCuentasPortal();
+  var faltan = clientesSinCuentaPortal(c.conCuenta);
+  if (!faltan.length) return { ok: true, creadas: 0 };
+  var filas = faltan.map(function (x) {
+    return [usuarioLibre(baseUsuario(x.nombre), c.usados), contrasenaAleatoria(), x.nombre, x.telefono];
+  });
+  escribirCuentasPortal(c.sh, filas);
+  return { ok: true, creadas: filas.length };
+}
+
+/** Cambia contrasena (o genera una nueva) y/o telefono de una cuenta. */
+function adminActualizarCuentaPortal(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var usuario = String(d.usuario || '').trim().toLowerCase();
+  var c = leerCuentasPortal();
+  for (var i = 0; i < c.cuentas.length; i++) {
+    var cu = c.cuentas[i];
+    if (cu.usuario.toLowerCase() !== usuario) continue;
+    if (d.generarContrasena) cu.contrasena = contrasenaAleatoria();
+    else if (d.contrasena) cu.contrasena = String(d.contrasena).trim();
+    if (d.telefono !== undefined) cu.telefono = String(d.telefono || '').trim();
+    var rango = c.sh.getRange(cu.fila, 2, 1, 3);
+    rango.setNumberFormat('@');
+    rango.setValues([[cu.contrasena, cu.nombre, cu.telefono]]);
+    return { ok: true, cuenta: { usuario: cu.usuario, contrasena: cu.contrasena, nombre: cu.nombre, telefono: cu.telefono } };
+  }
+  return { ok: false, error: 'No existe la cuenta "' + usuario + '".' };
+}
+
+function adminBorrarCuentaPortal(d) {
+  verificarAdminPortal(d.claveAdmin);
+  var usuario = String(d.usuario || '').trim().toLowerCase();
+  var c = leerCuentasPortal();
+  for (var i = 0; i < c.cuentas.length; i++) {
+    if (c.cuentas[i].usuario.toLowerCase() === usuario) {
+      c.sh.deleteRow(c.cuentas[i].fila);
+      return { ok: true };
+    }
+  }
+  return { ok: false, error: 'No existe la cuenta "' + usuario + '".' };
 }`;
   document.getElementById('script-txt').value=s;
 }
