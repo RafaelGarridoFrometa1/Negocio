@@ -125,6 +125,7 @@ h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance}
 .empty{text-align:center;color:var(--muted);font-size:13px;padding:30px 10px;border:1px dashed var(--border);border-radius:12px}
 
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row-2 > .field{min-width:0}
 .estimate{
   background:var(--surface-2);border:1px dashed var(--border);border-radius:10px;padding:12px 14px;
   display:flex;justify-content:space-between;align-items:center;margin:4px 0 18px;
@@ -194,6 +195,10 @@ a{color:var(--accent)}
 
 .calc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
 .calc-field{margin-bottom:14px}
+.calc-field select{
+  font:inherit;font-size:15px;padding:11px 12px;border-radius:9px;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--fg);width:100%;
+}
 .calc-field label{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.02em;display:block;margin-bottom:6px}
 .calc-input-wrap{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);padding:0 12px}
 .calc-input-wrap span{color:var(--muted);font-family:var(--font-mono);font-size:15px}
@@ -434,6 +439,17 @@ a{color:var(--accent)}
 </div>
 
 <script>
+// Si el script de abajo tiene un error (casi siempre una coma o comilla de
+// menos al editar la CONFIGURACION), se avisa en pantalla en vez de dejar
+// la pagina muerta sin explicacion.
+window.onerror = function(msg, src, linea){
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99;background:#b23b2e;color:#fff;padding:12px 16px;font:13px/1.5 system-ui,sans-serif';
+  d.textContent = 'Error en portal/index.html, línea ' + linea + ': ' + msg + '. Revisa comas y comillas en la sección CONFIGURACION.';
+  document.body.appendChild(d);
+};
+</script>
+<script>
 (function(){
   "use strict";
 
@@ -445,9 +461,9 @@ a{color:var(--accent)}
   // ahi la copiaste). Tiene que terminar en /exec.
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTZ6crBTQn6iJGVk8ngmwMjonwoM9kffNT8uvJJL1F-VAfCXTCT6j5UfK_sVxZK7j7/exec';
 
-  // Cuanto recibe el familiar en Cuba por cada $1 que se envia desde EE.UU.
-  // Cambialo aqui cuando cambie tu tasa (no hace falta tocar Apps Script).
-  var TASA_CAMBIO = 0.05;
+  // Comision del negocio sobre lo que recibe el familiar. 0.05 = 5 %.
+  // Ejemplo: para que reciba $200 el cliente envia $200 + 5 % = $210, mas la mensajeria.
+  var COMISION = 0.05;
 
   // Numero de WhatsApp del negocio, SOLO digitos y codigo de pais (sin + ni espacios).
   // Ejemplo Cuba +53 5xxx xxxx -> '535xxxxxxx'. Ejemplo EE.UU. +1 305 xxx xxxx -> '1305xxxxxxx'.
@@ -458,19 +474,22 @@ a{color:var(--accent)}
 
   // Municipios y el costo de mensajeria a cada uno. Edita nombres/montos
   // libremente; el primero queda seleccionado por defecto.
+  // OJO: cada linea termina en coma MENOS la ultima. Si falta una coma,
+  // la pagina deja de funcionar entera (saldra un aviso rojo arriba).
   var MUNICIPIOS = [
     { nombre:'Pasar a recogerlo (sin mensajería)', fee:0 },
     { nombre:'La Lisa', fee:3 },
     { nombre:'Marianao, La Habana', fee:5 },
     { nombre:'Plaza, Boyeros, Cerro', fee:7 },
-    { nombre:'Centro Habana, Habana Vieja ', fee:7 },
+    { nombre:'Centro Habana, Habana Vieja', fee:7 },
     { nombre:'Diez de Octubre, Arroyo Naranjo', fee:8 },
-    { nombre:'Regla, San Miguel del Padrón, ', fee:9 }
-    { nombre:'Guanabacoa, Cotorro, Habana del Este ', fee:12 }
-
+    { nombre:'Regla, San Miguel del Padrón', fee:9 },
+    { nombre:'Guanabacoa, Cotorro, Habana del Este', fee:12 }
   ];
 
   // ============================================================
+
+  MUNICIPIOS.forEach(function(m){ m.nombre = String(m.nombre).trim().replace(/,\s*$/, ''); });
 
   if(!SCRIPT_URL || SCRIPT_URL.indexOf('PEGA_AQUI') !== -1){
     document.body.innerHTML = '<div class="config-err">Falta configurar este portal.<br><br>Abre <code>portal/index.html</code> y pon la URL real de tu Apps Script en <code>SCRIPT_URL</code>.</div>';
@@ -501,14 +520,10 @@ a{color:var(--accent)}
     throw new Error('El servidor no devolvió datos válidos. Revisa que SCRIPT_URL esté bien puesta y que la implementación de Apps Script esté publicada para "Cualquier persona".');
   }
 
-  function pedirBackend(accion, datos, usarGet){
-    datos = datos || {};
-    if(usarGet){
-      var q = SCRIPT_URL + '?action=' + encodeURIComponent(accion);
-      Object.keys(datos).forEach(function(k){ q += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(datos[k]); });
-      return fetch(q, { method:'GET' }).then(function(r){ return r.text(); }).then(interpretar);
-    }
-    var cuerpo = Object.assign({ action: accion }, datos);
+  // Siempre por POST: el script solo lee los datos del cuerpo (o de ?data=),
+  // nunca de parametros sueltos de la URL.
+  function pedirBackend(accion, datos){
+    var cuerpo = Object.assign({ action: accion }, datos || {});
     return fetch(SCRIPT_URL, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
@@ -525,9 +540,14 @@ a{color:var(--accent)}
     if(m && m.fee === 0) return 'Mensajería (recogida en persona)';
     return 'Mensajería hasta ' + (municipio || '—');
   }
+  // Lo que recibe + comision, redondeado hacia arriba al dolar (sin mensajeria).
+  function montoConComision(recibido){
+    if(!recibido) return 0;
+    return Math.ceil(Math.round(recibido * (1 + COMISION) * 100) / 100);
+  }
   function calcularMontoEnviar(recibido, municipio){
     if(!recibido) return 0;
-    return Math.ceil(recibido / TASA_CAMBIO) + feeMensajeria(municipio);
+    return montoConComision(recibido) + feeMensajeria(municipio);
   }
   function populateMunicipioSelects(){
     var html = MUNICIPIOS.map(function(m){ return '<option value="'+m.nombre+'">'+m.nombre+' &middot; mensajería $'+m.fee+'</option>'; }).join('');
@@ -789,7 +809,7 @@ a{color:var(--accent)}
   function cargarPedidos(){
     var list = document.getElementById('orders-list');
     if(!pedidosCache.length) list.innerHTML = '<div class="empty">Cargando tus pedidos…</div>';
-    return pedirBackend('portalPedidos', { usuario: session.usuario }, true).then(function(res){
+    return pedirBackend('portalPedidos', { usuario: session.usuario }).then(function(res){
       pedidosCache = (res && res.ok && res.pedidos) ? res.pedidos : [];
       try{ localStorage.setItem(CACHE_PEDIDOS + session.usuario, JSON.stringify(pedidosCache)); }catch(e){}
       renderPanel();
@@ -929,7 +949,7 @@ a{color:var(--accent)}
 
   // ---- Familia (contactos guardados) ----
   function cargarFamiliares(){
-    return pedirBackend('portalFamiliares', { usuario: session.usuario }, true).then(function(res){
+    return pedirBackend('portalFamiliares', { usuario: session.usuario }).then(function(res){
       familiaresCache = (res && res.ok && res.familiares) ? res.familiares : [];
       try{ localStorage.setItem(CACHE_FAMILIA + session.usuario, JSON.stringify(familiaresCache)); }catch(e){}
       return familiaresCache;
@@ -1013,7 +1033,10 @@ a{color:var(--accent)}
   function aplicarFamiliar(c){
     document.getElementById('f-dest-nombre').value = c.nombre;
     document.getElementById('f-dest-tel').value = c.telefono || '';
-    document.getElementById('f-dest-municipio').value = c.municipio || '';
+    var selMun = document.getElementById('f-dest-municipio');
+    selMun.value = c.municipio || '';
+    if(selMun.selectedIndex < 0) selMun.selectedIndex = 0; // municipio guardado que ya no esta en la lista
+    updateEstimate();
     document.getElementById('f-dest-dir').value = c.direccion || '';
     document.getElementById('f-guardar-familiar').checked = false;
     closeFamiliaDD();
@@ -1057,12 +1080,12 @@ a{color:var(--accent)}
   function actualizarCalculadora(){
     var recibido = parseFloat(document.getElementById('calc-recibe').value) || 0;
     var municipio = document.getElementById('calc-municipio').value;
-    var conversion = recibido ? Math.ceil(recibido / TASA_CAMBIO) : 0;
+    var conversion = montoConComision(recibido);
     var total = calcularMontoEnviar(recibido, municipio);
     var mensajeria = total - conversion;
 
     document.getElementById('calc-breakdown').innerHTML = recibido ? (
-      '<div class="bd-row"><span>Monto en USD (sin mensajería)</span><span class="v">'+fmtMoney(conversion)+'</span></div>' +
+      '<div class="bd-row"><span>Lo que recibe + comisión</span><span class="v">'+fmtMoney(conversion)+'</span></div>' +
       '<div class="bd-row"><span>'+escapeHtml(labelMensajeria(municipio))+'</span><span class="v">'+fmtMoney(mensajeria)+'</span></div>'
     ) : '';
     document.getElementById('calc-total-value').textContent = fmtMoney(total);
