@@ -56,6 +56,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:.6rem .25rem;gap:.2rem;border:none;background:none;color:var(--g4);font-size:.6rem;cursor:pointer}
 .tab.active{color:var(--pri)}
 .tab-ico{font-size:1.3rem}
+body.rol-equipo .solo-dueno{display:none!important}
 .tab{min-width:0}
 .tab span:nth-child(2){max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tab{position:relative}
@@ -239,6 +240,10 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <input type="text" id="setup-user" placeholder="Nombre de usuario">
     <input type="password" id="setup-pass" placeholder="Contraseña (mín. 4 caracteres)">
     <input type="password" id="setup-pass2" placeholder="Repetir contraseña">
+    <select id="setup-rol" style="width:100%;padding:.75rem;border-radius:10px;border:1.5px solid #e5e7eb;margin-bottom:.75rem;font-size:.95rem;background:#fff">
+      <option value="dueno">Dueño — ve todo</option>
+      <option value="equipo">Equipo — sin ganancias, Dashboard ni contabilidad</option>
+    </select>
     <button onclick="doSetup()">Crear usuario</button>
     <div class="auth-err" id="setup-err"></div>
   </div>
@@ -364,18 +369,14 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       </div>
       <div class="card" id="portal-clave-box" style="display:none">
         <div class="card-ttl">Clave de administrador</div>
-        <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
-          Protege las contraseñas de tus clientes. <strong>La primera vez</strong>, la clave que
-          escribas aquí queda guardada en tu script. Después, tú y Daniela tienen que usar
-          esa misma clave en cada celular. Mínimo 4 caracteres.
-        </p>
+        <p id="portal-clave-txt" style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5"></p>
         <div class="fgroup"><input type="password" class="finput" id="portal-clave-inp" placeholder="Clave de administrador"></div>
         <button class="btn btn-pri" onclick="guardarClavePortal()">Entrar</button>
       </div>
       <div id="portal-body">
         <div class="tmini">
           <button class="tmi on" id="portal-vista-pedidos" onclick="vistaPortal('pedidos')">🛒 Pedidos</button>
-          <button class="tmi" id="portal-vista-cuentas" onclick="vistaPortal('cuentas')">🔐 Cuentas y contraseñas</button>
+          <button class="tmi solo-dueno" id="portal-vista-cuentas" onclick="vistaPortal('cuentas')">🔐 Cuentas y contraseñas</button>
         </div>
         <div id="portal-pedidos-box">
           <div class="tmini">
@@ -386,6 +387,15 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         </div>
         <div id="portal-cuentas-box" style="display:none">
         <button class="cfg-btn" onclick="abrirNuevaCuentaPortal('')">➕ Nueva cuenta</button>
+        <div class="card" style="margin-bottom:.75rem">
+          <div class="card-ttl">🔑 Clave del equipo (para Muse)</div>
+          <p style="font-size:.8rem;color:var(--g5);margin-bottom:.6rem;line-height:1.5">
+            Con esta clave, alguien del equipo ve y mueve los pedidos del portal,
+            pero NO ve estas cuentas ni las contraseñas. Tiene que ser distinta de la tuya.
+          </p>
+          <div style="display:flex;gap:.5rem"><input type="text" class="finput" id="portal-clave-equipo" placeholder="Clave para el equipo" autocapitalize="off">
+          <button class="btn btn-ok btn-sm" style="white-space:nowrap" onclick="guardarClaveEquipoPortal()">Guardar</button></div>
+        </div>
         <div id="portal-resumen" style="font-size:.85rem;color:var(--g6);margin-bottom:.6rem"></div>
         <button class="cfg-btn" id="portal-btn-todos" onclick="crearCuentasTodosPortal()" style="display:none"></button>
         <div class="tmini">
@@ -448,7 +458,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         <button class="cfg-btn" style="margin-top:.4rem" onclick="loadSheetsClientes(true)">👥 Recargar clientes de la hoja</button>
         <button class="cfg-btn" style="margin-top:.4rem" onclick="buscarActualizacion()">🔄 Buscar actualización</button>
         <div id="app-version" style="margin-top:.6rem;font-size:.8rem;opacity:.65;text-align:center"></div>
-        <button class="cfg-btn" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
+        <button class="cfg-btn solo-dueno" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
       </div>
       <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">🔔 Notificaciones push al celular</div>
@@ -461,7 +471,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         </p>
         <button class="cfg-btn" onclick="probarNotificacionPush()">🔔 Enviar notificación de prueba</button>
       </div>
-      <div class="card" style="margin-top:.75rem">
+      <div class="card solo-dueno" style="margin-top:.75rem">
         <div class="card-ttl">👤 Mensajeros</div>
         <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
           Ya no está en la barra de abajo, pero sigue aquí para agregar mensajeros
@@ -481,9 +491,9 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">Cuenta</div>
         <button class="cfg-btn" onclick="cambiarPass()">🔐 Cambiar mi contraseña</button>
-        <button class="cfg-btn" onclick="gestionarUsuarios()">👥 Gestionar usuarios</button>
-        <button class="cfg-btn" onclick="exportar()">📤 Exportar copia de seguridad</button>
-        <button class="cfg-btn" onclick="importar()">📥 Importar copia de seguridad</button>
+        <button class="cfg-btn solo-dueno" onclick="gestionarUsuarios()">👥 Gestionar usuarios</button>
+        <button class="cfg-btn solo-dueno" onclick="exportar()">📤 Exportar copia de seguridad</button>
+        <button class="cfg-btn solo-dueno" onclick="importar()">📥 Importar copia de seguridad</button>
       </div>
     </div>
 
@@ -493,7 +503,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <button class="tab active" onclick="showSection('envios',this)"><span class="tab-ico">📦</span><span>Envíos</span></button>
     <button class="tab" onclick="showSection('organizacion',this)"><span class="tab-ico">🗂️</span><span>Organización</span></button>
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
-    <button class="tab" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
+    <button class="tab solo-dueno" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
     <button class="tab" id="tab-portal" onclick="showSection('portal',this)"><span class="tab-ico">🌐</span><span>Portal</span><span class="tab-badge" id="badge-portal" style="display:none"></span></button>
     <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
@@ -645,8 +655,8 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     </div>
     <div class="op-divider">Resultados calculados</div>
     <div class="f3">
-      <div><div class="flabel">Ganancia</div><div class="op-result" id="op-r-gan">—</div></div>
-      <div><div class="flabel">Ganado c/u</div><div class="op-result" id="op-r-gcu">—</div></div>
+      <div class="solo-dueno"><div class="flabel">Ganancia</div><div class="op-result" id="op-r-gan">—</div></div>
+      <div class="solo-dueno"><div class="flabel">Ganado c/u</div><div class="op-result" id="op-r-gcu">—</div></div>
       <div class="fgroup"><label class="flabel">Hora</label><input type="time" class="finput" id="op-hora"></div>
     </div>
     <div class="frow" style="margin-top:.75rem">
@@ -918,6 +928,11 @@ function findUser(u){ return getUsers().find(function(x){ return x.u===u; }); }
 function checkAuth(u,p){ var usr=findUser(u); return usr&&usr.p===btoa(p); }
 function isLogged(){ return sessionStorage.getItem('logged')!==null&&findUser(sessionStorage.getItem('logged')); }
 function currentUser(){ return sessionStorage.getItem('logged')||''; }
+// "equipo" (p.ej. Muse): trabajo del dia sin ganancias, Dashboard, Mensajeros,
+// copias de seguridad ni cuentas del portal. Los usuarios viejos, sin rol, son dueños.
+function currentRol(){ var u=findUser(currentUser()); return (u&&u.rol==='equipo')?'equipo':'dueno'; }
+function esEquipo(){ return currentRol()==='equipo'; }
+function aplicarRol(){ document.body.classList.toggle('rol-equipo', esEquipo()); }
 
 function doLogin(){
   var u=document.getElementById('login-user').value.trim();
@@ -948,7 +963,7 @@ function doSetup(){
   var users=getUsers();
   if(users.length>=MAX_USERS){ err.textContent='Ya hay '+MAX_USERS+' usuarios registrados. Elimina uno antes de añadir otro.'; return; }
   if(findUser(u)){ err.textContent='Ese nombre de usuario ya existe.'; return; }
-  users.push({u:u,p:btoa(p)});
+  users.push({u:u,p:btoa(p),rol:document.getElementById('setup-rol').value==='equipo'?'equipo':'dueno'});
   saveUsers(users);
   err.style.color='var(--ok)';
   err.textContent='¡Usuario "'+u+'" creado! Ahora inicia sesión.';
@@ -993,7 +1008,7 @@ function cambiarPass(){
 function gestionarUsuarios(){
   var users=getUsers();
   if(!users.length){ alert('No hay usuarios registrados.'); return; }
-  var lista=users.map(function(u,i){ return (i+1)+'. '+u.u; }).join('\n');
+  var lista=users.map(function(u,i){ return (i+1)+'. '+u.u+(u.rol==='equipo'?' (equipo)':' (dueño)'); }).join('\n');
   var resp=prompt('Usuarios registrados ('+users.length+'/'+MAX_USERS+'):\n\n'+lista+'\n\nEscribe el nombre del usuario a ELIMINAR (o cancela):');
   if(!resp) return;
   var target=resp.trim();
@@ -1007,6 +1022,7 @@ function gestionarUsuarios(){
 
 // ══ INIT ══
 function initApp(){
+  aplicarRol();
   loadDB();
   document.getElementById('gs-url').value = localStorage.getItem(GS_KEY)||'';
   updateDot(true);
@@ -1038,6 +1054,7 @@ function renderAll(){
 
 // ══ NAV ══
 function showSection(name, btn){
+  if(esEquipo() && (name==='dashboard'||name==='mensajeros')) return;
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('sec-'+name).classList.add('active');
@@ -1286,7 +1303,9 @@ function saveOp(){
     estado:     document.getElementById('op-estado').value,
     revisado:   document.getElementById('op-chk').classList.contains('on'),
     pagadoMens: document.getElementById('op-chk-pago').classList.contains('on'),
-    creado:     eid ? (db.envios.find(function(r){ return r.id===eid; })||{}).creado||today() : today()
+    creado:     eid ? (db.envios.find(function(r){ return r.id===eid; })||{}).creado||today() : today(),
+    creadoPor:  eid ? ((db.envios.find(function(r){ return r.id===eid; })||{}).creadoPor||'') : currentUser(),
+    cambiadoPor:eid ? currentUser() : ''
   };
   if(!obj.cliente && !obj.clienteCuba){ alert('Introduce al menos un cliente.'); return; }
   if(!obj.depositar){ alert('La cantidad a depositar es obligatoria.'); return; }
@@ -1392,6 +1411,7 @@ function deleteOp(id){
 function markEntregada(id){
   var r=db.envios.find(function(x){ return x.id===id; }); if(!r) return;
   r.estado='entregada';
+  r.cambiadoPor=currentUser();
   saveDB();
   // Sin esto, el cambio se quedaba solo en el telefono: "Sincronizar" ya no
   // reenvia todo db.envios (desde que solo manda lo pendiente, para que no
@@ -1476,8 +1496,8 @@ function renderEnvios(){
     '<div class="stat"><div class="stat-val">'+all.length+'</div><div class="stat-lbl">Total envíos</div></div>'
     +'<div class="stat"><div class="stat-val w">'+pend.length+'</div><div class="stat-lbl">Pendientes</div></div>'
     +'<div class="stat"><div class="stat-val g">'+done.length+'</div><div class="stat-lbl">Entregados</div></div>'
-    +'<div class="stat"><div class="stat-val s">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>'
-    +'<div class="stat"><div class="stat-val s">'+fmtMoney(mesGan)+'</div><div class="stat-lbl">Ganancia del mes</div></div>';
+    +(esEquipo()?'':'<div class="stat"><div class="stat-val s">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>'
+    +'<div class="stat"><div class="stat-val s">'+fmtMoney(mesGan)+'</div><div class="stat-lbl">Ganancia del mes</div></div>');
   var list=all;
   if(envioFilter==='pendiente') list=all.filter(function(r){ return r.estado==='pendiente'||r.estado==='en_camino'; });
   if(envioFilter==='entregada') list=all.filter(function(r){ return r.estado==='entregada'; });
@@ -1514,7 +1534,10 @@ function renderEnvios(){
         +'📍 '+(r.direccion||'—')+(r.municipio?' · '+r.municipio:'')+'<br>'
         +'💰 '+fmtMoney(r.depositar)+' · Entrega: '+fmtMoney(r.entrega)+(r.costoMens?' · Mens: '+fmtMoney(r.costoMens):'')+' · 🛵 '+(mens?mens.nombre:'Sin asignar')+'<br>'
         +(r.fecha?'📅 '+fmtDate(r.fecha)+(r.hora?' ⏰ '+r.hora:'')+'<br>':'')
-        +(r.notas?'📝 '+r.notas:'')
+        +(r.notas?'📝 '+r.notas+'<br>':'')
+        +(r.creadoPor||r.cambiadoPor?'<span style="font-size:.75rem;color:var(--g5)">'
+          +(r.creadoPor?'✍️ Creado por '+txt(r.creadoPor):'')
+          +(r.cambiadoPor?(r.creadoPor?' · ':'')+'✏️ Cambiado por '+txt(r.cambiadoPor):'')+'</span>':'')
         +'</div>'
         +'<div class="item-actions">'
         +'<button class="btn btn-pri btn-sm" onclick="copiarMensajeEnvio(\''+r.id+'\')">📲 Copiar mensaje</button>'
@@ -2599,7 +2622,7 @@ function escPortal(s){
 function llamarAdminPortal(accion, datos){
   var url=gsUrl();
   if(!url) return Promise.reject(new Error('Primero configura la URL del script en Configuración.'));
-  var cuerpo=Object.assign({action:accion, claveAdmin:claveAdminPortal()}, datos||{});
+  var cuerpo=Object.assign({action:accion, claveAdmin:claveAdminPortal(), rolApp:currentRol()}, datos||{});
   return enviarAlScript(url,cuerpo)
     .catch(function(){ return enviarPorGet(url,cuerpo); })
     .then(function(res){
@@ -2609,6 +2632,9 @@ function llamarAdminPortal(accion, datos){
 }
 
 function mostrarClavePortal(mostrar){
+  document.getElementById('portal-clave-txt').innerHTML=esEquipo()
+    ?'Escribe la <strong>clave del equipo</strong> que te dio Rafael para ver los pedidos del portal.'
+    :'Protege las contraseñas de tus clientes. <strong>La primera vez</strong>, la clave que escribas aquí queda guardada en tu script. Después, tú y Daniela tienen que usar esa misma clave en cada celular. Mínimo 4 caracteres.';
   document.getElementById('portal-clave-box').style.display=mostrar?'block':'none';
   document.getElementById('portal-body').style.display=mostrar?'none':'block';
 }
@@ -2798,9 +2824,12 @@ function autocompletarTelCuentaPortal(){
 // operación (saveOp -> adminVincularPedidoPortal) y desde ahí el cliente ve en
 // el portal el estado real de la operación.
 var portalPedidos=[], portalVista='pedidos', portalFiltroPedidos='nuevos';
-var PORTAL_ESTADOS={pendiente:'Pendiente', en_camino:'En camino', entregada:'Entregada', cancelada:'Cancelada'};
+// Mismos estados que ve el cliente en el portal. "Confirmación de entrega" = ya
+// aceptado; al pasarlo a Envíos sale así solo hasta que la operación va en camino.
+var PORTAL_ESTADOS={pendiente:'Pedido hecho', confirmado:'Confirmación de entrega', en_camino:'En camino', entregada:'Entregado', cancelada:'Cancelado'};
 
 function vistaPortal(v){
+  if(esEquipo()) v='pedidos';
   portalVista=v;
   document.getElementById('portal-vista-pedidos').classList.toggle('on',v==='pedidos');
   document.getElementById('portal-vista-cuentas').classList.toggle('on',v==='cuentas');
@@ -2936,6 +2965,15 @@ function pasarPedidoPortalAEnvios(i){
   openModal('modal-op');
 }
 
+function guardarClaveEquipoPortal(){
+  var c=document.getElementById('portal-clave-equipo').value.trim();
+  if(c.length<4){ alert('La clave del equipo debe tener al menos 4 caracteres.'); return; }
+  llamarAdminPortal('adminFijarClaveEquipo',{claveEquipo:c}).then(function(){
+    document.getElementById('portal-clave-equipo').value='';
+    alert('Clave del equipo guardada: '+c+'\n\nEn el celular de Muse: pestaña 🌐 Portal → escribe esta clave.');
+  }).catch(function(err){ alert('No se pudo guardar: '+mensajeErrorPortal(err)); });
+}
+
 function guardarNuevaCuentaPortal(){
   var nombre=document.getElementById('cp-nombre').value.trim();
   if(!nombre){ alert('Escribe el nombre del cliente.'); return; }
@@ -3059,7 +3097,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v35 · 2026-11-20';
+var APP_VERSION='v38 · 2026-11-25';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -3345,6 +3383,8 @@ function mezclarOperacionesRemotas(lista){
       if(r.hora) local.hora=r.hora;
       if(r.municipio) local.municipio=r.municipio;
       if(r.notas) local.notas=r.notas;
+      if(r.creadoPor) local.creadoPor=r.creadoPor;
+      if(r.cambiadoPor) local.cambiadoPor=r.cambiadoPor;
     } else {
       db.envios.push(r);
       porId[r.id]=r;
@@ -3491,7 +3531,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 4.6
+ * MI NEGOCIO - Backend Apps Script  ·  version 4.9
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -3535,6 +3575,7 @@ var OP = {
   cantidad: 7, entrega: 8, costoMens: 9,
   mensajero: 12, pagado: 13, estado: 14, revRafael: 15, revDaniela: 16,
   refBanco: 18, nota: 20, idApp: 21,
+  creadoPor: 22, cambiadoPor: 23,   // V y W: usuario de la app que la creo / la cambio por ultima vez
   formulas: [1, 10, 11, 17, 19]   // OpeNumero, Ganancia, AcumMens, Estado Revision, Periodo
 };
 
@@ -3572,7 +3613,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '4.6',
+        return json({ ok: true, message: 'Script activo', version: '4.9',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -3613,6 +3654,7 @@ function manejar(e) {
       case 'portalFamiliares':      return json(portalFamiliares(datos));
       case 'portalGuardarFamiliar': return json(portalGuardarFamiliar(datos));
       case 'portalBorrarFamiliar':  return json(portalBorrarFamiliar(datos));
+      case 'portalCambiarClave':    return json(portalCambiarClave(datos));
 
       // --- cuentas del portal (desde la app de Negocio, con clave de administrador) ---
       case 'adminCuentasPortal':          return json(adminCuentasPortal(datos));
@@ -3623,6 +3665,7 @@ function manejar(e) {
       case 'adminPedidosPortal':          return json(adminPedidosPortal(datos));
       case 'adminEstadoPedidoPortal':     return json(adminEstadoPedidoPortal(datos));
       case 'adminVincularPedidoPortal':   return json(adminVincularPedidoPortal(datos));
+      case 'adminFijarClaveEquipo':       return json(adminFijarClaveEquipo(datos));
 
       // --- notificaciones push (ntfy) ---
       case 'probarNtfy':
@@ -3734,6 +3777,7 @@ function guardarOperacion(d) {
   sh.getRange(fila, OP.refBanco).setValue(d.ref_banco || d.refBanco || '');
   sh.getRange(fila, OP.nota).setValue(construirNota(d));
   sh.getRange(fila, OP.idApp).setValue(d.id || '');
+  escribirAutoresOperacion(sh, fila, d);
 
   SpreadsheetApp.flush();
 
@@ -3798,7 +3842,7 @@ function getClientes() {
 function getOperaciones() {
   var sh = hoja(OP.hoja);
   var n = OP.ultima - OP.primera + 1;
-  var v = sh.getRange(OP.primera, 1, n, 21).getDisplayValues();
+  var v = sh.getRange(OP.primera, 1, n, OP.cambiadoPor).getDisplayValues();
   var out = [];
   for (var i = 0; i < n; i++) {
     var fila = v[i];
@@ -3828,7 +3872,9 @@ function getOperaciones() {
       fecha: nota.fecha,
       hora: nota.hora,
       municipio: nota.municipio,
-      notas: nota.texto
+      notas: nota.texto,
+      creadoPor: fila[OP.creadoPor - 1] || '',
+      cambiadoPor: fila[OP.cambiadoPor - 1] || ''
     });
   }
   return out;
@@ -4216,6 +4262,21 @@ function escribirFilaOperacion(sh, fila, e) {
   sh.getRange(fila, OP.refBanco).setValue(e.ref_banco || e.refBanco || '');
   sh.getRange(fila, OP.nota).setValue(construirNota(e));
   sh.getRange(fila, OP.idApp).setValue(e.id || '');
+  escribirAutoresOperacion(sh, fila, e);
+}
+
+/**
+ * Escribe quien creo y quien cambio la operacion (columnas V y W). Solo si la
+ * app lo manda: un telefono con una version vieja de la app no lo manda, y asi
+ * no borra lo que ya estaba escrito.
+ */
+function escribirAutoresOperacion(sh, fila, e) {
+  var enc = sh.getRange(OP.primera - 1, OP.creadoPor, 1, 2).getValues()[0];
+  if (!String(enc[0] || '') || !String(enc[1] || '')) {
+    sh.getRange(OP.primera - 1, OP.creadoPor, 1, 2).setValues([['Creado por', 'Cambiado por']]);
+  }
+  if (e.creadoPor) sh.getRange(fila, OP.creadoPor).setValue(String(e.creadoPor));
+  if (e.cambiadoPor) sh.getRange(fila, OP.cambiadoPor).setValue(String(e.cambiadoPor));
 }
 
 function sincronizarAdelantos(pagos) {
@@ -4764,28 +4825,88 @@ function hojaPortalPedidos() {
   return sh;
 }
 
-/**
- * Estado de cada operacion por su ID App (columna U de Operaciones). Cuando un
- * pedido del portal se pasa a Envios queda enlazado a su operacion, y desde
- * ahi el cliente ve el estado REAL de la operacion (lo que se marque en la app),
- * sin tener que cambiarlo dos veces.
- */
-function estadosOperacionesPorId() {
-  var n = OP.ultima - OP.primera + 1;
-  var v = hoja(OP.hoja).getRange(OP.primera, OP.estado, n, OP.idApp - OP.estado + 1).getDisplayValues();
-  var mapa = {};
-  for (var i = 0; i < v.length; i++) {
-    var id = String(v[i][OP.idApp - OP.estado] || '').trim();
-    if (id) mapa[id] = deEstado(v[i][0]);
-  }
-  return mapa;
+// Estados que ve el cliente en el portal (y su texto en la columna J).
+var ETIQUETAS_ESTADO_PORTAL = { pendiente: 'Pedido hecho', confirmado: 'Confirmación de entrega',
+                                en_camino: 'En camino', entregada: 'Entregado', cancelada: 'Cancelado' };
+
+/** Estado de un pedido escrito a mano en la columna J de Portal_Pedidos. */
+function estadoPortal(v) {
+  if (String(v || '').toLowerCase().indexOf('confirm') !== -1) return 'confirmado';
+  var e = deEstado(v);
+  return e === 'devuelta' ? 'cancelada' : e;
 }
 
-/** Fila de Portal_Pedidos -> objeto. estadosOps: resultado de estadosOperacionesPorId(). */
-function filaPedidoPortal(f, estadosOps) {
+/** Estado de una operacion -> estado para el cliente: si ya esta registrada, esta confirmada. */
+function estadoPortalDeOperacion(e) {
+  if (e === 'pendiente') return 'confirmado';
+  if (e === 'devuelta') return 'cancelada';
+  return e;
+}
+
+/**
+ * Operaciones de la hoja "Operaciones" (con ID App) con lo que necesita el
+ * portal: su estado y, para enlazar pedidos sueltos, a quien se entrega,
+ * cuanto y que dia.
+ */
+function operacionesParaPortal() {
+  var n = OP.ultima - OP.primera + 1;
+  var v = hoja(OP.hoja).getRange(OP.primera, 1, n, OP.idApp).getDisplayValues();
+  var porId = {}, lista = [];
+  for (var i = 0; i < n; i++) {
+    var id = String(v[i][OP.idApp - 1] || '').trim();
+    if (!id) continue;
+    var o = { id: id, estado: deEstado(v[i][OP.estado - 1]),
+              destinatario: normalizarTexto(v[i][OP.clienteCuba - 1]),
+              entrega: Number(aNumero(v[i][OP.entrega - 1])) || 0,
+              fecha: parseFechaSheet(v[i][OP.dia - 1]).iso };
+    porId[id] = o;
+    lista.push(o);
+  }
+  return { porId: porId, lista: lista };
+}
+
+/**
+ * Enlaza solos los pedidos del portal que todavia no lo estan pero cuya
+ * operacion ya existe en "Operaciones" porque se registro sin el boton
+ * "Pasar a Envios": misma persona en Cuba, misma cantidad a entregar y fecha
+ * igual o posterior al pedido (la mas cercana). Guarda el enlace en la
+ * columna O; desde ahi el cliente ve el estado real de esa operacion.
+ */
+function enlazarPedidosSueltos(sh, datos, ops) {
+  var usadas = {};
+  for (var i = 1; i < datos.length; i++) {
+    var o = String(datos[i][PP_OPERACION - 1] || '').trim();
+    if (o) usadas[o] = true;
+  }
+  for (var j = 1; j < datos.length; j++) {
+    var f = datos[j];
+    if (!String(f[0] || '').trim() || String(f[PP_OPERACION - 1] || '').trim()) continue;
+    if (estadoPortal(f[9]) === 'cancelada') continue;
+    var dest = normalizarTexto(f[3]), recibido = Number(f[7]) || 0, desde = portalFechaIso(f[1]);
+    if (!dest || !recibido) continue;
+    var mejor = null;
+    ops.lista.forEach(function (op) {
+      if (usadas[op.id] || op.destinatario !== dest || Math.abs(op.entrega - recibido) > 0.01) return;
+      if (desde && op.fecha && op.fecha < desde) return;
+      if (!mejor || (op.fecha || '') < (mejor.fecha || '')) mejor = op;
+    });
+    if (mejor) {
+      usadas[mejor.id] = true;
+      f[PP_OPERACION - 1] = mejor.id;
+      sh.getRange(j + 1, PP_OPERACION).setNumberFormat('@').setValue(mejor.id);
+    }
+  }
+}
+
+/** Fila de Portal_Pedidos -> objeto. ops: resultado de operacionesParaPortal(). */
+function filaPedidoPortal(f, ops) {
   var operacion = String(f[PP_OPERACION - 1] || '').trim();
-  var estado = deEstado(f[9]);
-  if (operacion && estadosOps && estadosOps[operacion]) estado = estadosOps[operacion];
+  var estado = estadoPortal(f[9]);
+  if (operacion && estado !== 'cancelada') {
+    var o = ops && ops.porId[operacion];
+    // Ya pasado a Envios: como minimo esta confirmado, aunque la operacion aun no haya subido a la hoja.
+    estado = o ? estadoPortalDeOperacion(o.estado) : 'confirmado';
+  }
   return {
     id: String(f[0]), fecha: portalFechaIso(f[1]), usuario: String(f[2] || '').trim().toLowerCase(),
     destinatario: f[3], telefono: f[4], municipio: f[5],
@@ -4798,18 +4919,121 @@ function filaPedidoPortal(f, estadosOps) {
 
 function portalPedidos(d) {
   var usuario = String(d.usuario || '').trim().toLowerCase();
-  var datos = hojaPortalPedidos().getDataRange().getValues();
-  var estadosOps = null, pedidos = [];
+  var sh = hojaPortalPedidos();
+  var datos = sh.getDataRange().getValues();
+  var ops = operacionesParaPortal();
+  enlazarPedidosSueltos(sh, datos, ops);
+  var pedidos = [], enlazadas = {};
   for (var i = 1; i < datos.length; i++) {
     var f = datos[i];
     if (String(f[2] || '').trim().toLowerCase() !== usuario) continue;
-    if (!estadosOps && String(f[PP_OPERACION - 1] || '').trim()) estadosOps = estadosOperacionesPorId();
-    var p = filaPedidoPortal(f, estadosOps);
+    var p = filaPedidoPortal(f, ops);
+    if (p.operacion) enlazadas[p.operacion] = true;
     delete p.operacion; delete p.usuario;
     pedidos.push(p);
   }
+  // Envios que el cliente ya tenia antes del portal (los de la hoja Operaciones).
+  pedidos = pedidos.concat(historialOperacionesCliente(nombreCuentaPortal(usuario), enlazadas));
   pedidos.sort(function (a, b) { return (b.fecha || '').localeCompare(a.fecha || ''); });
   return { ok: true, pedidos: pedidos };
+}
+
+function nombreCuentaPortal(usuario) {
+  var c = leerCuentasPortal().cuentas;
+  for (var i = 0; i < c.length; i++) if (c[i].usuario.toLowerCase() === usuario) return c[i].nombre;
+  return '';
+}
+
+/**
+ * Operaciones EE.UU. -> Cuba de la hoja "Operaciones" cuyo "Cliente reside en
+ * EeUu" es este cliente (comparando el nombre sin acentos ni mayusculas), con la
+ * forma de un pedido del portal. Asi un cliente antiguo ve todo su historial en
+ * cuanto le crean la cuenta. idsEnlazados: operaciones que ya salen como pedido
+ * del portal (se saltan para no repetirlas).
+ */
+function historialOperacionesCliente(nombreCliente, idsEnlazados) {
+  var clave = normalizarTexto(nombreCliente);
+  if (!clave) return [];
+  var n = OP.ultima - OP.primera + 1;
+  var v = hoja(OP.hoja).getRange(OP.primera, 1, n, OP.idApp).getDisplayValues();
+  var out = [];
+  for (var i = 0; i < n; i++) {
+    var f = v[i];
+    if (normalizarTexto(f[OP.clienteUsa - 1]) !== clave) continue;
+    var tipo = normalizarTexto(f[OP.tipo - 1]).replace(/[^a-z]/g, '');
+    if (tipo && !/eeuu.*cuba/.test(tipo)) continue;          // solo envios hacia Cuba
+    if (/ejemplo/i.test(f[OP.nota - 1])) continue;
+    var idApp = String(f[OP.idApp - 1] || '').trim();
+    if (idApp && idsEnlazados && idsEnlazados[idApp]) continue;
+    var nota = desarmarNota(f[OP.nota - 1]);
+    out.push({
+      id: String(f[0] || '').trim() || ('OP-' + (OP.primera + i)),
+      fecha: parseFechaSheet(f[OP.dia - 1]).iso,
+      destinatario: f[OP.clienteCuba - 1], telefono: '', municipio: nota.municipio || '',
+      monto: Number(aNumero(f[OP.cantidad - 1])) || 0, recibido: Number(aNumero(f[OP.entrega - 1])) || 0,
+      nota: '',                                               // la nota del libro es interna
+      estado: estadoPortalDeOperacion(deEstado(f[OP.estado - 1])), pagado: true, pagadoFecha: '', comprobante: '',
+      historico: true
+    });
+  }
+  return out;
+}
+
+/**
+ * La primera vez que un cliente abre "Familia" en el portal, se le copian a
+ * Portal_Familiares las personas a las que ya les ha enviado: los beneficiarios
+ * de la hoja Clientes (seccion B, con telefono/direccion/municipio) y los
+ * "Cliente en Cuba" de sus operaciones. Una sola vez por cliente (propiedad
+ * PORTAL_FAM_<usuario>), asi lo que el cliente borre no vuelve a aparecer.
+ */
+function importarFamiliaresHistoricos(usuario, sh) {
+  var props = PropertiesService.getScriptProperties();
+  var marca = 'PORTAL_FAM_' + usuario;
+  if (props.getProperty(marca)) return;
+  var clave = normalizarTexto(nombreCuentaPortal(usuario));
+  if (clave) {
+    var ya = {}, datos = sh.getDataRange().getValues();
+    for (var i = 1; i < datos.length; i++) {
+      if (String(datos[i][0] || '').trim().toLowerCase() === usuario) ya[normalizarTexto(datos[i][1])] = true;
+    }
+    var nuevos = [], porNombre = {};
+    getBeneficiarios().forEach(function (b) {
+      if (normalizarTexto(b.cliente) !== clave) return;
+      var k = normalizarTexto(b.nombre);
+      if (!k || ya[k] || porNombre[k]) return;
+      porNombre[k] = true;
+      nuevos.push([usuario, String(b.nombre).trim(), b.telefono || '', b.municipio || '', b.direccion || '']);
+    });
+    historialOperacionesCliente(nombreCuentaPortal(usuario), {}).forEach(function (op) {
+      var k = normalizarTexto(op.destinatario);
+      if (!k || ya[k] || porNombre[k]) return;
+      porNombre[k] = true;
+      nuevos.push([usuario, String(op.destinatario).trim(), '', op.municipio || '', '']);
+    });
+    if (nuevos.length) {
+      var r = sh.getRange(sh.getLastRow() + 1, 1, nuevos.length, 5);
+      r.setNumberFormat('@');
+      r.setValues(nuevos);
+    }
+  }
+  props.setProperty(marca, '1');
+}
+
+/** El cliente cambia su propia contrasena desde el portal. */
+function portalCambiarClave(d) {
+  var usuario = String(d.usuario || '').trim().toLowerCase();
+  var actual = String(d.claveActual || '');
+  var nueva = String(d.claveNueva || '').trim();
+  if (nueva.length < 4) return { ok: false, error: 'La contraseña nueva debe tener al menos 4 caracteres.' };
+  var c = leerCuentasPortal();
+  for (var i = 0; i < c.cuentas.length; i++) {
+    var cu = c.cuentas[i];
+    if (cu.usuario.toLowerCase() !== usuario) continue;
+    if (cu.contrasena !== actual) return { ok: false, error: 'La contraseña actual no es correcta.' };
+    c.sh.getRange(cu.fila, 2).setNumberFormat('@').setValue(nueva);
+    return { ok: true };
+  }
+  return { ok: false, error: 'Usuario no encontrado.' };
 }
 
 function portalCrearPedido(d) {
@@ -4832,7 +5056,7 @@ function portalCrearPedido(d) {
                                           d.municipio || '', Number(d.monto) || 0, Number(d.recibido) || 0, d.nota || '']]);
   sh.getRange(fila, 1).setNumberFormat('@');
   sh.getRange(fila, 2).setNumberFormat('@');
-  sh.getRange(fila, 10).setValue('Pendiente');
+  sh.getRange(fila, 10).setValue(ETIQUETAS_ESTADO_PORTAL.pendiente);
   sh.getRange(fila, 11).setValue('No');
   if (comprobanteUrl) sh.getRange(fila, 13).setValue(comprobanteUrl);
   if (d.direccion) sh.getRange(fila, PP_DIRECCION).setValue(String(d.direccion));
@@ -4889,6 +5113,10 @@ function portalMarcarPago(d) {
 function portalFamiliares(d) {
   var usuario = String(d.usuario || '').trim().toLowerCase();
   var sh = hojaPortal('Portal_Familiares', ['Usuario', 'Nombre', 'Telefono', 'Municipio', 'Direccion']);
+  if (usuario) {
+    try { importarFamiliaresHistoricos(usuario, sh); }
+    catch (err) { Logger.log('No se pudieron importar familiares de ' + usuario + ': ' + err); }
+  }
   var datos = sh.getDataRange().getValues();
   var out = [];
   for (var i = 1; i < datos.length; i++) {
@@ -4943,13 +5171,37 @@ function portalBorrarFamiliar(d) {
 
 var ENC_PORTAL_CLIENTES = ['Usuario', 'Contraseña', 'Nombre', 'Telefono'];
 
-function verificarAdminPortal(clave) {
-  clave = String(clave || '');
+/**
+ * d.claveAdmin: la clave de administrador o, si permitirEquipo, tambien la
+ * clave del equipo (la que usa Muse: ve y mueve pedidos, pero NO las cuentas
+ * ni contrasenas de los clientes). Un telefono del equipo (d.rolApp 'equipo')
+ * nunca puede fijar la clave de administrador por ser el primero en llegar.
+ */
+function verificarAdminPortal(d, permitirEquipo) {
+  var clave = String((d && d.claveAdmin) || '');
   if (clave.length < 4) throw new Error('Falta la clave de administrador (minimo 4 caracteres).');
   var props = PropertiesService.getScriptProperties();
   var guardada = props.getProperty('CLAVE_ADMIN_PORTAL');
-  if (!guardada) { props.setProperty('CLAVE_ADMIN_PORTAL', clave); return; }
-  if (guardada !== clave) throw new Error('Clave de administrador incorrecta.');
+  if (!guardada) {
+    if (d && d.rolApp === 'equipo') throw new Error('Clave de administrador incorrecta: Rafael tiene que entrar primero al Portal desde su app.');
+    props.setProperty('CLAVE_ADMIN_PORTAL', clave);
+    return 'admin';
+  }
+  if (guardada === clave) return 'admin';
+  var equipo = props.getProperty('CLAVE_EQUIPO_PORTAL');
+  if (permitirEquipo && equipo && equipo === clave) return 'equipo';
+  throw new Error(permitirEquipo ? 'Clave de administrador incorrecta.'
+                                 : 'Clave de administrador incorrecta (la clave del equipo no sirve para las cuentas).');
+}
+
+/** Rafael fija (o cambia) la clave del equipo desde su app. Solo con la clave de administrador. */
+function adminFijarClaveEquipo(d) {
+  verificarAdminPortal(d, false);
+  var nueva = String(d.claveEquipo || '').trim();
+  if (nueva.length < 4) return { ok: false, error: 'La clave del equipo debe tener al menos 4 caracteres.' };
+  if (nueva === String(d.claveAdmin)) return { ok: false, error: 'La clave del equipo tiene que ser distinta de la tuya.' };
+  PropertiesService.getScriptProperties().setProperty('CLAVE_EQUIPO_PORTAL', nueva);
+  return { ok: true };
 }
 
 /** minusculas, sin acentos ni espacios dobles: para comparar nombres. */
@@ -5017,13 +5269,13 @@ function escribirCuentasPortal(sh, filas) {
 }
 
 function adminCuentasPortal(d) {
-  verificarAdminPortal(d.claveAdmin);
+  verificarAdminPortal(d, false);
   var c = leerCuentasPortal();
   return { ok: true, cuentas: c.cuentas, sinCuenta: clientesSinCuentaPortal(c.conCuenta) };
 }
 
 function adminCrearCuentaPortal(d) {
-  verificarAdminPortal(d.claveAdmin);
+  verificarAdminPortal(d, false);
   var nombre = String(d.nombre || '').replace(/\s+/g, ' ').trim();
   if (!nombre) return { ok: false, error: 'Falta el nombre del cliente.' };
   var c = leerCuentasPortal();
@@ -5043,7 +5295,7 @@ function adminCrearCuentaPortal(d) {
 }
 
 function adminCrearCuentasTodos(d) {
-  verificarAdminPortal(d.claveAdmin);
+  verificarAdminPortal(d, false);
   var c = leerCuentasPortal();
   var faltan = clientesSinCuentaPortal(c.conCuenta);
   if (!faltan.length) return { ok: true, creadas: 0 };
@@ -5056,7 +5308,7 @@ function adminCrearCuentasTodos(d) {
 
 /** Cambia contrasena (o genera una nueva) y/o telefono de una cuenta. */
 function adminActualizarCuentaPortal(d) {
-  verificarAdminPortal(d.claveAdmin);
+  verificarAdminPortal(d, false);
   var usuario = String(d.usuario || '').trim().toLowerCase();
   var c = leerCuentasPortal();
   for (var i = 0; i < c.cuentas.length; i++) {
@@ -5075,8 +5327,11 @@ function adminActualizarCuentaPortal(d) {
 
 /** Todos los pedidos del portal, con el nombre del cliente, para la app de Negocio. */
 function adminPedidosPortal(d) {
-  verificarAdminPortal(d.claveAdmin);
-  var datos = hojaPortalPedidos().getDataRange().getValues();
+  verificarAdminPortal(d, true);
+  var sh = hojaPortalPedidos();
+  var datos = sh.getDataRange().getValues();
+  var ops = operacionesParaPortal();
+  enlazarPedidosSueltos(sh, datos, ops);
   var cuentas = {}, c = leerCuentasPortal().cuentas;
   for (var k = 0; k < c.length; k++) cuentas[c[k].usuario.toLowerCase()] = c[k];
   // Direccion de los pedidos viejos (antes de la columna N): la del familiar guardado.
@@ -5084,11 +5339,10 @@ function adminPedidosPortal(d) {
   for (var j = 1; j < fv.length; j++) {
     fam[String(fv[j][0] || '').trim().toLowerCase() + '|' + normalizarTexto(fv[j][1])] = String(fv[j][4] || '');
   }
-  var estadosOps = estadosOperacionesPorId();
   var pedidos = [];
   for (var i = 1; i < datos.length; i++) {
     if (!String(datos[i][0] || '').trim()) continue;
-    var p = filaPedidoPortal(datos[i], estadosOps);
+    var p = filaPedidoPortal(datos[i], ops);
     var cu = cuentas[p.usuario] || {};
     p.cliente = cu.nombre || p.usuario;
     p.clienteTelefono = cu.telefono || '';
@@ -5108,9 +5362,8 @@ function filaDePedidoPortal(sh, id) {
 
 /** Cambia a mano el estado de un pedido que todavia no se paso a Envios. */
 function adminEstadoPedidoPortal(d) {
-  verificarAdminPortal(d.claveAdmin);
-  var etiquetas = { pendiente: 'Pendiente', en_camino: 'En camino', entregada: 'Entregada', cancelada: 'Cancelada' };
-  var etiqueta = etiquetas[deEstado(d.estado)];
+  verificarAdminPortal(d, true);
+  var etiqueta = ETIQUETAS_ESTADO_PORTAL[estadoPortal(d.estado)];
   var sh = hojaPortalPedidos();
   var fila = filaDePedidoPortal(sh, d.id);
   if (!fila) return { ok: false, error: 'No existe el pedido ' + d.id + '.' };
@@ -5120,7 +5373,7 @@ function adminEstadoPedidoPortal(d) {
 
 /** Enlaza un pedido del portal con la operacion que se creo en Envios. */
 function adminVincularPedidoPortal(d) {
-  verificarAdminPortal(d.claveAdmin);
+  verificarAdminPortal(d, true);
   var sh = hojaPortalPedidos();
   var fila = filaDePedidoPortal(sh, d.id);
   if (!fila) return { ok: false, error: 'No existe el pedido ' + d.id + '.' };
@@ -5129,7 +5382,7 @@ function adminVincularPedidoPortal(d) {
 }
 
 function adminBorrarCuentaPortal(d) {
-  verificarAdminPortal(d.claveAdmin);
+  verificarAdminPortal(d, false);
   var usuario = String(d.usuario || '').trim().toLowerCase();
   var c = leerCuentasPortal();
   for (var i = 0; i < c.cuentas.length; i++) {
