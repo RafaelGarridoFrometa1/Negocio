@@ -233,6 +233,7 @@ a{color:var(--accent)}
   <div class="topbar">
     <div class="brand-logo-chip"><img src="logo-conecta.png" alt="Conecta"></div>
     <div class="topbar-right hidden" id="topbar-logged">
+      <button class="icon-btn" id="btn-cuenta" title="Mi cuenta">&#128100;</button>
       <button class="icon-btn" id="btn-theme" title="Cambiar tema">&#9788;</button>
       <button class="icon-btn" id="btn-logout" title="Salir">&#8629;</button>
     </div>
@@ -266,7 +267,7 @@ a{color:var(--accent)}
       <div class="hello">
         <div>
           <h2 id="panel-name">Hola</h2>
-          <p>Tu historial y pedidos en un solo lugar</p>
+          <p>Tu historial y pedidos en un solo lugar · <a href="#" id="link-cambiar-clave">Cambiar mi contraseña</a></p>
         </div>
       </div>
 
@@ -394,6 +395,33 @@ a{color:var(--accent)}
     </div>
   </div>
 
+  <!-- MI CUENTA -->
+  <div class="view hidden" id="view-cuenta">
+    <div class="section-pad">
+      <h2 style="margin-bottom:4px">Mi cuenta</h2>
+      <p style="margin:0 0 18px;color:var(--muted);font-size:13px" id="cuenta-datos"></p>
+
+      <div class="card">
+        <h3 style="font-size:16px;margin-bottom:14px">Cambiar contraseña</h3>
+        <div class="field">
+          <label for="cc-actual">Contraseña actual</label>
+          <input id="cc-actual" type="password" autocomplete="current-password">
+        </div>
+        <div class="field">
+          <label for="cc-nueva">Contraseña nueva</label>
+          <input id="cc-nueva" type="password" autocomplete="new-password" placeholder="Mínimo 4 caracteres">
+        </div>
+        <div class="field">
+          <label for="cc-repetir">Repite la contraseña nueva</label>
+          <input id="cc-repetir" type="password" autocomplete="new-password">
+        </div>
+        <div class="err" id="cc-err"></div>
+        <button class="btn btn-primary" id="btn-cambiar-clave">Guardar contraseña nueva</button>
+      </div>
+      <div class="note">¿Se te olvidó la contraseña actual? Escríbenos por WhatsApp desde "Contacto" y te damos una nueva.</div>
+    </div>
+  </div>
+
   <!-- CALCULADORA -->
   <div class="view hidden" id="view-calculadora">
     <div class="section-pad">
@@ -479,12 +507,20 @@ window.onerror = function(msg, src, linea){
   var MUNICIPIOS = [
     { nombre:'Pasar a recogerlo (sin mensajería)', fee:0 },
     { nombre:'La Lisa', fee:3 },
-    { nombre:'Marianao, La Habana', fee:5 },
-    { nombre:'Plaza, Boyeros, Cerro', fee:7 },
-    { nombre:'Centro Habana, Habana Vieja', fee:7 },
-    { nombre:'Diez de Octubre, Arroyo Naranjo', fee:8 },
-    { nombre:'Regla, San Miguel del Padrón', fee:9 },
-    { nombre:'Guanabacoa, Cotorro, Habana del Este', fee:12 }
+    { nombre:'Playa', fee:5 },
+    { nombre:'Marianao', fee:5 },
+    { nombre:'Plaza', fee:7 },
+    { nombre:'Boyeros', fee:7 },
+    { nombre:'Cerro', fee:7 },
+    { nombre:'Centro Habana', fee:7 },
+    { nombre:'Habana Vieja', fee:7 },
+    { nombre:'10 de Octubre', fee:8 },
+    { nombre:'Arroyo Naranjo', fee:8 },
+    { nombre:'Regla', fee:9 },
+    { nombre:'San Miguel del Padrón', fee:9 },
+    { nombre:'Guanabacoa', fee:12 },
+    { nombre:'Cotorro', fee:12 },
+    { nombre:'Habana del Este', fee:12 }
   ];
 
   // ============================================================
@@ -559,10 +595,11 @@ window.onerror = function(msg, src, linea){
   populateMunicipioSelects();
 
   var ESTADOS = {
-    pendiente:{label:'Pendiente', cls:'pill-pendiente'},
+    pendiente:{label:'Pedido hecho', cls:'pill-pendiente'},
+    confirmado:{label:'Confirmación de entrega', cls:'pill-camino'},
     en_camino:{label:'En camino', cls:'pill-camino'},
-    entregada:{label:'Entregada', cls:'pill-entregada'},
-    cancelada:{label:'Cancelada', cls:'pill-cancelada'}
+    entregada:{label:'Entregado', cls:'pill-entregada'},
+    cancelada:{label:'Cancelado', cls:'pill-cancelada'}
   };
 
   function fmtMoney(n){ return '$' + Number(n||0).toLocaleString('en-US'); }
@@ -578,7 +615,7 @@ window.onerror = function(msg, src, linea){
   }
 
   var views = {};
-  ['login','panel','nuevo','detalle','familia','calculadora'].forEach(function(v){ views[v] = document.getElementById('view-'+v); });
+  ['login','panel','nuevo','detalle','familia','calculadora','cuenta'].forEach(function(v){ views[v] = document.getElementById('view-'+v); });
   var bottomnav = document.getElementById('bottomnav');
   var topbarLogged = document.getElementById('topbar-logged');
 
@@ -825,7 +862,7 @@ window.onerror = function(msg, src, linea){
   }
 
   function renderPanel(){
-    var activos = pedidosCache.filter(function(o){ return o.estado === 'pendiente' || o.estado === 'en_camino'; }).length;
+    var activos = pedidosCache.filter(function(o){ return o.estado === 'pendiente' || o.estado === 'confirmado' || o.estado === 'en_camino'; }).length;
     var ahora = new Date();
     var totalMes = pedidosCache.reduce(function(s,o){
       var d = new Date(o.fecha + 'T00:00:00');
@@ -851,7 +888,7 @@ window.onerror = function(msg, src, linea){
             '<span class="pill '+est.cls+'">'+est.label+'</span>' +
           '</div>' +
           '<div class="order-dest">'+escapeHtml(o.destinatario)+'</div>' +
-          '<div class="order-meta"><span>'+escapeHtml(o.municipio)+'</span><span>'+fmtFecha(o.fecha)+'</span></div>' +
+          '<div class="order-meta">'+(o.municipio?'<span>'+escapeHtml(o.municipio)+'</span>':'')+'<span>'+fmtFecha(o.fecha)+'</span>'+(o.historico?'<span>Registrado por Conecta</span>':'')+'</div>' +
           '<div class="order-amount">'+fmtMoney(o.monto)+'</div>' +
         '</div>'
       );
@@ -862,10 +899,12 @@ window.onerror = function(msg, src, linea){
     });
   }
 
-  var PASOS = ['pendiente','en_camino','entregada'];
-  var PASO_LABEL = { pendiente:'Pedido recibido', en_camino:'En camino a Cuba', entregada:'Entregado' };
+  var PASOS = ['pendiente','confirmado','en_camino','entregada'];
+  var PASO_LABEL = { pendiente:'Pedido hecho', confirmado:'Confirmación de entrega', en_camino:'En camino', entregada:'Entregado' };
 
+  var detalleAbierto = null;
   function openDetalle(id){
+    detalleAbierto = id;
     var o = pedidosCache.filter(function(x){ return x.id === id; })[0];
     if(!o) return;
     var est = ESTADOS[o.estado] || ESTADOS.pendiente;
@@ -899,12 +938,13 @@ window.onerror = function(msg, src, linea){
       '<div class="detail-rows">' +
         '<div class="detail-row"><span class="k">Monto enviado</span><span class="v mono">'+fmtMoney(o.monto)+'</span></div>' +
         (o.recibido ? '<div class="detail-row"><span class="k">Tu familiar recibió</span><span class="v mono">'+fmtMoney(o.recibido)+'</span></div>' : '') +
-        '<div class="detail-row"><span class="k">Municipio</span><span class="v">'+escapeHtml(o.municipio)+'</span></div>' +
+        (o.municipio ? '<div class="detail-row"><span class="k">Municipio</span><span class="v">'+escapeHtml(o.municipio)+'</span></div>' : '') +
+        (o.historico ? '<div class="detail-row"><span class="k">Origen</span><span class="v">Registrado por Conecta</span></div>' : '') +
         (o.telefono ? '<div class="detail-row"><span class="k">Teléfono destino</span><span class="v mono">'+escapeHtml(o.telefono)+'</span></div>' : '') +
         (o.nota ? '<div class="detail-row"><span class="k">Nota</span><span class="v">'+escapeHtml(o.nota)+'</span></div>' : '') +
         (o.comprobante ? '<div class="detail-row"><span class="k">Comprobante</span><span class="v"><a href="'+o.comprobante+'" target="_blank" rel="noopener">Ver imagen</a></span></div>' : '') +
       '</div>' +
-      (o.estado === 'entregada' ? (
+      (o.estado === 'entregada' && !o.historico ? (
         o.pagado ?
           '<div class="pay-done">&#9989; Pago enviado' + (o.pagadoFecha ? (' &middot; ' + fmtFecha(o.pagadoFecha)) : '') + '</div>' :
           '<button class="btn btn-primary" id="btn-pagar-ahora" style="margin-top:16px">&#128179; Enviar el pago ahora</button>' +
@@ -1030,12 +1070,30 @@ window.onerror = function(msg, src, linea){
   });
 
   // ---- Autocompletado de familiares en Nuevo pedido ----
+  /** Opcion de MUNICIPIOS para un municipio guardado (los del historial vienen sueltos: "Centro Habana"). */
+  function opcionMunicipio(m){
+    function norm(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\bdiez de octubre\b/,'10 de octubre').trim(); }
+    var k = norm(m);
+    if(!k) return MUNICIPIOS[0].nombre;
+    var exacta = MUNICIPIOS.filter(function(x){ return norm(x.nombre) === k; })[0];
+    if(exacta) return exacta.nombre;
+    // Guardado con varios municipios juntos ("Plaza, Boyeros, Cerro"): el primero que aparece.
+    var mejor = null, pos = Infinity;
+    MUNICIPIOS.forEach(function(x){
+      if(!x.fee) return;
+      var at = k.indexOf(norm(x.nombre));
+      if(at !== -1 && at < pos){ pos = at; mejor = x; }
+    });
+    if(mejor) return mejor.nombre;
+    var parcial = MUNICIPIOS.filter(function(x){ return x.fee > 0 && norm(x.nombre).indexOf(k) !== -1; })[0];
+    return parcial ? parcial.nombre : MUNICIPIOS[0].nombre;
+  }
+
   function aplicarFamiliar(c){
     document.getElementById('f-dest-nombre').value = c.nombre;
     document.getElementById('f-dest-tel').value = c.telefono || '';
     var selMun = document.getElementById('f-dest-municipio');
-    selMun.value = c.municipio || '';
-    if(selMun.selectedIndex < 0) selMun.selectedIndex = 0; // municipio guardado que ya no esta en la lista
+    selMun.value = opcionMunicipio(c.municipio);
     updateEstimate();
     document.getElementById('f-dest-dir').value = c.direccion || '';
     document.getElementById('f-guardar-familiar').checked = false;
@@ -1100,6 +1158,59 @@ window.onerror = function(msg, src, linea){
   document.getElementById('btn-calc-enviar').addEventListener('click', function(){
     if(this.disabled) return;
     openNuevo({ recibido: this._recibido, municipio: this._municipio });
+  });
+
+  // ---- Refresco automatico ----
+  // Si el cliente deja la pagina abierta o vuelve a ella, se recargan sus
+  // pedidos para que vea el estado nuevo sin tener que salir y volver a entrar.
+  function refrescarSiVisible(){
+    if(!session || document.hidden) return;
+    var enPanel = !views.panel.classList.contains('hidden');
+    var enDetalle = !views.detalle.classList.contains('hidden');
+    if(!enPanel && !enDetalle) return;
+    var antes = enDetalle ? JSON.stringify(pedidosCache.filter(function(x){ return x.id === detalleAbierto; })) : '';
+    cargarPedidos().then(function(){
+      if(!enDetalle || views.detalle.classList.contains('hidden')) return;
+      var ahora = JSON.stringify(pedidosCache.filter(function(x){ return x.id === detalleAbierto; }));
+      if(ahora !== antes) openDetalle(detalleAbierto);
+    });
+  }
+  document.addEventListener('visibilitychange', refrescarSiVisible);
+  window.addEventListener('focus', refrescarSiVisible);
+  setInterval(refrescarSiVisible, 60000);
+
+  // ---- Mi cuenta: cambiar contraseña ----
+  document.getElementById('link-cambiar-clave').addEventListener('click', function(e){
+    e.preventDefault();
+    document.getElementById('btn-cuenta').click();
+  });
+  document.getElementById('btn-cuenta').addEventListener('click', function(){
+    ['cc-actual','cc-nueva','cc-repetir'].forEach(function(id){ document.getElementById(id).value = ''; });
+    document.getElementById('cc-err').textContent = '';
+    document.getElementById('cuenta-datos').textContent = (session.nombre ? session.nombre + ' · ' : '') + 'Usuario: ' + session.usuario;
+    showView('cuenta');
+  });
+  document.getElementById('btn-cambiar-clave').addEventListener('click', function(){
+    var actual = document.getElementById('cc-actual').value;
+    var nueva = document.getElementById('cc-nueva').value.trim();
+    var repetir = document.getElementById('cc-repetir').value.trim();
+    var err = document.getElementById('cc-err');
+    if(!actual){ err.textContent = 'Escribe tu contraseña actual.'; return; }
+    if(nueva.length < 4){ err.textContent = 'La contraseña nueva debe tener al menos 4 caracteres.'; return; }
+    if(nueva !== repetir){ err.textContent = 'Las dos contraseñas nuevas no coinciden.'; return; }
+    err.textContent = '';
+    var btn = this;
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    pedirBackend('portalCambiarClave', { usuario: session.usuario, claveActual: actual, claveNueva: nueva }).then(function(res){
+      btn.disabled = false; btn.textContent = 'Guardar contraseña nueva';
+      if(!res || res.ok === false){ err.textContent = (res && res.error) || 'No se pudo cambiar la contraseña.'; return; }
+      ['cc-actual','cc-nueva','cc-repetir'].forEach(function(id){ document.getElementById(id).value = ''; });
+      toast('Contraseña cambiada. Úsala la próxima vez que entres.');
+      showView('panel');
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = 'Guardar contraseña nueva';
+      err.textContent = 'No se pudo conectar. Intenta de nuevo.';
+    });
   });
 
   // ---- Arranque ----
