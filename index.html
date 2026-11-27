@@ -245,6 +245,18 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   </div>
 
   <div class="auth-lnk" id="auth-toggle" onclick="toggleAuth()">¿No tienes usuario? Pide acceso</div>
+  <div class="auth-lnk" onclick="toggleConexion()" style="margin-top:.4rem;opacity:.8">⚙️ Conexión con el script</div>
+
+  <div class="auth-box" id="box-conexion" style="display:none;margin-top:.75rem">
+    <h2>Conexión con el script</h2>
+    <p style="font-size:.78rem;color:var(--g5);margin-bottom:.5rem;line-height:1.5">Esta es la dirección del script que usa este celular. Tiene que ser la misma implementación que actualizaste a la versión 5.0.</p>
+    <div id="cx-actual" style="font-size:.72rem;word-break:break-all;background:#f3f4f6;border-radius:8px;padding:.5rem;margin-bottom:.5rem"></div>
+    <div id="cx-estado" style="font-size:.85rem;font-weight:600;margin-bottom:.6rem"></div>
+    <button onclick="probarConexionLogin()">Probar conexión</button>
+    <input type="url" id="cx-nueva" placeholder="Pega aquí otra dirección (termina en /exec)" style="margin-top:.75rem">
+    <button onclick="guardarConexionLogin()">Guardar esta dirección</button>
+    <div class="auth-lnk" onclick="usarConexionDefecto()" style="margin-top:.5rem">Volver a la dirección por defecto</div>
+  </div>
 </div>
 
 <!-- ══ APP ══ -->
@@ -948,7 +960,7 @@ function aplicarRol(){
 
 function errorScript(res, porDefecto){
   var m=txt(res&&res.error).replace(/^Error:\s*/,'');
-  if(/Accion no reconocida/i.test(m)) return 'Tu Apps Script todavía no tiene la versión 5.0. Pega el negocio-contabilidad.gs nuevo y haz una "Nueva versión" de la implementación.';
+  if(/Accion no reconocida/i.test(m)) return 'El script al que está conectado este celular no tiene la versión 5.0. Toca "⚙️ Conexión con el script" abajo para ver qué dirección usa.';
   return m||porDefecto;
 }
 
@@ -1015,6 +1027,43 @@ function doSetup(){
     btn.disabled=false; btn.textContent='Pedir acceso';
     err.textContent='No se pudo conectar con el script. Revisa tu internet.';
   });
+}
+
+// ── Conexion con el script desde la pantalla de entrada ──
+// Sin esto, si el celular tenia guardada la direccion de otra implementacion
+// (o una vieja), no habia forma de verla ni cambiarla sin entrar a la app.
+function toggleConexion(){
+  var b=document.getElementById('box-conexion');
+  b.style.display=b.style.display==='none'?'block':'none';
+  if(b.style.display==='block'){ document.getElementById('cx-actual').textContent=gsUrl(); probarConexionLogin(); }
+}
+
+function probarConexionLogin(){
+  var est=document.getElementById('cx-estado');
+  est.style.color=''; est.textContent='Probando…';
+  fetch(gsUrl()+'?action=ping',{method:'GET'}).then(function(r){ return r.text(); }).then(interpretar).then(function(res){
+    var v=parseFloat(res&&res.version)||0;
+    if(v>=5){ est.style.color='var(--ok)'; est.textContent='✓ Conectado. Script versión '+res.version+': todo bien.'; }
+    else { est.style.color='var(--err)'; est.textContent='✗ Ese script tiene la versión '+((res&&res.version)||'antigua')+'. O no se actualizó esta implementación, o la que actualizaste tiene otra dirección: pégala abajo.'; }
+  }).catch(function(e){
+    est.style.color='var(--err)';
+    est.textContent='✗ No responde: '+(e&&e.message?e.message:'sin conexión')+'. Revisa internet o pega la dirección correcta abajo.';
+  });
+}
+
+function guardarConexionLogin(){
+  var u=document.getElementById('cx-nueva').value.trim();
+  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)){ alert('La dirección tiene que empezar por https://script.google.com/ y terminar en /exec'); return; }
+  localStorage.setItem(GS_KEY,u);
+  document.getElementById('cx-nueva').value='';
+  document.getElementById('cx-actual').textContent=gsUrl();
+  probarConexionLogin();
+}
+
+function usarConexionDefecto(){
+  localStorage.removeItem(GS_KEY);
+  document.getElementById('cx-actual').textContent=gsUrl();
+  probarConexionLogin();
 }
 
 function doLogout(){
@@ -3218,7 +3267,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v40 · 2026-11-27';
+var APP_VERSION='v41 · 2026-11-27';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
