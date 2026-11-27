@@ -227,28 +227,24 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
 
   <div class="auth-box" id="box-login">
     <h2>Iniciar sesión</h2>
-    <input type="text" id="login-user" placeholder="Usuario" autocomplete="username">
-    <input type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password">
-    <button onclick="doLogin()">Entrar</button>
+    <input type="text" id="login-user" placeholder="Usuario" autocomplete="username" autocapitalize="off">
+    <input type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button id="btn-login" onclick="doLogin()">Entrar</button>
     <div class="auth-err" id="login-err"></div>
   </div>
 
   <div class="auth-box" id="box-setup" style="display:none">
-    <h2>Configurar acceso</h2>
-    <p style="font-size:.8rem;color:var(--g5);margin-bottom:1rem">Solo se permiten 2 usuarios. Introduce el código de administrador para continuar.</p>
-    <input type="password" id="setup-admin" placeholder="Código de administrador">
-    <input type="text" id="setup-user" placeholder="Nombre de usuario">
+    <h2>Pedir acceso</h2>
+    <p style="font-size:.8rem;color:var(--g5);margin-bottom:1rem;line-height:1.5">Elige tu usuario y contraseña. Servirán en cualquier celular. Rafael tiene que aprobarte antes de que puedas entrar.</p>
+    <input type="text" id="setup-user" placeholder="Usuario (sin espacios ni acentos)" autocapitalize="off">
     <input type="password" id="setup-pass" placeholder="Contraseña (mín. 4 caracteres)">
     <input type="password" id="setup-pass2" placeholder="Repetir contraseña">
-    <select id="setup-rol" style="width:100%;padding:.75rem;border-radius:10px;border:1.5px solid #e5e7eb;margin-bottom:.75rem;font-size:.95rem;background:#fff">
-      <option value="dueno">Dueño — ve todo</option>
-      <option value="equipo">Equipo — sin ganancias, Dashboard ni contabilidad</option>
-    </select>
-    <button onclick="doSetup()">Crear usuario</button>
+    <input type="password" id="setup-admin" placeholder="Clave de administrador (solo Rafael; si no la tienes, déjalo vacío)">
+    <button id="btn-setup" onclick="doSetup()">Pedir acceso</button>
     <div class="auth-err" id="setup-err"></div>
   </div>
 
-  <div class="auth-lnk" id="auth-toggle" onclick="toggleAuth()">Configurar acceso</div>
+  <div class="auth-lnk" id="auth-toggle" onclick="toggleAuth()">¿No tienes usuario? Pide acceso</div>
 </div>
 
 <!-- ══ APP ══ -->
@@ -361,6 +357,19 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       <div id="list-mensajeros"></div>
     </div>
 
+    <!-- USUARIOS DE LA APP (solo dueños) -->
+    <div class="section" id="sec-usuarios">
+      <div class="sec-hdr">
+        <div class="sec-ttl">Usuarios de la app</div>
+        <button class="btn btn-ok btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="abrirCrearUsuarioApp()">+ Crear</button>
+      </div>
+      <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
+        Sirven en cualquier celular o cuenta de Google. Quien pide acceso desde la pantalla de entrada
+        aparece aquí y no puede entrar hasta que lo apruebes.
+      </p>
+      <div id="list-usuarios"></div>
+    </div>
+
     <!-- PORTAL DE CLIENTES: PEDIDOS Y CUENTAS -->
     <div class="section" id="sec-portal">
       <div class="sec-hdr">
@@ -387,15 +396,6 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         </div>
         <div id="portal-cuentas-box" style="display:none">
         <button class="cfg-btn" onclick="abrirNuevaCuentaPortal('')">➕ Nueva cuenta</button>
-        <div class="card" style="margin-bottom:.75rem">
-          <div class="card-ttl">🔑 Clave del equipo (para Muse)</div>
-          <p style="font-size:.8rem;color:var(--g5);margin-bottom:.6rem;line-height:1.5">
-            Con esta clave, alguien del equipo ve y mueve los pedidos del portal,
-            pero NO ve estas cuentas ni las contraseñas. Tiene que ser distinta de la tuya.
-          </p>
-          <div style="display:flex;gap:.5rem"><input type="text" class="finput" id="portal-clave-equipo" placeholder="Clave para el equipo" autocapitalize="off">
-          <button class="btn btn-ok btn-sm" style="white-space:nowrap" onclick="guardarClaveEquipoPortal()">Guardar</button></div>
-        </div>
         <div id="portal-resumen" style="font-size:.85rem;color:var(--g6);margin-bottom:.6rem"></div>
         <button class="cfg-btn" id="portal-btn-todos" onclick="crearCuentasTodosPortal()" style="display:none"></button>
         <div class="tmini">
@@ -491,7 +491,8 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
       <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">Cuenta</div>
         <button class="cfg-btn" onclick="cambiarPass()">🔐 Cambiar mi contraseña</button>
-        <button class="cfg-btn solo-dueno" onclick="gestionarUsuarios()">👥 Gestionar usuarios</button>
+        <div id="quien-soy" style="font-size:.8rem;color:var(--g5);margin-bottom:.6rem"></div>
+        <button class="cfg-btn solo-dueno" onclick="gestionarUsuarios()">👥 Usuarios de la app (aprobar, crear, quitar)</button>
         <button class="cfg-btn solo-dueno" onclick="exportar()">📤 Exportar copia de seguridad</button>
         <button class="cfg-btn solo-dueno" onclick="importar()">📥 Importar copia de seguridad</button>
       </div>
@@ -506,7 +507,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <button class="tab solo-dueno" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
     <button class="tab" id="tab-portal" onclick="showSection('portal',this)"><span class="tab-ico">🌐</span><span>Portal</span><span class="tab-badge" id="badge-portal" style="display:none"></span></button>
-    <button class="tab" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span></button>
+    <button class="tab" id="tab-config" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span><span class="tab-badge" id="badge-config" style="display:none"></span></button>
   </div>
 </div>
 
@@ -686,6 +687,21 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <div class="fgroup"><label class="flabel">Nombre *</label><input type="text" class="finput" id="mens-nombre" placeholder="Nombre del mensajero"></div>
   <div class="fgroup"><label class="flabel">Teléfono</label><input type="tel" class="finput" id="mens-tel" placeholder="+53..."></div>
   <button class="btn btn-pri" onclick="saveMens()">Guardar</button>
+</div>
+</div>
+
+<!-- ══ MODAL: CREAR USUARIO DE LA APP ══ -->
+<div class="modal-bg" id="modal-usuario-app">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-usuario-app')">×</button>
+  <div class="modal-ttl">Crear usuario de la app</div>
+  <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">Queda aprobado al momento. Sirve en cualquier celular o navegador (también para una IA como Muse).</p>
+  <div class="fgroup"><label class="flabel">Usuario *</label><input type="text" class="finput" id="nu-usuario" placeholder="muse" autocapitalize="off"></div>
+  <div class="fgroup"><label class="flabel">Contraseña * (mín. 4)</label><input type="text" class="finput" id="nu-clave" autocapitalize="off"></div>
+  <div class="fgroup"><label class="flabel">Tipo</label>
+    <select class="finput" id="nu-rol"><option value="equipo">Equipo — sin ganancias, Dashboard ni contabilidad</option><option value="dueno">Dueño — ve todo</option></select>
+  </div>
+  <button class="btn btn-pri" onclick="guardarUsuarioApp()">Crear usuario</button>
 </div>
 </div>
 
@@ -910,74 +926,99 @@ function fmtMoney(n){ return '$'+parseFloat(n||0).toFixed(2); }
 function txt(v){ return (v===null||v===undefined)?'':String(v); }
 
 // ══ AUTH ══
-// Código de administrador — cámbialo por uno que solo tú conozcas
-var ADMIN_CODE = 'negocio2024admin';
-// Máximo de usuarios permitidos
-var MAX_USERS = 2;
-
-function getUsers(){
-  var raw = JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
-  if(raw && !Array.isArray(raw) && raw.u && raw.p){
-    raw = [{u:raw.u, p:raw.p}];
-    localStorage.setItem(AUTH_KEY, JSON.stringify(raw));
-  }
-  return raw;
-}
-function saveUsers(users){ localStorage.setItem(AUTH_KEY, JSON.stringify(users)); }
-function findUser(u){ return getUsers().find(function(x){ return x.u===u; }); }
-function checkAuth(u,p){ var usr=findUser(u); return usr&&usr.p===btoa(p); }
-function isLogged(){ return sessionStorage.getItem('logged')!==null&&findUser(sessionStorage.getItem('logged')); }
-function currentUser(){ return sessionStorage.getItem('logged')||''; }
+// Los usuarios viven en el script (hoja Usuarios_App), no en cada telefono:
+// el mismo usuario sirve en cualquier dispositivo o cuenta de Google, no hay
+// limite, y los nuevos esperan a que un dueño los apruebe. En el telefono solo
+// se guarda la sesion (usuario, rol y un token firmado por el script).
+var SESION_KEY='negocio_sesion';
+function sesion(){ try{ return JSON.parse(localStorage.getItem(SESION_KEY)||'null'); }catch(e){ return null; } }
+function guardarSesion(x){ localStorage.setItem(SESION_KEY, JSON.stringify(x)); }
+function isLogged(){ var x=sesion(); return !!(x&&x.usuario&&x.token); }
+function currentUser(){ var x=sesion(); return x?x.usuario:''; }
+function tokenApp(){ var x=sesion(); return x?x.token:''; }
 // "equipo" (p.ej. Muse): trabajo del dia sin ganancias, Dashboard, Mensajeros,
-// copias de seguridad ni cuentas del portal. Los usuarios viejos, sin rol, son dueños.
-function currentRol(){ var u=findUser(currentUser()); return (u&&u.rol==='equipo')?'equipo':'dueno'; }
+// copias de seguridad, usuarios ni cuentas del portal.
+function currentRol(){ var x=sesion(); return (x&&x.rol==='dueno')?'dueno':'equipo'; }
 function esEquipo(){ return currentRol()==='equipo'; }
-function aplicarRol(){ document.body.classList.toggle('rol-equipo', esEquipo()); }
+function aplicarRol(){
+  document.body.classList.toggle('rol-equipo', esEquipo());
+  var q=document.getElementById('quien-soy');
+  if(q) q.textContent='Conectado como '+currentUser()+' ('+(esEquipo()?'equipo':'dueño')+')';
+}
+
+function errorScript(res, porDefecto){
+  var m=txt(res&&res.error).replace(/^Error:\s*/,'');
+  if(/Accion no reconocida/i.test(m)) return 'Tu Apps Script todavía no tiene la versión 5.0. Pega el negocio-contabilidad.gs nuevo y haz una "Nueva versión" de la implementación.';
+  return m||porDefecto;
+}
+
+/** Accion del script con la sesion. Si la sesion ya no vale, vuelve a la pantalla de entrada. */
+function llamarApp(accion, datos){
+  var cuerpo=Object.assign({action:accion, token:tokenApp()}, datos||{});
+  return enviarAlScript(gsUrl(),cuerpo).then(function(res){
+    if(!res||res.ok===false){
+      var m=errorScript(res,'El script no respondió.');
+      if(/Sesión no válida|sesión venció|ya no tiene acceso/i.test(m) && isLogged()){ alert(m); doLogout(); }
+      throw new Error(m);
+    }
+    return res;
+  });
+}
 
 function doLogin(){
-  var u=document.getElementById('login-user').value.trim();
+  var u=document.getElementById('login-user').value.trim().toLowerCase();
   var p=document.getElementById('login-pass').value;
   var err=document.getElementById('login-err');
+  err.style.color='';
   if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
-  if(getUsers().length===0){ err.textContent='No hay usuarios configurados. Usa "Configurar acceso".'; return; }
-  if(checkAuth(u,p)){
-    sessionStorage.setItem('logged',u);
+  if(!navigator.onLine){ err.textContent='Para entrar hace falta internet. Después la app funciona también sin conexión.'; return; }
+  var btn=document.getElementById('btn-login');
+  btn.disabled=true; btn.textContent='Entrando…';
+  // Solo POST: la contraseña no debe ir nunca en la URL.
+  enviarAlScript(gsUrl(),{action:'appLogin',usuario:u,clave:p}).then(function(res){
+    btn.disabled=false; btn.textContent='Entrar';
+    if(!res||res.ok===false){ err.textContent=errorScript(res,'No se pudo entrar.'); return; }
+    guardarSesion({usuario:res.usuario, rol:res.rol, token:res.token});
+    document.getElementById('login-pass').value='';
     document.getElementById('auth').style.display='none';
     document.getElementById('app').style.display='flex';
     initApp();
-  } else {
-    err.textContent='Usuario o contraseña incorrectos.';
-  }
+  }).catch(function(){
+    btn.disabled=false; btn.textContent='Entrar';
+    err.textContent='No se pudo conectar con el script. Revisa tu internet e inténtalo de nuevo.';
+  });
 }
 
 function doSetup(){
-  var admin=document.getElementById('setup-admin').value;
-  var u=document.getElementById('setup-user').value.trim();
+  var u=document.getElementById('setup-user').value.trim().toLowerCase();
   var p=document.getElementById('setup-pass').value;
   var p2=document.getElementById('setup-pass2').value;
+  var admin=document.getElementById('setup-admin').value;
   var err=document.getElementById('setup-err');
-  if(admin!==ADMIN_CODE){ err.textContent='Código de administrador incorrecto.'; return; }
-  if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
+  err.style.color='';
+  if(!u||!p){ err.textContent='Completa usuario y contraseña.'; return; }
+  if(!/^[a-z0-9._-]{2,30}$/.test(u)){ err.textContent='El usuario solo puede tener letras sin acentos, números, punto o guion.'; return; }
   if(p.length<4){ err.textContent='La contraseña debe tener al menos 4 caracteres.'; return; }
   if(p!==p2){ err.textContent='Las contraseñas no coinciden.'; return; }
-  var users=getUsers();
-  if(users.length>=MAX_USERS){ err.textContent='Ya hay '+MAX_USERS+' usuarios registrados. Elimina uno antes de añadir otro.'; return; }
-  if(findUser(u)){ err.textContent='Ese nombre de usuario ya existe.'; return; }
-  users.push({u:u,p:btoa(p),rol:document.getElementById('setup-rol').value==='equipo'?'equipo':'dueno'});
-  saveUsers(users);
-  err.style.color='var(--ok)';
-  err.textContent='¡Usuario "'+u+'" creado! Ahora inicia sesión.';
-  setTimeout(function(){
-    document.getElementById('box-setup').style.display='none';
-    document.getElementById('box-login').style.display='block';
-    document.getElementById('auth-toggle').textContent='Configurar acceso';
+  var btn=document.getElementById('btn-setup');
+  btn.disabled=true; btn.textContent='Enviando…';
+  enviarAlScript(gsUrl(),{action:'appRegistro',usuario:u,clave:p,claveAdmin:admin}).then(function(res){
+    btn.disabled=false; btn.textContent='Pedir acceso';
+    if(!res||res.ok===false){ err.textContent=errorScript(res,'No se pudo enviar.'); return; }
+    err.style.color='var(--ok)';
+    err.textContent=res.estado==='aprobado'
+      ?'¡Listo! "'+u+'" es dueño. Ya puedes entrar.'
+      :'Solicitud enviada. Cuando Rafael la apruebe, podrás entrar con "'+u+'" en cualquier celular.';
+    document.getElementById('setup-pass').value=''; document.getElementById('setup-pass2').value=''; document.getElementById('setup-admin').value='';
     document.getElementById('login-user').value=u;
-    err.textContent='';
-  },1500);
+  }).catch(function(){
+    btn.disabled=false; btn.textContent='Pedir acceso';
+    err.textContent='No se pudo conectar con el script. Revisa tu internet.';
+  });
 }
 
 function doLogout(){
-  sessionStorage.removeItem('logged');
+  localStorage.removeItem(SESION_KEY);
   location.reload();
 }
 
@@ -987,37 +1028,122 @@ function toggleAuth(){
   var tog=document.getElementById('auth-toggle');
   if(setup.style.display==='none'){
     setup.style.display='block'; login.style.display='none';
-    tog.textContent='Ya tengo cuenta';
+    tog.textContent='Ya tengo usuario: entrar';
   } else {
     setup.style.display='none'; login.style.display='block';
-    tog.textContent='Configurar acceso';
+    tog.textContent='¿No tienes usuario? Pide acceso';
   }
 }
 
 function cambiarPass(){
-  var np=prompt('Nueva contraseña (mín. 4 caracteres):');
-  if(!np||np.length<4){ alert('Contraseña demasiado corta.'); return; }
-  var users=getUsers();
-  var idx=users.findIndex(function(x){ return x.u===currentUser(); });
-  if(idx<0){ alert('Error: usuario no encontrado.'); return; }
-  users[idx].p=btoa(np);
-  saveUsers(users);
-  alert('Contraseña actualizada correctamente.');
+  var actual=prompt('Tu contraseña actual:');
+  if(actual===null) return;
+  var nueva=prompt('Contraseña nueva (mín. 4 caracteres):');
+  if(nueva===null) return;
+  if(nueva.length<4){ alert('Contraseña demasiado corta.'); return; }
+  llamarApp('appCambiarMiClave',{actual:actual, nueva:nueva})
+    .then(function(){ alert('Contraseña cambiada. Úsala desde ahora en todos tus celulares.'); })
+    .catch(function(e){ alert('No se pudo cambiar: '+e.message); });
 }
 
+// ── Usuarios de la app (solo dueños) ──
+var usuariosApp=[];
 function gestionarUsuarios(){
-  var users=getUsers();
-  if(!users.length){ alert('No hay usuarios registrados.'); return; }
-  var lista=users.map(function(u,i){ return (i+1)+'. '+u.u+(u.rol==='equipo'?' (equipo)':' (dueño)'); }).join('\n');
-  var resp=prompt('Usuarios registrados ('+users.length+'/'+MAX_USERS+'):\n\n'+lista+'\n\nEscribe el nombre del usuario a ELIMINAR (o cancela):');
-  if(!resp) return;
-  var target=resp.trim();
-  if(target===currentUser()){ alert('No puedes eliminar tu propio usuario mientras estás conectado.'); return; }
-  var found=findUser(target);
-  if(!found){ alert('Usuario "'+target+'" no encontrado.'); return; }
-  if(!confirm('¿Eliminar al usuario "'+target+'"? Esta acción no se puede deshacer.')){ return; }
-  saveUsers(users.filter(function(u){ return u.u!==target; }));
-  alert('Usuario "'+target+'" eliminado.');
+  showSection('usuarios', document.getElementById('tab-config'));
+}
+
+function cargarUsuariosApp(conAviso){
+  if(esEquipo()||!isLogged()) return Promise.resolve();
+  var list=document.getElementById('list-usuarios');
+  if(conAviso) list.innerHTML='<div class="empty">Cargando usuarios…</div>';
+  return llamarApp('appUsuarios').then(function(res){
+    usuariosApp=res.usuarios||[];
+    actualizarBadgeUsuarios();
+    renderUsuariosApp();
+  }).catch(function(e){ if(conAviso) list.innerHTML='<div class="empty">No se pudieron cargar los usuarios.<br>'+escPortal(e.message)+'</div>'; });
+}
+
+function actualizarBadgeUsuarios(){
+  var n=usuariosApp.filter(function(u){ return u.estado==='pendiente'; }).length;
+  var b=document.getElementById('badge-config');
+  if(!b) return;
+  b.textContent=n; b.style.display=n?'block':'none';
+}
+
+function renderUsuariosApp(){
+  var list=document.getElementById('list-usuarios');
+  if(!usuariosApp.length){ list.innerHTML='<div class="empty">Todavía no hay usuarios.</div>'; return; }
+  var orden={pendiente:0, aprobado:1, bloqueado:2};
+  var lista=usuariosApp.map(function(u,i){ return {u:u,i:i}; })
+    .sort(function(a,b){
+      var oa=(a.u.estado in orden)?orden[a.u.estado]:9, ob=(b.u.estado in orden)?orden[b.u.estado]:9;
+      return oa-ob || a.u.usuario.localeCompare(b.u.usuario);
+    });
+  list.innerHTML=lista.map(function(x){
+    var u=x.u, i=x.i, yo=u.usuario===currentUser();
+    var est=u.estado==='pendiente'?'<span class="bdg bdg-warn">Pide acceso</span>'
+      :(u.estado==='bloqueado'?'<span class="bdg bdg-warn">Bloqueado</span>':'<span class="bdg bdg-ok">Con acceso</span>');
+    var acc;
+    if(u.estado==='pendiente'){
+      acc='<button class="btn btn-ok btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\',\'equipo\')">✓ Aprobar como Equipo</button>'
+         +'<button class="btn btn-out btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\',\'dueno\')">✓ Aprobar como Dueño</button>'
+         +'<button class="btn btn-err btn-sm" onclick="accionUsuarioApp('+i+',\'rechazar\')">✕ Rechazar</button>';
+    } else {
+      acc='<select class="finput" style="width:auto;padding:.35rem 2rem .35rem .6rem;font-size:.8rem" onchange="accionUsuarioApp('+i+',\'rol\',this.value)">'
+         +'<option value="equipo"'+(u.rol==='equipo'?' selected':'')+'>Equipo</option>'
+         +'<option value="dueno"'+(u.rol==='dueno'?' selected':'')+'>Dueño</option></select>'
+         +'<button class="btn btn-out btn-sm" onclick="accionUsuarioApp('+i+',\'clave\')">🔑 Nueva contraseña</button>'
+         +(yo?'':(u.estado==='bloqueado'
+            ?'<button class="btn btn-ok btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\')">✓ Desbloquear</button>'
+            :'<button class="btn btn-out btn-sm" onclick="accionUsuarioApp('+i+',\'bloquear\')">🚫 Bloquear</button>')
+           +'<button class="btn btn-err btn-sm" onclick="accionUsuarioApp('+i+',\'borrar\')">🗑 Borrar</button>');
+    }
+    return '<div class="card">'
+      +'<div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center;margin-bottom:.3rem">'
+      +'<div style="font-weight:700">'+escPortal(u.usuario)+(yo?' <span style="font-weight:400;color:var(--g5)">(tú)</span>':'')+'</div>'+est+'</div>'
+      +'<div style="font-size:.78rem;color:var(--g5);margin-bottom:.5rem">'
+      +(u.estado==='pendiente'?'Pidió acceso el '+escPortal(u.pedido||'—'):(u.rol==='dueno'?'Dueño':'Equipo')+(u.ultimoAcceso?' · último acceso '+escPortal(u.ultimoAcceso):''))
+      +'</div><div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">'+acc+'</div></div>';
+  }).join('');
+}
+
+function accionUsuarioApp(i, accion, rol){
+  var u=usuariosApp[i]; if(!u) return;
+  var datos={usuario:u.usuario, accion:accion};
+  if(rol) datos.rol=rol;
+  if(accion==='rechazar' && !confirm('¿Rechazar la solicitud de '+u.usuario+'?')) return;
+  if(accion==='borrar' && !confirm('¿Borrar el usuario '+u.usuario+'? Ya no podrá entrar en ningún celular.')) return;
+  if(accion==='bloquear' && !confirm('¿Bloquear a '+u.usuario+'? No podrá entrar hasta que lo desbloquees.')) return;
+  if(accion==='clave'){
+    var c=prompt('Contraseña nueva para '+u.usuario+' (mín. 4 caracteres):');
+    if(c===null) return;
+    if(c.length<4){ alert('Contraseña demasiado corta.'); return; }
+    datos.clave=c;
+  }
+  llamarApp('appGestionUsuario',datos).then(function(){
+    if(accion==='clave') alert('Contraseña de '+u.usuario+' cambiada. Díselo.');
+    if(u.usuario===currentUser() && accion==='rol' && rol!=='dueno'){ alert('Ahora eres de equipo. Vuelve a entrar.'); doLogout(); return; }
+    cargarUsuariosApp();
+  }).catch(function(e){ alert('No se pudo: '+e.message); cargarUsuariosApp(); });
+}
+
+function abrirCrearUsuarioApp(){
+  ['nu-usuario','nu-clave'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('nu-rol').value='equipo';
+  openModal('modal-usuario-app');
+}
+
+function guardarUsuarioApp(){
+  var u=document.getElementById('nu-usuario').value.trim().toLowerCase();
+  var c=document.getElementById('nu-clave').value;
+  var rol=document.getElementById('nu-rol').value;
+  if(!/^[a-z0-9._-]{2,30}$/.test(u)){ alert('El usuario solo puede tener letras sin acentos, números, punto o guion.'); return; }
+  if(c.length<4){ alert('La contraseña debe tener al menos 4 caracteres.'); return; }
+  llamarApp('appCrearUsuario',{usuario:u, clave:c, rol:rol}).then(function(){
+    closeModal('modal-usuario-app');
+    alert('Usuario creado.\n\nPara entrar:\n'+location.origin+location.pathname+'\nUsuario: '+u+'\nContraseña: '+c);
+    cargarUsuariosApp();
+  }).catch(function(e){ alert('No se pudo crear: '+e.message); });
 }
 
 // ══ INIT ══
@@ -1044,6 +1170,8 @@ function initApp(){
   setInterval(function(){ if(navigator.onLine) empujarPendientes(); }, 3*60*1000);
   // Contador de pedidos nuevos del portal en la pestaña "Portal".
   if(claveAdminPortal()) cargarPedidosPortal();
+  cargarUsuariosApp();
+  setInterval(function(){ if(navigator.onLine) cargarUsuariosApp(); }, 5*60*1000);
   setInterval(function(){ if(navigator.onLine && claveAdminPortal()) cargarPedidosPortal(); }, 5*60*1000);
 }
 
@@ -1054,7 +1182,7 @@ function renderAll(){
 
 // ══ NAV ══
 function showSection(name, btn){
-  if(esEquipo() && (name==='dashboard'||name==='mensajeros')) return;
+  if(esEquipo() && (name==='dashboard'||name==='mensajeros'||name==='usuarios')) return;
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('sec-'+name).classList.add('active');
@@ -1062,6 +1190,7 @@ function showSection(name, btn){
   if(name==='clientes'){ renderClientes(); loadSheetsClientes(); }
   if(name==='dashboard') renderDashboard();
   if(name==='portal') recargarPortal();
+  if(name==='usuarios'||name==='config') cargarUsuariosApp(name==='usuarios');
 }
 
 // ══ MODALS ══
@@ -2614,7 +2743,8 @@ var PORTAL_PUBLICO_URL='https://rafaelgarridofrometa1.github.io/Negocio/portal/'
 var PORTAL_ADMIN_KEY='negocio_portal_admin';
 var portalCuentas=[], portalSinCuenta=[], portalFiltro='con';
 
-function claveAdminPortal(){ try{ return localStorage.getItem(PORTAL_ADMIN_KEY)||''; }catch(e){ return ''; } }
+// Con la sesion de la app ya no hace falta clave: el script sabe si eres dueño o equipo.
+function claveAdminPortal(){ try{ return localStorage.getItem(PORTAL_ADMIN_KEY)||tokenApp(); }catch(e){ return tokenApp(); } }
 function escPortal(s){
   return txt(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
 }
@@ -2622,7 +2752,7 @@ function escPortal(s){
 function llamarAdminPortal(accion, datos){
   var url=gsUrl();
   if(!url) return Promise.reject(new Error('Primero configura la URL del script en Configuración.'));
-  var cuerpo=Object.assign({action:accion, claveAdmin:claveAdminPortal(), rolApp:currentRol()}, datos||{});
+  var cuerpo=Object.assign({action:accion, claveAdmin:claveAdminPortal(), rolApp:currentRol(), token:tokenApp()}, datos||{});
   return enviarAlScript(url,cuerpo)
     .catch(function(){ return enviarPorGet(url,cuerpo); })
     .then(function(res){
@@ -2965,15 +3095,6 @@ function pasarPedidoPortalAEnvios(i){
   openModal('modal-op');
 }
 
-function guardarClaveEquipoPortal(){
-  var c=document.getElementById('portal-clave-equipo').value.trim();
-  if(c.length<4){ alert('La clave del equipo debe tener al menos 4 caracteres.'); return; }
-  llamarAdminPortal('adminFijarClaveEquipo',{claveEquipo:c}).then(function(){
-    document.getElementById('portal-clave-equipo').value='';
-    alert('Clave del equipo guardada: '+c+'\n\nEn el celular de Muse: pestaña 🌐 Portal → escribe esta clave.');
-  }).catch(function(err){ alert('No se pudo guardar: '+mensajeErrorPortal(err)); });
-}
-
 function guardarNuevaCuentaPortal(){
   var nombre=document.getElementById('cp-nombre').value.trim();
   if(!nombre){ alert('Escribe el nombre del cliente.'); return; }
@@ -3097,7 +3218,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v38 · 2026-11-25';
+var APP_VERSION='v40 · 2026-11-27';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -3118,7 +3239,10 @@ function buscarActualizacion(){
   }).catch(function(){ location.reload(true); });
 }
 
-function gsUrl(){ return localStorage.getItem(GS_KEY)||''; }
+// URL del script por defecto (la misma que usa el portal): un celular nuevo puede
+// entrar sin configurar nada. Si en Configuración se guarda otra, manda esa.
+var GS_URL_DEFECTO='https://script.google.com/macros/s/AKfycbxTZ6crBTQn6iJGVk8ngmwMjonwoM9kffNT8uvJJL1F-VAfCXTCT6j5UfK_sVxZK7j7/exec';
+function gsUrl(){ return localStorage.getItem(GS_KEY)||GS_URL_DEFECTO; }
 
 // Manda un aviso de prueba por ntfy a traves del backend, para confirmar que
 // el celular suscrito al tema de ntfy si recibe las notificaciones push.
@@ -3531,7 +3655,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 4.9
+ * MI NEGOCIO - Backend Apps Script  ·  version 5.0
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -3613,7 +3737,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '4.9',
+        return json({ ok: true, message: 'Script activo', version: '5.0',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -3666,6 +3790,14 @@ function manejar(e) {
       case 'adminEstadoPedidoPortal':     return json(adminEstadoPedidoPortal(datos));
       case 'adminVincularPedidoPortal':   return json(adminVincularPedidoPortal(datos));
       case 'adminFijarClaveEquipo':       return json(adminFijarClaveEquipo(datos));
+
+      // --- usuarios de la app de Negocio (guardados en el script, no en cada telefono) ---
+      case 'appLogin':            return json(appLogin(datos));
+      case 'appRegistro':         return json(appRegistro(datos));
+      case 'appUsuarios':         return json(appUsuarios(datos));
+      case 'appCrearUsuario':     return json(appCrearUsuario(datos));
+      case 'appGestionUsuario':   return json(appGestionUsuario(datos));
+      case 'appCambiarMiClave':   return json(appCambiarMiClave(datos));
 
       // --- notificaciones push (ntfy) ---
       case 'probarNtfy':
@@ -5178,6 +5310,14 @@ var ENC_PORTAL_CLIENTES = ['Usuario', 'Contraseña', 'Nombre', 'Telefono'];
  * nunca puede fijar la clave de administrador por ser el primero en llegar.
  */
 function verificarAdminPortal(d, permitirEquipo) {
+  // Con la sesion de la app (usuario aprobado) ya no hace falta clave:
+  // dueno = administrador; equipo = solo pedidos.
+  if (d && d.token) {
+    var u = usuarioDeToken(d.token);
+    if (u.rol === 'dueno') return 'admin';
+    if (permitirEquipo) return 'equipo';
+    throw new Error('Tu usuario es de equipo: las cuentas y contraseñas del portal solo las ve un dueño.');
+  }
   var clave = String((d && d.claveAdmin) || '');
   if (clave.length < 4) throw new Error('Falta la clave de administrador (minimo 4 caracteres).');
   var props = PropertiesService.getScriptProperties();
@@ -5392,6 +5532,208 @@ function adminBorrarCuentaPortal(d) {
     }
   }
   return { ok: false, error: 'No existe la cuenta "' + usuario + '".' };
+}
+
+// ============================================================
+// USUARIOS DE LA APP DE NEGOCIO
+//
+// Antes cada telefono guardaba sus propios usuarios (maximo 2) y para crear
+// uno hacia falta el codigo de administrador escrito en el codigo de la app.
+// Ahora los usuarios viven en la hoja "Usuarios_App" de este libro, sirven en
+// cualquier telefono o cuenta de Google, no tienen limite, y los nuevos quedan
+// "Pendiente" hasta que un dueno los aprueba desde la app.
+// La contrasena se guarda como huella SHA-256 con sal, nunca en claro.
+// Al entrar, la app recibe un "token" firmado (60 dias) que manda en cada
+// accion protegida; el rol y el estado se leen de la hoja cada vez, asi que
+// bloquear o cambiar el rol de alguien vale al instante.
+// ============================================================
+
+var ENC_USUARIOS_APP = ['Usuario', 'Huella', 'Sal', 'Rol', 'Estado', 'Pedido el', 'Aprobado por', 'Ultimo acceso'];
+var DIAS_SESION_APP = 60;
+
+function hojaUsuariosApp() { return hojaPortal('Usuarios_App', ENC_USUARIOS_APP); }
+
+function normUsuarioApp(u) { return String(u || '').trim().toLowerCase(); }
+
+function huellaClave(sal, clave) {
+  var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, sal + '|' + clave, Utilities.Charset.UTF_8);
+  return Utilities.base64Encode(b);
+}
+
+function leerUsuariosApp() {
+  var sh = hojaUsuariosApp();
+  var v = sh.getDataRange().getValues();
+  var lista = [];
+  for (var i = 1; i < v.length; i++) {
+    var u = normUsuarioApp(v[i][0]);
+    if (!u) continue;
+    lista.push({ fila: i + 1, usuario: u, huella: String(v[i][1] || ''), sal: String(v[i][2] || ''),
+                 rol: String(v[i][3] || '') === 'dueno' ? 'dueno' : 'equipo',
+                 estado: String(v[i][4] || 'pendiente').toLowerCase(),
+                 pedido: portalFechaIso(v[i][5]), aprobadoPor: String(v[i][6] || ''),
+                 ultimoAcceso: portalFechaIso(v[i][7]) });
+  }
+  return { sh: sh, lista: lista };
+}
+
+function secretoApp() {
+  var props = PropertiesService.getScriptProperties();
+  var s = props.getProperty('APP_SECRETO');
+  if (!s) { s = Utilities.getUuid() + Utilities.getUuid(); props.setProperty('APP_SECRETO', s); }
+  return s;
+}
+
+function firmaApp(texto) {
+  return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(texto, secretoApp()));
+}
+
+function crearTokenApp(usuario) {
+  var vence = new Date().getTime() + DIAS_SESION_APP * 24 * 3600 * 1000;
+  var cuerpo = Utilities.base64EncodeWebSafe(usuario + '|' + vence);
+  return cuerpo + '.' + firmaApp(cuerpo);
+}
+
+/** Token -> usuario aprobado {usuario, rol, ...}. Lanza error si no vale. */
+function usuarioDeToken(token) {
+  var partes = String(token || '').split('.');
+  if (partes.length !== 2 || firmaApp(partes[0]) !== partes[1]) throw new Error('Sesión no válida: vuelve a entrar.');
+  var datos = Utilities.newBlob(Utilities.base64DecodeWebSafe(partes[0])).getDataAsString().split('|');
+  if (Number(datos[1]) < new Date().getTime()) throw new Error('Tu sesión venció: vuelve a entrar.');
+  var u = null, lista = leerUsuariosApp().lista;
+  for (var i = 0; i < lista.length; i++) if (lista[i].usuario === datos[0]) u = lista[i];
+  if (!u || u.estado !== 'aprobado') throw new Error('Tu usuario ya no tiene acceso. Habla con Rafael.');
+  return u;
+}
+
+function exigirDueno(d) {
+  var u = usuarioDeToken(d.token);
+  if (u.rol !== 'dueno') throw new Error('Solo un dueño puede hacer esto.');
+  return u;
+}
+
+function validarNuevoUsuario(usuario, clave) {
+  if (!/^[a-z0-9._-]{2,30}$/.test(usuario)) return 'El usuario solo puede tener letras sin acentos, números, punto, guion o guion bajo (2 a 30).';
+  if (String(clave || '').length < 4) return 'La contraseña debe tener al menos 4 caracteres.';
+  return '';
+}
+
+function hoyApp() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'); }
+
+function escribirUsuarioApp(sh, fila, u) {
+  var r = sh.getRange(fila, 1, 1, 8);
+  r.setNumberFormat('@');
+  r.setValues([[u.usuario, u.huella, u.sal, u.rol, u.estado, u.pedido || '', u.aprobadoPor || '', u.ultimoAcceso || '']]);
+}
+
+/**
+ * Pedir acceso. Si trae la clave de administrador del script (la del Portal),
+ * entra directo como dueno aprobado: asi Rafael se da de alta sin esperar a
+ * nadie. Si no, queda "pendiente" como equipo hasta que un dueno lo apruebe.
+ */
+function appRegistro(d) {
+  var usuario = normUsuarioApp(d.usuario), clave = String(d.clave || '');
+  var err = validarNuevoUsuario(usuario, clave);
+  if (err) return { ok: false, error: err };
+  var c = leerUsuariosApp();
+  for (var i = 0; i < c.lista.length; i++) {
+    if (c.lista[i].usuario === usuario) return { ok: false, error: 'Ese usuario ya existe. Elige otro o entra con él.' };
+  }
+  var dueno = false;
+  if (String(d.claveAdmin || '')) {
+    verificarAdminPortal({ claveAdmin: d.claveAdmin }, false); // lanza error si no es la clave
+    dueno = true;
+  }
+  var sal = Utilities.getUuid();
+  var nuevo = { usuario: usuario, huella: huellaClave(sal, clave), sal: sal,
+                rol: dueno ? 'dueno' : 'equipo', estado: dueno ? 'aprobado' : 'pendiente',
+                pedido: hoyApp(), aprobadoPor: dueno ? '(clave de administrador)' : '' };
+  escribirUsuarioApp(c.sh, c.sh.getLastRow() + 1, nuevo);
+  if (!dueno) {
+    try { enviarNtfy('👤 Pide acceso a la app', usuario + ' quiere entrar en Mi Negocio. Apruébalo en Config -> Usuarios.'); }
+    catch (e) { Logger.log(e); }
+  }
+  return { ok: true, estado: nuevo.estado, rol: nuevo.rol };
+}
+
+function appLogin(d) {
+  var usuario = normUsuarioApp(d.usuario), clave = String(d.clave || '');
+  var c = leerUsuariosApp();
+  for (var i = 0; i < c.lista.length; i++) {
+    var u = c.lista[i];
+    if (u.usuario !== usuario) continue;
+    if (huellaClave(u.sal, clave) !== u.huella) return { ok: false, error: 'Usuario o contraseña incorrectos.' };
+    if (u.estado === 'pendiente') return { ok: false, error: 'Tu usuario está esperando que Rafael lo apruebe.' };
+    if (u.estado !== 'aprobado') return { ok: false, error: 'Tu usuario no tiene acceso. Habla con Rafael.' };
+    c.sh.getRange(u.fila, 8).setNumberFormat('@').setValue(hoyApp());
+    return { ok: true, usuario: u.usuario, rol: u.rol, token: crearTokenApp(u.usuario) };
+  }
+  return { ok: false, error: 'Usuario o contraseña incorrectos.' };
+}
+
+function appUsuarios(d) {
+  exigirDueno(d);
+  return { ok: true, usuarios: leerUsuariosApp().lista.map(function (u) {
+    return { usuario: u.usuario, rol: u.rol, estado: u.estado, pedido: u.pedido,
+             aprobadoPor: u.aprobadoPor, ultimoAcceso: u.ultimoAcceso };
+  }) };
+}
+
+/** Un dueno crea un usuario ya aprobado (p. ej. para la IA Muse). */
+function appCrearUsuario(d) {
+  var yo = exigirDueno(d);
+  var usuario = normUsuarioApp(d.usuario), clave = String(d.clave || '');
+  var err = validarNuevoUsuario(usuario, clave);
+  if (err) return { ok: false, error: err };
+  var c = leerUsuariosApp();
+  for (var i = 0; i < c.lista.length; i++) {
+    if (c.lista[i].usuario === usuario) return { ok: false, error: 'Ese usuario ya existe.' };
+  }
+  var sal = Utilities.getUuid();
+  escribirUsuarioApp(c.sh, c.sh.getLastRow() + 1, {
+    usuario: usuario, huella: huellaClave(sal, clave), sal: sal,
+    rol: d.rol === 'dueno' ? 'dueno' : 'equipo', estado: 'aprobado', pedido: hoyApp(), aprobadoPor: yo.usuario });
+  return { ok: true };
+}
+
+/** accion: aprobar | rechazar | bloquear | rol | clave | borrar */
+function appGestionUsuario(d) {
+  var yo = exigirDueno(d);
+  var usuario = normUsuarioApp(d.usuario);
+  var c = leerUsuariosApp(), u = null;
+  for (var i = 0; i < c.lista.length; i++) if (c.lista[i].usuario === usuario) u = c.lista[i];
+  if (!u) return { ok: false, error: 'No existe el usuario ' + usuario + '.' };
+  var duenosActivos = c.lista.filter(function (x) { return x.rol === 'dueno' && x.estado === 'aprobado'; }).length;
+  var quitaDueno = u.rol === 'dueno' && u.estado === 'aprobado' &&
+                   (d.accion === 'bloquear' || d.accion === 'borrar' || d.accion === 'rechazar' ||
+                    (d.accion === 'rol' && d.rol !== 'dueno'));
+  if (quitaDueno && duenosActivos <= 1) return { ok: false, error: 'Tiene que quedar al menos un dueño con acceso.' };
+  if (u.usuario === yo.usuario && (d.accion === 'borrar' || d.accion === 'bloquear' || d.accion === 'rechazar'))
+    return { ok: false, error: 'No puedes quitarte el acceso a ti mismo.' };
+
+  if (d.accion === 'borrar' || d.accion === 'rechazar') {
+    c.sh.deleteRow(u.fila);
+    return { ok: true };
+  }
+  if (d.accion === 'aprobar') { u.estado = 'aprobado'; u.aprobadoPor = yo.usuario; if (d.rol) u.rol = d.rol === 'dueno' ? 'dueno' : 'equipo'; }
+  else if (d.accion === 'bloquear') u.estado = 'bloqueado';
+  else if (d.accion === 'rol') u.rol = d.rol === 'dueno' ? 'dueno' : 'equipo';
+  else if (d.accion === 'clave') {
+    var nueva = String(d.clave || '');
+    if (nueva.length < 4) return { ok: false, error: 'La contraseña debe tener al menos 4 caracteres.' };
+    u.sal = Utilities.getUuid(); u.huella = huellaClave(u.sal, nueva);
+  } else return { ok: false, error: 'Acción no reconocida.' };
+  escribirUsuarioApp(c.sh, u.fila, u);
+  return { ok: true };
+}
+
+function appCambiarMiClave(d) {
+  var yo = usuarioDeToken(d.token);
+  if (huellaClave(yo.sal, String(d.actual || '')) !== yo.huella) return { ok: false, error: 'La contraseña actual no es correcta.' };
+  var nueva = String(d.nueva || '');
+  if (nueva.length < 4) return { ok: false, error: 'La contraseña nueva debe tener al menos 4 caracteres.' };
+  yo.sal = Utilities.getUuid(); yo.huella = huellaClave(yo.sal, nueva);
+  escribirUsuarioApp(leerUsuariosApp().sh, yo.fila, yo);
+  return { ok: true };
 }`;
   document.getElementById('script-txt').value=s;
 }
@@ -5413,10 +5755,6 @@ window.addEventListener('DOMContentLoaded', function(){
     document.getElementById('auth').style.display='none';
     document.getElementById('app').style.display='flex';
     initApp();
-  } else if(getUsers().length===0){
-    document.getElementById('box-setup').style.display='block';
-    document.getElementById('box-login').style.display='none';
-    document.getElementById('auth-toggle').textContent='Ya tengo cuenta';
   }
   pintarVersion();
   if('serviceWorker' in navigator){
