@@ -60,7 +60,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:.6rem .25rem;gap:.2rem;border:none;background:none;color:var(--g4);font-size:.6rem;cursor:pointer}
 .tab.active{color:var(--pri)}
 .tab-ico{font-size:1.3rem}
-body.rol-equipo .solo-dueno{display:none!important}
+/* invitado: sin dinero ni contabilidad · solo un dueño: usuarios y contraseñas */
+body.rol-invitado .no-invitado{display:none!important}
+body:not(.rol-dueno) .solo-dueno{display:none!important}
 .tab{min-width:0}
 .tab span:nth-child(2){max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tab{position:relative}
@@ -383,6 +385,11 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         Sirven en cualquier celular o cuenta de Google. Quien pide acceso desde la pantalla de entrada
         aparece aquí y no puede entrar hasta que lo apruebes.
       </p>
+      <div style="font-size:.78rem;color:var(--g5);margin-bottom:.9rem;line-height:1.55;background:var(--g1,#f3f4f6);border-radius:10px;padding:.6rem .75rem">
+        <b>Invitado</b>: el trabajo del día, sin ganancias, Dashboard ni contabilidad.<br>
+        <b>Equipo</b>: lo ve todo, menos usuarios y contraseñas.<br>
+        <b>Dueño</b>: todo, y es el único que maneja usuarios y contraseñas y da o quita acceso.
+      </div>
       <div id="list-usuarios"></div>
     </div>
 
@@ -474,7 +481,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         <button class="cfg-btn" style="margin-top:.4rem" onclick="loadSheetsClientes(true)">👥 Recargar clientes de la hoja</button>
         <button class="cfg-btn" style="margin-top:.4rem" onclick="buscarActualizacion()">🔄 Buscar actualización</button>
         <div id="app-version" style="margin-top:.6rem;font-size:.8rem;opacity:.65;text-align:center"></div>
-        <button class="cfg-btn solo-dueno" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
+        <button class="cfg-btn no-invitado" style="margin-top:.75rem" onclick="showScript()">📄 Ver script para Apps Script</button>
       </div>
       <div class="card" style="margin-top:.75rem">
         <div class="card-ttl">🔔 Notificaciones push al celular</div>
@@ -487,7 +494,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         </p>
         <button class="cfg-btn" onclick="probarNotificacionPush()">🔔 Enviar notificación de prueba</button>
       </div>
-      <div class="card solo-dueno" style="margin-top:.75rem">
+      <div class="card no-invitado" style="margin-top:.75rem">
         <div class="card-ttl">👤 Mensajeros</div>
         <p style="font-size:.8rem;color:var(--g5);margin-bottom:.75rem;line-height:1.5">
           Ya no está en la barra de abajo, pero sigue aquí para agregar mensajeros
@@ -509,7 +516,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
         <button class="cfg-btn" onclick="cambiarPass()">🔐 Cambiar mi contraseña</button>
         <div id="quien-soy" style="font-size:.8rem;color:var(--g5);margin-bottom:.6rem"></div>
         <button class="cfg-btn solo-dueno" onclick="gestionarUsuarios()">👥 Usuarios de la app (aprobar, crear, quitar)</button>
-        <button class="cfg-btn solo-dueno" onclick="exportar()">📤 Exportar copia de seguridad</button>
+        <button class="cfg-btn no-invitado" onclick="exportar()">📤 Exportar copia de seguridad</button>
         <button class="cfg-btn solo-dueno" onclick="importar()">📥 Importar copia de seguridad</button>
       </div>
     </div>
@@ -520,7 +527,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     <button class="tab active" onclick="showSection('envios',this)"><span class="tab-ico">📦</span><span>Envíos</span></button>
     <button class="tab" onclick="showSection('organizacion',this)"><span class="tab-ico">🗂️</span><span>Organización</span></button>
     <button class="tab" onclick="showSection('entregas',this)"><span class="tab-ico">🛵</span><span>Entregas</span></button>
-    <button class="tab solo-dueno" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
+    <button class="tab no-invitado" onclick="showSection('dashboard',this)"><span class="tab-ico">📊</span><span>Dashboard</span></button>
     <button class="tab" onclick="showSection('clientes',this)"><span class="tab-ico">👥</span><span>Clientes</span></button>
     <button class="tab" id="tab-portal" onclick="showSection('portal',this)"><span class="tab-ico">🌐</span><span>Portal</span><span class="tab-badge" id="badge-portal" style="display:none"></span></button>
     <button class="tab" id="tab-config" onclick="showSection('config',this)"><span class="tab-ico">⚙️</span><span>Config</span><span class="tab-badge" id="badge-config" style="display:none"></span></button>
@@ -672,8 +679,8 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
     </div>
     <div class="op-divider">Resultados calculados</div>
     <div class="f3">
-      <div class="solo-dueno"><div class="flabel">Ganancia</div><div class="op-result" id="op-r-gan">—</div></div>
-      <div class="solo-dueno"><div class="flabel">Ganado c/u</div><div class="op-result" id="op-r-gcu">—</div></div>
+      <div class="no-invitado"><div class="flabel">Ganancia</div><div class="op-result" id="op-r-gan">—</div></div>
+      <div class="no-invitado"><div class="flabel">Ganado c/u</div><div class="op-result" id="op-r-gcu">—</div></div>
       <div class="fgroup"><label class="flabel">Hora</label><input type="time" class="finput" id="op-hora"></div>
     </div>
     <div class="frow" style="margin-top:.75rem">
@@ -715,7 +722,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <div class="fgroup"><label class="flabel">Usuario *</label><input type="text" class="finput" id="nu-usuario" placeholder="muse" autocapitalize="off"></div>
   <div class="fgroup"><label class="flabel">Contraseña * (mín. 4)</label><input type="text" class="finput" id="nu-clave" autocapitalize="off"></div>
   <div class="fgroup"><label class="flabel">Tipo</label>
-    <select class="finput" id="nu-rol"><option value="equipo">Equipo — sin ganancias, Dashboard ni contabilidad</option><option value="dueno">Dueño — ve todo</option></select>
+    <select class="finput" id="nu-rol"><option value="invitado">Invitado — trabajo del día, sin ganancias, Dashboard ni contabilidad</option><option value="equipo">Equipo — lo ve todo menos usuarios y contraseñas</option><option value="dueno">Dueño — todo, y maneja usuarios y contraseñas</option></select>
   </div>
   <button class="btn btn-pri" onclick="guardarUsuarioApp()">Crear usuario</button>
 </div>
@@ -952,14 +959,60 @@ function guardarSesion(x){ localStorage.setItem(SESION_KEY, JSON.stringify(x)); 
 function isLogged(){ var x=sesion(); return !!(x&&x.usuario&&(x.token||x.local)); }
 function currentUser(){ var x=sesion(); return x?x.usuario:''; }
 function tokenApp(){ var x=sesion(); return x?x.token:''; }
-// "equipo" (p.ej. Muse): trabajo del dia sin ganancias, Dashboard, Mensajeros,
-// copias de seguridad, usuarios ni cuentas del portal.
-function currentRol(){ var x=sesion(); return (x&&x.rol==='dueno')?'dueno':'equipo'; }
-function esEquipo(){ return currentRol()==='equipo'; }
+// Tipos de usuario:
+//   dueno    = todo, y el UNICO que ve usuarios y contraseñas (de la app y del
+//              portal) y puede dar o quitar acceso.
+//   equipo   = todo (ganancias, Dashboard, Mensajeros...) menos usuarios y contraseñas.
+//   invitado = el trabajo del dia, sin ganancias, Dashboard, Mensajeros ni copias
+//              (lo que antes se llamaba "equipo", p.ej. Muse).
+var NOMBRES_ROL={dueno:'Dueño', equipo:'Equipo', invitado:'Invitado'};
+function normRol(r){ r=String(r||'').toLowerCase().replace(/ñ/g,'n'); return NOMBRES_ROL[r]?r:'invitado'; }
+// Hasta la v42 "equipo" era el rol limitado: lo que venga sin la marca
+// roles:2 (sesiones guardadas o un script viejo) cuenta como invitado.
+function rolDe(x){
+  if(!x) return 'invitado';
+  if(x.rol==='equipo' && x.roles!==2) return 'invitado';
+  return normRol(x.rol);
+}
+function currentRol(){ return rolDe(sesion()); }
+function esDueno(){ return currentRol()==='dueno'; }
+function esInvitado(){ return currentRol()==='invitado'; }
 function aplicarRol(){
-  document.body.classList.toggle('rol-equipo', esEquipo());
+  var r=currentRol();
+  ['dueno','equipo','invitado'].forEach(function(k){ document.body.classList.toggle('rol-'+k, r===k); });
   var q=document.getElementById('quien-soy');
-  if(q) q.textContent='Conectado como '+currentUser()+' ('+(esEquipo()?'equipo':'dueño')+')';
+  if(q) q.textContent='Conectado como '+currentUser()+' ('+NOMBRES_ROL[r].toLowerCase()+')';
+}
+
+/**
+ * Al abrir la app pregunta al script que tipo de usuario eres ahora: si el
+ * dueño te cambio el tipo, se aplica sin volver a entrar; si te quito el
+ * acceso, te saca. Los usuarios viejos de este telefono no se tocan.
+ */
+function refrescarRol(){
+  var x=sesion();
+  if(!x||!x.token||x.local||!navigator.onLine) return;
+  enviarAlScript(gsUrl(),{action:'appYo',token:x.token}).then(function(res){
+    var y=sesion();
+    if(!y||y.token!==x.token) return;
+    if(res&&res.ok&&res.roles===2){
+      var r=normRol(res.rol);
+      if(rolDe(y)===r && y.roles===2) return;
+      y.rol=r; y.roles=2; guardarSesion(y);
+      aplicarRol(); renderEnvios();
+      var activa=document.querySelector('.section.active');
+      var id=activa?activa.id.replace('sec-',''):'';
+      if(!puedeVerSeccion(id)) showSection('envios', document.querySelector('.tab'));
+    } else if(res&&res.ok===false && /Sesión no válida|sesión venció|ya no tiene acceso/i.test(txt(res.error))){
+      alert(txt(res.error)); doLogout();
+    }
+  }).catch(function(){});
+}
+
+function puedeVerSeccion(name){
+  if(esInvitado() && (name==='dashboard'||name==='mensajeros')) return false;
+  if(!esDueno() && name==='usuarios') return false;
+  return true;
 }
 
 function errorScript(res, porDefecto){
@@ -1009,7 +1062,7 @@ function pasarUsuarioLocalAlScript(u,p,rol){
   login().then(function(res){
     if(res&&res.ok) return res;
     var clave=''; try{ clave=localStorage.getItem(PORTAL_ADMIN_KEY)||''; }catch(e){}
-    if(!clave || rol==='equipo') return null;
+    if(!clave || rol!=='dueno') return null;
     return enviarAlScript(gsUrl(),{action:'appRegistro',usuario:u,clave:p,claveAdmin:clave})
       .then(function(r){ return (r&&r.ok)?login():null; });
   }).then(function(res){
@@ -1037,8 +1090,9 @@ function doLogin(){
   if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
   var loc=usuarioLocal(uOriginal,p);
   if(loc){
-    var rol=loc.rol==='equipo'?'equipo':'dueno';
-    guardarSesion({usuario:loc.u, rol:rol, token:'', local:true});
+    // Usuarios viejos de este telefono: sin rol = dueño; "equipo" (el de antes) = invitado.
+    var rol=(!loc.rol||loc.rol==='dueno')?'dueno':'invitado';
+    guardarSesion({usuario:loc.u, rol:rol, roles:2, token:'', local:true});
     entrarEnApp();
     pasarUsuarioLocalAlScript(u,p,rol);
     return;
@@ -1050,7 +1104,7 @@ function doLogin(){
   enviarAlScript(gsUrl(),{action:'appLogin',usuario:u,clave:p}).then(function(res){
     btn.disabled=false; btn.textContent='Entrar';
     if(!res||res.ok===false){ err.textContent=errorScript(res,'No se pudo entrar.'); return; }
-    guardarSesion({usuario:res.usuario, rol:res.rol, token:res.token});
+    guardarSesion({usuario:res.usuario, rol:rolDe(res), roles:2, token:res.token});
     entrarEnApp();
   }).catch(function(){
     btn.disabled=false; btn.textContent='Entrar';
@@ -1159,11 +1213,12 @@ function gestionarUsuarios(){
 }
 
 function cargarUsuariosApp(conAviso){
-  if(esEquipo()||!isLogged()) return Promise.resolve();
+  if(!esDueno()||!isLogged()) return Promise.resolve();
   var list=document.getElementById('list-usuarios');
   if(conAviso) list.innerHTML='<div class="empty">Cargando usuarios…</div>';
   return llamarApp('appUsuarios').then(function(res){
-    usuariosApp=res.usuarios||[];
+    // Un script viejo (sin roles:2) llama "equipo" al invitado.
+    usuariosApp=(res.usuarios||[]).map(function(u){ u.rol=rolDe({rol:u.rol, roles:res.roles}); return u; });
     actualizarBadgeUsuarios();
     renderUsuariosApp();
   }).catch(function(e){ if(conAviso) list.innerHTML='<div class="empty">No se pudieron cargar los usuarios.<br>'+escPortal(e.message)+'</div>'; });
@@ -1191,13 +1246,13 @@ function renderUsuariosApp(){
       :(u.estado==='bloqueado'?'<span class="bdg bdg-warn">Bloqueado</span>':'<span class="bdg bdg-ok">Con acceso</span>');
     var acc;
     if(u.estado==='pendiente'){
-      acc='<button class="btn btn-ok btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\',\'equipo\')">✓ Aprobar como Equipo</button>'
+      acc='<button class="btn btn-ok btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\',\'invitado\')">✓ Aprobar como Invitado</button>'
+         +'<button class="btn btn-ok btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\',\'equipo\')">✓ Aprobar como Equipo</button>'
          +'<button class="btn btn-out btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\',\'dueno\')">✓ Aprobar como Dueño</button>'
          +'<button class="btn btn-err btn-sm" onclick="accionUsuarioApp('+i+',\'rechazar\')">✕ Rechazar</button>';
     } else {
       acc='<select class="finput" style="width:auto;padding:.35rem 2rem .35rem .6rem;font-size:.8rem" onchange="accionUsuarioApp('+i+',\'rol\',this.value)">'
-         +'<option value="equipo"'+(u.rol==='equipo'?' selected':'')+'>Equipo</option>'
-         +'<option value="dueno"'+(u.rol==='dueno'?' selected':'')+'>Dueño</option></select>'
+         +['invitado','equipo','dueno'].map(function(r){ return '<option value="'+r+'"'+(u.rol===r?' selected':'')+'>'+NOMBRES_ROL[r]+'</option>'; }).join('')+'</select>'
          +'<button class="btn btn-out btn-sm" onclick="accionUsuarioApp('+i+',\'clave\')">🔑 Nueva contraseña</button>'
          +(yo?'':(u.estado==='bloqueado'
             ?'<button class="btn btn-ok btn-sm" onclick="accionUsuarioApp('+i+',\'aprobar\')">✓ Desbloquear</button>'
@@ -1208,7 +1263,7 @@ function renderUsuariosApp(){
       +'<div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center;margin-bottom:.3rem">'
       +'<div style="font-weight:700">'+escPortal(u.usuario)+(yo?' <span style="font-weight:400;color:var(--g5)">(tú)</span>':'')+'</div>'+est+'</div>'
       +'<div style="font-size:.78rem;color:var(--g5);margin-bottom:.5rem">'
-      +(u.estado==='pendiente'?'Pidió acceso el '+escPortal(u.pedido||'—'):(u.rol==='dueno'?'Dueño':'Equipo')+(u.ultimoAcceso?' · último acceso '+escPortal(u.ultimoAcceso):''))
+      +(u.estado==='pendiente'?'Pidió acceso el '+escPortal(u.pedido||'—'):(NOMBRES_ROL[u.rol]||'Invitado')+(u.ultimoAcceso?' · último acceso '+escPortal(u.ultimoAcceso):''))
       +'</div><div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">'+acc+'</div></div>';
   }).join('');
 }
@@ -1216,7 +1271,7 @@ function renderUsuariosApp(){
 function accionUsuarioApp(i, accion, rol){
   var u=usuariosApp[i]; if(!u) return;
   var datos={usuario:u.usuario, accion:accion};
-  if(rol) datos.rol=rol;
+  if(rol){ datos.rol=rol; datos.roles=2; }
   if(accion==='rechazar' && !confirm('¿Rechazar la solicitud de '+u.usuario+'?')) return;
   if(accion==='borrar' && !confirm('¿Borrar el usuario '+u.usuario+'? Ya no podrá entrar en ningún celular.')) return;
   if(accion==='bloquear' && !confirm('¿Bloquear a '+u.usuario+'? No podrá entrar hasta que lo desbloquees.')) return;
@@ -1228,14 +1283,14 @@ function accionUsuarioApp(i, accion, rol){
   }
   llamarApp('appGestionUsuario',datos).then(function(){
     if(accion==='clave') alert('Contraseña de '+u.usuario+' cambiada. Díselo.');
-    if(u.usuario===currentUser() && accion==='rol' && rol!=='dueno'){ alert('Ahora eres de equipo. Vuelve a entrar.'); doLogout(); return; }
+    if(u.usuario===currentUser() && accion==='rol' && rol!=='dueno'){ alert('Ahora eres '+NOMBRES_ROL[rol].toLowerCase()+'. Vuelve a entrar.'); doLogout(); return; }
     cargarUsuariosApp();
   }).catch(function(e){ alert('No se pudo: '+e.message); cargarUsuariosApp(); });
 }
 
 function abrirCrearUsuarioApp(){
   ['nu-usuario','nu-clave'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('nu-rol').value='equipo';
+  document.getElementById('nu-rol').value='invitado';
   openModal('modal-usuario-app');
 }
 
@@ -1245,9 +1300,9 @@ function guardarUsuarioApp(){
   var rol=document.getElementById('nu-rol').value;
   if(!/^[a-z0-9áéíóúüñ._ -]{2,30}$/.test(u)){ alert('El usuario puede tener letras, números, espacios, punto o guion (2 a 30).'); return; }
   if(c.length<4){ alert('La contraseña debe tener al menos 4 caracteres.'); return; }
-  llamarApp('appCrearUsuario',{usuario:u, clave:c, rol:rol}).then(function(){
+  llamarApp('appCrearUsuario',{usuario:u, clave:c, rol:rol, roles:2}).then(function(){
     closeModal('modal-usuario-app');
-    alert('Usuario creado.\n\nPara entrar:\n'+location.origin+location.pathname+'\nUsuario: '+u+'\nContraseña: '+c);
+    alert('Usuario creado ('+NOMBRES_ROL[rol]+').\n\nPara entrar:\n'+location.origin+location.pathname+'\nUsuario: '+u+'\nContraseña: '+c);
     cargarUsuariosApp();
   }).catch(function(e){ alert('No se pudo crear: '+e.message); });
 }
@@ -1276,6 +1331,7 @@ function initApp(){
   setInterval(function(){ if(navigator.onLine) empujarPendientes(); }, 3*60*1000);
   // Contador de pedidos nuevos del portal en la pestaña "Portal".
   if(claveAdminPortal()) cargarPedidosPortal();
+  refrescarRol();
   cargarUsuariosApp();
   setInterval(function(){ if(navigator.onLine) cargarUsuariosApp(); }, 5*60*1000);
   setInterval(function(){ if(navigator.onLine && claveAdminPortal()) cargarPedidosPortal(); }, 5*60*1000);
@@ -1288,7 +1344,7 @@ function renderAll(){
 
 // ══ NAV ══
 function showSection(name, btn){
-  if(esEquipo() && (name==='dashboard'||name==='mensajeros'||name==='usuarios')) return;
+  if(!puedeVerSeccion(name)) return;
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('sec-'+name).classList.add('active');
@@ -1731,7 +1787,7 @@ function renderEnvios(){
     '<div class="stat"><div class="stat-val">'+all.length+'</div><div class="stat-lbl">Total envíos</div></div>'
     +'<div class="stat"><div class="stat-val w">'+pend.length+'</div><div class="stat-lbl">Pendientes</div></div>'
     +'<div class="stat"><div class="stat-val g">'+done.length+'</div><div class="stat-lbl">Entregados</div></div>'
-    +(esEquipo()?'':'<div class="stat"><div class="stat-val s">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>'
+    +(esInvitado()?'':'<div class="stat"><div class="stat-val s">'+fmtMoney(totalGan)+'</div><div class="stat-lbl">Ganancia total</div></div>'
     +'<div class="stat"><div class="stat-val s">'+fmtMoney(mesGan)+'</div><div class="stat-lbl">Ganancia del mes</div></div>');
   var list=all;
   if(envioFilter==='pendiente') list=all.filter(function(r){ return r.estado==='pendiente'||r.estado==='en_camino'; });
@@ -2849,7 +2905,8 @@ var PORTAL_PUBLICO_URL='https://rafaelgarridofrometa1.github.io/Negocio/portal/'
 var PORTAL_ADMIN_KEY='negocio_portal_admin';
 var portalCuentas=[], portalSinCuenta=[], portalFiltro='con';
 
-// Con la sesion de la app ya no hace falta clave: el script sabe si eres dueño o equipo.
+// Con la sesion de la app ya no hace falta clave: el script sabe tu tipo de usuario
+// (dueño = pedidos y cuentas; equipo e invitado = solo pedidos).
 function claveAdminPortal(){ try{ return localStorage.getItem(PORTAL_ADMIN_KEY)||tokenApp(); }catch(e){ return tokenApp(); } }
 function escPortal(s){
   return txt(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
@@ -2868,7 +2925,7 @@ function llamarAdminPortal(accion, datos){
 }
 
 function mostrarClavePortal(mostrar){
-  document.getElementById('portal-clave-txt').innerHTML=esEquipo()
+  document.getElementById('portal-clave-txt').innerHTML=!esDueno()
     ?'Escribe la <strong>clave del equipo</strong> que te dio Rafael para ver los pedidos del portal.'
     :'Protege las contraseñas de tus clientes. <strong>La primera vez</strong>, la clave que escribas aquí queda guardada en tu script. Después, tú y Daniela tienen que usar esa misma clave en cada celular. Mínimo 4 caracteres.';
   document.getElementById('portal-clave-box').style.display=mostrar?'block':'none';
@@ -3065,7 +3122,7 @@ var portalPedidos=[], portalVista='pedidos', portalFiltroPedidos='nuevos';
 var PORTAL_ESTADOS={pendiente:'Pedido hecho', confirmado:'Confirmación de entrega', en_camino:'En camino', entregada:'Entregado', cancelada:'Cancelado'};
 
 function vistaPortal(v){
-  if(esEquipo()) v='pedidos';
+  if(!esDueno()) v='pedidos';
   portalVista=v;
   document.getElementById('portal-vista-pedidos').classList.toggle('on',v==='pedidos');
   document.getElementById('portal-vista-cuentas').classList.toggle('on',v==='cuentas');
@@ -3324,7 +3381,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v42 · 2026-11-27';
+var APP_VERSION='v43 · 2026-11-27';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -3761,7 +3818,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 5.1
+ * MI NEGOCIO - Backend Apps Script  ·  version 5.2
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -3843,7 +3900,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '5.1',
+        return json({ ok: true, message: 'Script activo', version: '5.2',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -3904,6 +3961,7 @@ function manejar(e) {
       case 'appCrearUsuario':     return json(appCrearUsuario(datos));
       case 'appGestionUsuario':   return json(appGestionUsuario(datos));
       case 'appCambiarMiClave':   return json(appCambiarMiClave(datos));
+      case 'appYo':               return json(appYo(datos));
 
       // --- notificaciones push (ntfy) ---
       case 'probarNtfy':
@@ -5412,24 +5470,25 @@ var ENC_PORTAL_CLIENTES = ['Usuario', 'Contraseña', 'Nombre', 'Telefono'];
 /**
  * d.claveAdmin: la clave de administrador o, si permitirEquipo, tambien la
  * clave del equipo (la que usa Muse: ve y mueve pedidos, pero NO las cuentas
- * ni contrasenas de los clientes). Un telefono del equipo (d.rolApp 'equipo')
- * nunca puede fijar la clave de administrador por ser el primero en llegar.
+ * ni contrasenas de los clientes). Un telefono que no es de un dueno
+ * (d.rolApp 'equipo' o 'invitado') nunca puede fijar la clave de
+ * administrador por ser el primero en llegar.
  */
 function verificarAdminPortal(d, permitirEquipo) {
   // Con la sesion de la app (usuario aprobado) ya no hace falta clave:
-  // dueno = administrador; equipo = solo pedidos.
+  // dueno = administrador; equipo e invitado = solo pedidos.
   if (d && d.token) {
     var u = usuarioDeToken(d.token);
     if (u.rol === 'dueno') return 'admin';
     if (permitirEquipo) return 'equipo';
-    throw new Error('Tu usuario es de equipo: las cuentas y contraseñas del portal solo las ve un dueño.');
+    throw new Error('Las cuentas y contraseñas del portal solo las ve un dueño.');
   }
   var clave = String((d && d.claveAdmin) || '');
   if (clave.length < 4) throw new Error('Falta la clave de administrador (minimo 4 caracteres).');
   var props = PropertiesService.getScriptProperties();
   var guardada = props.getProperty('CLAVE_ADMIN_PORTAL');
   if (!guardada) {
-    if (d && d.rolApp === 'equipo') throw new Error('Clave de administrador incorrecta: Rafael tiene que entrar primero al Portal desde su app.');
+    if (d && d.rolApp && d.rolApp !== 'dueno') throw new Error('Clave de administrador incorrecta: Rafael tiene que entrar primero al Portal desde su app.');
     props.setProperty('CLAVE_ADMIN_PORTAL', clave);
     return 'admin';
   }
@@ -5661,6 +5720,51 @@ function hojaUsuariosApp() { return hojaPortal('Usuarios_App', ENC_USUARIOS_APP)
 
 function normUsuarioApp(u) { return String(u || '').trim().toLowerCase().replace(/\s+/g, ' '); }
 
+// Tipos de usuario (v5.2):
+//   dueno    = lo ve todo y es el UNICO que maneja usuarios y contrasenas
+//              (de la app y del portal) y da o quita acceso.
+//   equipo   = lo ve todo (ganancias, Dashboard, contabilidad...) menos
+//              usuarios y contrasenas.
+//   invitado = el trabajo del dia, sin dinero ni contabilidad (lo que antes
+//              se llamaba "equipo", p. ej. Muse).
+var ROLES_APP = ['dueno', 'equipo', 'invitado'];
+
+/** Cualquier valor raro cuenta como invitado: es lo mas seguro. */
+function normRolApp(r) {
+  r = String(r || '').trim().toLowerCase().replace(/ñ/g, 'n');
+  return ROLES_APP.indexOf(r) >= 0 ? r : 'invitado';
+}
+
+/**
+ * Rol que pide la app. Hasta la v42 la app llamaba "equipo" al rol limitado:
+ * si la app no avisa que ya conoce los 3 tipos (d.roles = 2), "equipo" se
+ * guarda como invitado para no dar mas acceso del que se queria.
+ */
+function rolPedidoApp(d) {
+  var r = normRolApp(d.rol);
+  return (r === 'equipo' && Number(d.roles) !== 2) ? 'invitado' : r;
+}
+
+/**
+ * Una sola vez: el "equipo" de antes (sin dinero ni contabilidad) pasa a
+ * llamarse "invitado", asi nadie gana acceso sin que Rafael lo decida.
+ */
+function migrarRolesApp(sh) {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('ROLES_APP_V2')) return;
+  var n = sh.getLastRow();
+  if (n >= 2) {
+    var v = sh.getRange(2, 1, n - 1, 4).getValues();
+    for (var i = 0; i < v.length; i++) {
+      if (!normUsuarioApp(v[i][0])) continue;
+      var x = String(v[i][3] || '').trim().toLowerCase().replace(/ñ/g, 'n');
+      if (x === 'dueno' || x === 'invitado') continue;
+      sh.getRange(i + 2, 4).setNumberFormat('@').setValue('invitado');
+    }
+  }
+  props.setProperty('ROLES_APP_V2', '1');
+}
+
 function huellaClave(sal, clave) {
   var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, sal + '|' + clave, Utilities.Charset.UTF_8);
   return Utilities.base64Encode(b);
@@ -5668,13 +5772,14 @@ function huellaClave(sal, clave) {
 
 function leerUsuariosApp() {
   var sh = hojaUsuariosApp();
+  migrarRolesApp(sh);
   var v = sh.getDataRange().getValues();
   var lista = [];
   for (var i = 1; i < v.length; i++) {
     var u = normUsuarioApp(v[i][0]);
     if (!u) continue;
     lista.push({ fila: i + 1, usuario: u, huella: String(v[i][1] || ''), sal: String(v[i][2] || ''),
-                 rol: String(v[i][3] || '') === 'dueno' ? 'dueno' : 'equipo',
+                 rol: normRolApp(v[i][3]),
                  estado: String(v[i][4] || 'pendiente').toLowerCase(),
                  pedido: portalFechaIso(v[i][5]), aprobadoPor: String(v[i][6] || ''),
                  ultimoAcceso: portalFechaIso(v[i][7]) });
@@ -5734,7 +5839,8 @@ function escribirUsuarioApp(sh, fila, u) {
 /**
  * Pedir acceso. Si trae la clave de administrador del script (la del Portal),
  * entra directo como dueno aprobado: asi Rafael se da de alta sin esperar a
- * nadie. Si no, queda "pendiente" como equipo hasta que un dueno lo apruebe.
+ * nadie. Si no, queda "pendiente" como invitado hasta que un dueno lo apruebe
+ * (al aprobarlo elige si es invitado, equipo o dueno).
  */
 function appRegistro(d) {
   var usuario = normUsuarioApp(d.usuario), clave = String(d.clave || '');
@@ -5751,7 +5857,7 @@ function appRegistro(d) {
   }
   var sal = Utilities.getUuid();
   var nuevo = { usuario: usuario, huella: huellaClave(sal, clave), sal: sal,
-                rol: dueno ? 'dueno' : 'equipo', estado: dueno ? 'aprobado' : 'pendiente',
+                rol: dueno ? 'dueno' : 'invitado', estado: dueno ? 'aprobado' : 'pendiente',
                 pedido: hoyApp(), aprobadoPor: dueno ? '(clave de administrador)' : '' };
   escribirUsuarioApp(c.sh, c.sh.getLastRow() + 1, nuevo);
   if (!dueno) {
@@ -5771,14 +5877,14 @@ function appLogin(d) {
     if (u.estado === 'pendiente') return { ok: false, error: 'Tu usuario está esperando que Rafael lo apruebe.' };
     if (u.estado !== 'aprobado') return { ok: false, error: 'Tu usuario no tiene acceso. Habla con Rafael.' };
     c.sh.getRange(u.fila, 8).setNumberFormat('@').setValue(hoyApp());
-    return { ok: true, usuario: u.usuario, rol: u.rol, token: crearTokenApp(u.usuario) };
+    return { ok: true, usuario: u.usuario, rol: u.rol, roles: 2, token: crearTokenApp(u.usuario) };
   }
   return { ok: false, error: 'Usuario o contraseña incorrectos.' };
 }
 
 function appUsuarios(d) {
   exigirDueno(d);
-  return { ok: true, usuarios: leerUsuariosApp().lista.map(function (u) {
+  return { ok: true, roles: 2, usuarios: leerUsuariosApp().lista.map(function (u) {
     return { usuario: u.usuario, rol: u.rol, estado: u.estado, pedido: u.pedido,
              aprobadoPor: u.aprobadoPor, ultimoAcceso: u.ultimoAcceso };
   }) };
@@ -5797,7 +5903,7 @@ function appCrearUsuario(d) {
   var sal = Utilities.getUuid();
   escribirUsuarioApp(c.sh, c.sh.getLastRow() + 1, {
     usuario: usuario, huella: huellaClave(sal, clave), sal: sal,
-    rol: d.rol === 'dueno' ? 'dueno' : 'equipo', estado: 'aprobado', pedido: hoyApp(), aprobadoPor: yo.usuario });
+    rol: rolPedidoApp(d), estado: 'aprobado', pedido: hoyApp(), aprobadoPor: yo.usuario });
   return { ok: true };
 }
 
@@ -5811,7 +5917,7 @@ function appGestionUsuario(d) {
   var duenosActivos = c.lista.filter(function (x) { return x.rol === 'dueno' && x.estado === 'aprobado'; }).length;
   var quitaDueno = u.rol === 'dueno' && u.estado === 'aprobado' &&
                    (d.accion === 'bloquear' || d.accion === 'borrar' || d.accion === 'rechazar' ||
-                    (d.accion === 'rol' && d.rol !== 'dueno'));
+                    (d.accion === 'rol' && rolPedidoApp(d) !== 'dueno'));
   if (quitaDueno && duenosActivos <= 1) return { ok: false, error: 'Tiene que quedar al menos un dueño con acceso.' };
   if (u.usuario === yo.usuario && (d.accion === 'borrar' || d.accion === 'bloquear' || d.accion === 'rechazar'))
     return { ok: false, error: 'No puedes quitarte el acceso a ti mismo.' };
@@ -5820,9 +5926,9 @@ function appGestionUsuario(d) {
     c.sh.deleteRow(u.fila);
     return { ok: true };
   }
-  if (d.accion === 'aprobar') { u.estado = 'aprobado'; u.aprobadoPor = yo.usuario; if (d.rol) u.rol = d.rol === 'dueno' ? 'dueno' : 'equipo'; }
+  if (d.accion === 'aprobar') { u.estado = 'aprobado'; u.aprobadoPor = yo.usuario; if (d.rol) u.rol = rolPedidoApp(d); }
   else if (d.accion === 'bloquear') u.estado = 'bloqueado';
-  else if (d.accion === 'rol') u.rol = d.rol === 'dueno' ? 'dueno' : 'equipo';
+  else if (d.accion === 'rol') u.rol = rolPedidoApp(d);
   else if (d.accion === 'clave') {
     var nueva = String(d.clave || '');
     if (nueva.length < 4) return { ok: false, error: 'La contraseña debe tener al menos 4 caracteres.' };
@@ -5830,6 +5936,12 @@ function appGestionUsuario(d) {
   } else return { ok: false, error: 'Acción no reconocida.' };
   escribirUsuarioApp(c.sh, u.fila, u);
   return { ok: true };
+}
+
+/** Quien soy y que tipo de usuario tengo ahora (la app lo pregunta al abrir). */
+function appYo(d) {
+  var yo = usuarioDeToken(d.token);
+  return { ok: true, usuario: yo.usuario, rol: yo.rol, roles: 2 };
 }
 
 function appCambiarMiClave(d) {
