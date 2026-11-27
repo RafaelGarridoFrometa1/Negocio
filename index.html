@@ -1051,27 +1051,77 @@ function usuarioLocal(u,p){
       || usuariosLocales().filter(function(x){ try{ return String(x.u||'').trim().toLowerCase()===k && x.p===btoa(p); }catch(e){ return false; } })[0];
 }
 
+/** Contraseña de un usuario viejo del telefono (negocio_auth la guarda con btoa). */
+function claveLocalDe(usuario){
+  var k=String(usuario||'').trim().toLowerCase();
+  var x=usuariosLocales().filter(function(l){ return String(l.u||'').trim().toLowerCase()===k; })[0];
+  if(!x||!x.p) return '';
+  try{ return decodeURIComponent(escape(atob(x.p))); }catch(e){ try{ return atob(x.p); }catch(e2){ return ''; } }
+}
+
 /**
- * Despues de entrar con un usuario viejo: intenta, sin molestar, que ese
- * usuario exista tambien en el script (para poder usarlo en otros celulares
- * y gestionar usuarios). Si el script esta viejo o no hay clave, no pasa nada.
+ * Despues de entrar con un usuario viejo: intenta que ese usuario exista
+ * tambien en el script (para usarlo en otros celulares y gestionar usuarios).
+ * Devuelve {ok} o {ok:false, motivo} para poder explicar que pasa:
+ * script-viejo | sin-clave | clave-mala | existe-otra-clave | pendiente |
+ * bloqueado | no-dueno | sin-conexion | otro.
  */
-function pasarUsuarioLocalAlScript(u,p,rol){
-  if(!navigator.onLine) return;
-  var login=function(){ return enviarAlScript(gsUrl(),{action:'appLogin',usuario:u,clave:p}); };
-  login().then(function(res){
-    if(res&&res.ok) return res;
-    var clave=''; try{ clave=localStorage.getItem(PORTAL_ADMIN_KEY)||''; }catch(e){}
-    if(!clave || rol!=='dueno') return null;
-    return enviarAlScript(gsUrl(),{action:'appRegistro',usuario:u,clave:p,claveAdmin:clave})
-      .then(function(r){ return (r&&r.ok)?login():null; });
-  }).then(function(res){
-    if(res&&res.ok&&res.token){
-      var x=sesion()||{};
-      x.token=res.token; x.usuarioScript=res.usuario;
-      guardarSesion(x);
-    }
-  }).catch(function(){});
+function pasarUsuarioLocalAlScript(u,p,rol,claveManual){
+  if(!navigator.onLine) return Promise.resolve({ok:false, motivo:'sin-conexion'});
+  var usuario=String(u||'').trim().toLowerCase().replace(/\s+/g,' ');
+  var login=function(){ return enviarAlScript(gsUrl(),{action:'appLogin',usuario:usuario,clave:p}); };
+  var guardar=function(res){
+    var x=sesion()||{};
+    x.token=res.token; x.usuarioScript=res.usuario;
+    guardarSesion(x);
+    return {ok:true};
+  };
+  return login().then(function(res){
+    if(res&&res.ok&&res.token) return guardar(res);
+    var err=txt(res&&res.error);
+    if(/Accion no reconocida/i.test(err)) return {ok:false, motivo:'script-viejo'};
+    if(/esperando que Rafael/i.test(err)) return {ok:false, motivo:'pendiente'};
+    if(/no tiene acceso/i.test(err)) return {ok:false, motivo:'bloqueado'};
+    if(rol!=='dueno') return {ok:false, motivo:'no-dueno'};
+    var clave=claveManual||'';
+    if(!clave){ try{ clave=localStorage.getItem(PORTAL_ADMIN_KEY)||''; }catch(e){} }
+    if(!clave) return {ok:false, motivo:'sin-clave'};
+    return enviarAlScript(gsUrl(),{action:'appRegistro',usuario:usuario,clave:p,claveAdmin:clave}).then(function(r){
+      if(!(r&&r.ok)){
+        var e2=txt(r&&r.error);
+        // "ya existe": puede que otro intento (al abrir la app) lo acabe de pasar.
+        if(/ya existe/i.test(e2)) return login().then(function(res3){
+          return (res3&&res3.ok&&res3.token)?guardar(res3):{ok:false, motivo:'existe-otra-clave'};
+        });
+        if(/incorrecta|Falta la clave/i.test(e2)) return {ok:false, motivo:'clave-mala'};
+        return {ok:false, motivo:'otro', mensaje:e2};
+      }
+      return login().then(function(res2){
+        if(!(res2&&res2.ok&&res2.token)) return {ok:false, motivo:'otro', mensaje:txt(res2&&res2.error)};
+        if(claveManual){ try{ localStorage.setItem(PORTAL_ADMIN_KEY,claveManual); }catch(e){} }
+        return guardar(res2);
+      });
+    });
+  }).catch(function(){ return {ok:false, motivo:'sin-conexion'}; });
+}
+
+/** Al abrir la app: si entraste con tu usuario de siempre y aun no esta en el script, lo pasa solo. */
+function reconectarUsuarioLocal(){
+  var x=sesion();
+  if(!x||!x.local||x.token) return Promise.resolve(null);
+  var p=claveLocalDe(x.usuario);
+  if(!p) return Promise.resolve(null);
+  return pasarUsuarioLocalAlScript(x.usuario,p,rolDe(x)).then(function(r){
+    if(r&&r.ok) cargarUsuariosApp(document.getElementById('sec-usuarios').classList.contains('active'));
+    return r;
+  });
+}
+
+/** Version del script al que habla este celular ('' si no la dice, null si no responde). */
+function versionScript(){
+  return fetch(gsUrl()+'?action=ping',{method:'GET'}).then(function(r){ return r.text(); }).then(interpretar)
+    .then(function(res){ return txt(res&&res.version); })
+    .catch(function(){ return null; });
 }
 
 function entrarEnApp(){
@@ -1215,6 +1265,7 @@ function gestionarUsuarios(){
 function cargarUsuariosApp(conAviso){
   if(!esDueno()||!isLogged()) return Promise.resolve();
   var list=document.getElementById('list-usuarios');
+  if(!tokenApp()){ if(conAviso) mostrarConectarMiUsuario(); return Promise.resolve(); }
   if(conAviso) list.innerHTML='<div class="empty">Cargando usuarios…</div>';
   return llamarApp('appUsuarios').then(function(res){
     // Un script viejo (sin roles:2) llama "equipo" al invitado.
@@ -1222,6 +1273,65 @@ function cargarUsuariosApp(conAviso){
     actualizarBadgeUsuarios();
     renderUsuariosApp();
   }).catch(function(e){ if(conAviso) list.innerHTML='<div class="empty">No se pudieron cargar los usuarios.<br>'+escPortal(e.message)+'</div>'; });
+}
+
+// Tu usuario de siempre (de este celular) todavia no esta en el script:
+// se explica por que y se arregla desde aqui, sin salir de la app.
+function mostrarConectarMiUsuario(){
+  document.getElementById('list-usuarios').innerHTML='<div class="card" id="cx-usuario">'
+    +'<div style="font-weight:700;margin-bottom:.35rem">Tu usuario «'+escPortal(currentUser())+'» todavía no está en el script</div>'
+    +'<div style="font-size:.8rem;color:var(--g5);line-height:1.5;margin-bottom:.6rem">Es tu usuario de siempre de este celular: entra igual, pero para ver y manejar los usuarios hay que pasarlo una vez al script. La app lo intenta sola; aquí ves qué pasa.</div>'
+    +'<div id="cx-usuario-diag" style="font-size:.85rem;line-height:1.55;margin-bottom:.6rem">Comprobando…</div>'
+    +'<div id="cx-usuario-form" style="display:none">'
+    +'<div class="fgroup"><label class="flabel">Clave de administrador del Portal</label><input type="password" class="finput" id="cx-usuario-clave" autocomplete="off"></div>'
+    +'<button class="btn btn-pri" onclick="conectarMiUsuario()">Conectar mi usuario</button></div>'
+    +'</div>';
+  conectarMiUsuario(true);
+}
+
+var PISTA_CLAVE_ADMIN='<br><span style="color:var(--g5);font-size:.8rem">Es la que pusiste la primera vez en Portal → Cuentas y contraseñas. ¿No la recuerdas? En script.google.com abre tu proyecto → ⚙️ Configuración del proyecto → Propiedades del script → <b>CLAVE_ADMIN_PORTAL</b>.</span>';
+
+function conectarMiUsuario(auto){
+  var diag=document.getElementById('cx-usuario-diag');
+  if(!diag) return;
+  var form=document.getElementById('cx-usuario-form');
+  var x=sesion()||{}, p=claveLocalDe(x.usuario);
+  var manual=auto?'':document.getElementById('cx-usuario-clave').value.trim();
+  if(!auto && manual.length<4){ alert('Escribe la clave de administrador (mínimo 4 caracteres).'); return; }
+  var pinta=function(color,html,conForm){ diag.style.color=color||''; diag.innerHTML=html; form.style.display=conForm?'block':'none'; };
+  if(!x.local||!p){ pinta('var(--err)','Sal y vuelve a entrar con tu usuario y contraseña.',false); return; }
+  pinta('','Comprobando el script…',false);
+  var url=gsUrl(), urlCorta=url.replace(/^https:\/\/script\.google\.com\/macros\/s\//,'…/').slice(0,22)+'…'+url.slice(-12);
+  versionScript().then(function(v){
+    if(v===null) return {ok:false, motivo:'sin-conexion'};
+    if((parseFloat(v)||0)<5) return {ok:false, motivo:'script-viejo', version:v};
+    return pasarUsuarioLocalAlScript(x.usuario,p,rolDe(x),manual).then(function(r){ r.version=v; return r; });
+  }).then(function(r){
+    var m=r.motivo;
+    if(r.ok){
+      pinta('var(--ok)','✓ Listo: tu usuario ya está en el script (versión '+escPortal(r.version)+'). Ahora sirve en cualquier celular con la misma contraseña.',false);
+      setTimeout(function(){ cargarUsuariosApp(true); }, 1200);
+    } else if(m==='script-viejo'){
+      pinta('var(--err)','✗ La dirección del script de este celular responde <b>versión '+escPortal(r.version||'antigua')+'</b>: ahí NO está publicada la versión nueva (5.2).<br>'
+        +'<span style="color:var(--g7)">Dirección: <code style="font-size:.75rem">'+escPortal(urlCorta)+'</code><br>'
+        +'Arreglo: en script.google.com → <b>Implementar → Gestionar implementaciones</b> → ✏️ → Versión: <b>Nueva versión</b> → Implementar. '
+        +'Si la dirección de esa implementación no termina igual que la de arriba, cópiala en Configuración → URL del script.</span>',false);
+    } else if(m==='sin-clave'){
+      pinta('','El script está bien (versión '+escPortal(r.version)+'). Falta tu <b>clave de administrador del Portal</b> para pasar tu usuario como dueño. Escríbela y toca «Conectar mi usuario».'+PISTA_CLAVE_ADMIN,true);
+    } else if(m==='clave-mala'){
+      pinta('var(--err)','✗ Esa no es la clave de administrador del script.'+PISTA_CLAVE_ADMIN,true);
+    } else if(m==='existe-otra-clave'){
+      pinta('var(--err)','✗ En el script ya hay un usuario «'+escPortal(x.usuario)+'» con otra contraseña. Sal y entra con esa contraseña, o pide a otro dueño que te ponga una nueva.',false);
+    } else if(m==='pendiente'){
+      pinta('var(--err)','Tu usuario está en el script esperando que un dueño lo apruebe.',false);
+    } else if(m==='bloqueado'){
+      pinta('var(--err)','Tu usuario está bloqueado en el script. Otro dueño tiene que desbloquearlo.',false);
+    } else if(m==='sin-conexion'){
+      pinta('var(--err)','✗ No se pudo hablar con el script. Revisa internet y toca el botón para probar otra vez.',true);
+    } else {
+      pinta('var(--err)','✗ '+escPortal(r.mensaje||'No se pudo.'),true);
+    }
+  });
 }
 
 function actualizarBadgeUsuarios(){
@@ -1332,6 +1442,7 @@ function initApp(){
   // Contador de pedidos nuevos del portal en la pestaña "Portal".
   if(claveAdminPortal()) cargarPedidosPortal();
   refrescarRol();
+  reconectarUsuarioLocal();
   cargarUsuariosApp();
   setInterval(function(){ if(navigator.onLine) cargarUsuariosApp(); }, 5*60*1000);
   setInterval(function(){ if(navigator.onLine && claveAdminPortal()) cargarPedidosPortal(); }, 5*60*1000);
@@ -3381,7 +3492,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v43 · 2026-11-27';
+var APP_VERSION='v44 · 2026-11-27';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
