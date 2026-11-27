@@ -25,7 +25,11 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--g0);color:var(--g9);min-height:100vh}
 
 /* ── AUTH ── */
-#auth{position:fixed;inset:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:2rem}
+#auth{position:fixed;inset:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:9999;padding:2rem 1rem;overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* Centrado cuando cabe; si no cabe, se puede bajar (antes lo de abajo quedaba cortado). */
+#auth > :first-child{margin-top:auto}
+#auth > :last-child{margin-bottom:auto}
+#auth .auth-box{flex-shrink:0}
 .auth-ico{font-size:3rem;margin-bottom:.5rem}
 .auth-ttl{color:#fff;font-size:1.5rem;font-weight:700;margin-bottom:.25rem}
 .auth-sub{color:rgba(255,255,255,.5);font-size:.875rem;margin-bottom:2rem}
@@ -236,7 +240,7 @@ table.tbl{border-collapse:collapse;font-size:.72rem;white-space:nowrap;width:100
   <div class="auth-box" id="box-setup" style="display:none">
     <h2>Pedir acceso</h2>
     <p style="font-size:.8rem;color:var(--g5);margin-bottom:1rem;line-height:1.5">Elige tu usuario y contraseña. Servirán en cualquier celular. Rafael tiene que aprobarte antes de que puedas entrar.</p>
-    <input type="text" id="setup-user" placeholder="Usuario (sin espacios ni acentos)" autocapitalize="off">
+    <input type="text" id="setup-user" placeholder="Usuario" autocapitalize="off">
     <input type="password" id="setup-pass" placeholder="Contraseña (mín. 4 caracteres)">
     <input type="password" id="setup-pass2" placeholder="Repetir contraseña">
     <input type="password" id="setup-admin" placeholder="Clave de administrador (solo Rafael; si no la tienes, déjalo vacío)">
@@ -945,7 +949,7 @@ function txt(v){ return (v===null||v===undefined)?'':String(v); }
 var SESION_KEY='negocio_sesion';
 function sesion(){ try{ return JSON.parse(localStorage.getItem(SESION_KEY)||'null'); }catch(e){ return null; } }
 function guardarSesion(x){ localStorage.setItem(SESION_KEY, JSON.stringify(x)); }
-function isLogged(){ var x=sesion(); return !!(x&&x.usuario&&x.token); }
+function isLogged(){ var x=sesion(); return !!(x&&x.usuario&&(x.token||x.local)); }
 function currentUser(){ var x=sesion(); return x?x.usuario:''; }
 function tokenApp(){ var x=sesion(); return x?x.token:''; }
 // "equipo" (p.ej. Muse): trabajo del dia sin ganancias, Dashboard, Mensajeros,
@@ -966,6 +970,7 @@ function errorScript(res, porDefecto){
 
 /** Accion del script con la sesion. Si la sesion ya no vale, vuelve a la pantalla de entrada. */
 function llamarApp(accion, datos){
+  if(!tokenApp()) return Promise.reject(new Error('Tu usuario todavía no está en el script (versión 5.0). Cuando el script esté actualizado, sal y vuelve a entrar.'));
   var cuerpo=Object.assign({action:accion, token:tokenApp()}, datos||{});
   return enviarAlScript(gsUrl(),cuerpo).then(function(res){
     if(!res||res.ok===false){
@@ -977,12 +982,67 @@ function llamarApp(accion, datos){
   });
 }
 
+// Usuarios del sistema viejo, guardados en ESTE telefono (negocio_auth). Siguen
+// entrando siempre, aunque el script este viejo o no haya internet: asi nunca
+// se queda nadie fuera por un cambio en el script. El rol se respeta.
+function usuariosLocales(){
+  try{
+    var raw=JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');
+    if(raw && !Array.isArray(raw) && raw.u && raw.p) raw=[{u:raw.u, p:raw.p}];
+    return Array.isArray(raw)?raw:[];
+  }catch(e){ return []; }
+}
+function usuarioLocal(u,p){
+  var k=String(u||'').trim().toLowerCase();
+  return usuariosLocales().filter(function(x){ return String(x.u||'').trim().toLowerCase()===k && x.p===btoa(unescape(encodeURIComponent(p))); })[0]
+      || usuariosLocales().filter(function(x){ try{ return String(x.u||'').trim().toLowerCase()===k && x.p===btoa(p); }catch(e){ return false; } })[0];
+}
+
+/**
+ * Despues de entrar con un usuario viejo: intenta, sin molestar, que ese
+ * usuario exista tambien en el script (para poder usarlo en otros celulares
+ * y gestionar usuarios). Si el script esta viejo o no hay clave, no pasa nada.
+ */
+function pasarUsuarioLocalAlScript(u,p,rol){
+  if(!navigator.onLine) return;
+  var login=function(){ return enviarAlScript(gsUrl(),{action:'appLogin',usuario:u,clave:p}); };
+  login().then(function(res){
+    if(res&&res.ok) return res;
+    var clave=''; try{ clave=localStorage.getItem(PORTAL_ADMIN_KEY)||''; }catch(e){}
+    if(!clave || rol==='equipo') return null;
+    return enviarAlScript(gsUrl(),{action:'appRegistro',usuario:u,clave:p,claveAdmin:clave})
+      .then(function(r){ return (r&&r.ok)?login():null; });
+  }).then(function(res){
+    if(res&&res.ok&&res.token){
+      var x=sesion()||{};
+      x.token=res.token; x.usuarioScript=res.usuario;
+      guardarSesion(x);
+    }
+  }).catch(function(){});
+}
+
+function entrarEnApp(){
+  document.getElementById('login-pass').value='';
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initApp();
+}
+
 function doLogin(){
-  var u=document.getElementById('login-user').value.trim().toLowerCase();
+  var uOriginal=document.getElementById('login-user').value.trim();
+  var u=uOriginal.toLowerCase().replace(/\s+/g,' ');
   var p=document.getElementById('login-pass').value;
   var err=document.getElementById('login-err');
   err.style.color='';
   if(!u||!p){ err.textContent='Completa todos los campos.'; return; }
+  var loc=usuarioLocal(uOriginal,p);
+  if(loc){
+    var rol=loc.rol==='equipo'?'equipo':'dueno';
+    guardarSesion({usuario:loc.u, rol:rol, token:'', local:true});
+    entrarEnApp();
+    pasarUsuarioLocalAlScript(u,p,rol);
+    return;
+  }
   if(!navigator.onLine){ err.textContent='Para entrar hace falta internet. Después la app funciona también sin conexión.'; return; }
   var btn=document.getElementById('btn-login');
   btn.disabled=true; btn.textContent='Entrando…';
@@ -991,10 +1051,7 @@ function doLogin(){
     btn.disabled=false; btn.textContent='Entrar';
     if(!res||res.ok===false){ err.textContent=errorScript(res,'No se pudo entrar.'); return; }
     guardarSesion({usuario:res.usuario, rol:res.rol, token:res.token});
-    document.getElementById('login-pass').value='';
-    document.getElementById('auth').style.display='none';
-    document.getElementById('app').style.display='flex';
-    initApp();
+    entrarEnApp();
   }).catch(function(){
     btn.disabled=false; btn.textContent='Entrar';
     err.textContent='No se pudo conectar con el script. Revisa tu internet e inténtalo de nuevo.';
@@ -1002,14 +1059,14 @@ function doLogin(){
 }
 
 function doSetup(){
-  var u=document.getElementById('setup-user').value.trim().toLowerCase();
+  var u=document.getElementById('setup-user').value.trim().toLowerCase().replace(/\s+/g,' ');
   var p=document.getElementById('setup-pass').value;
   var p2=document.getElementById('setup-pass2').value;
   var admin=document.getElementById('setup-admin').value;
   var err=document.getElementById('setup-err');
   err.style.color='';
   if(!u||!p){ err.textContent='Completa usuario y contraseña.'; return; }
-  if(!/^[a-z0-9._-]{2,30}$/.test(u)){ err.textContent='El usuario solo puede tener letras sin acentos, números, punto o guion.'; return; }
+  if(!/^[a-z0-9áéíóúüñ._ -]{2,30}$/.test(u)){ err.textContent='El usuario puede tener letras, números, espacios, punto o guion (2 a 30).'; return; }
   if(p.length<4){ err.textContent='La contraseña debe tener al menos 4 caracteres.'; return; }
   if(p!==p2){ err.textContent='Las contraseñas no coinciden.'; return; }
   var btn=document.getElementById('btn-setup');
@@ -1183,10 +1240,10 @@ function abrirCrearUsuarioApp(){
 }
 
 function guardarUsuarioApp(){
-  var u=document.getElementById('nu-usuario').value.trim().toLowerCase();
+  var u=document.getElementById('nu-usuario').value.trim().toLowerCase().replace(/\s+/g,' ');
   var c=document.getElementById('nu-clave').value;
   var rol=document.getElementById('nu-rol').value;
-  if(!/^[a-z0-9._-]{2,30}$/.test(u)){ alert('El usuario solo puede tener letras sin acentos, números, punto o guion.'); return; }
+  if(!/^[a-z0-9áéíóúüñ._ -]{2,30}$/.test(u)){ alert('El usuario puede tener letras, números, espacios, punto o guion (2 a 30).'); return; }
   if(c.length<4){ alert('La contraseña debe tener al menos 4 caracteres.'); return; }
   llamarApp('appCrearUsuario',{usuario:u, clave:c, rol:rol}).then(function(){
     closeModal('modal-usuario-app');
@@ -3267,7 +3324,7 @@ function saveGsUrl(){
   alert('URL guardada correctamente.');
 }
 
-var APP_VERSION='v41 · 2026-11-27';
+var APP_VERSION='v42 · 2026-11-27';
 
 function pintarVersion(){
   var d=document.getElementById('app-version');
@@ -3704,7 +3761,7 @@ function handleImport(e){
 
 function buildScriptText(){
   var s=`/**
- * MI NEGOCIO - Backend Apps Script  ·  version 5.0
+ * MI NEGOCIO - Backend Apps Script  ·  version 5.1
  * Libro "Contabilidad_Remesas"
  *
  * ADAPTADO A LO QUE LA APP ENVIA DE VERDAD:
@@ -3786,7 +3843,7 @@ function manejar(e) {
 
     switch (accion) {
       case 'ping':
-        return json({ ok: true, message: 'Script activo', version: '5.0',
+        return json({ ok: true, message: 'Script activo', version: '5.1',
                       recibioPost: !!(e && e.postData && e.postData.contents),
                       metodo: (e && e.postData) ? 'POST' : 'GET' });
 
@@ -5602,7 +5659,7 @@ var DIAS_SESION_APP = 60;
 
 function hojaUsuariosApp() { return hojaPortal('Usuarios_App', ENC_USUARIOS_APP); }
 
-function normUsuarioApp(u) { return String(u || '').trim().toLowerCase(); }
+function normUsuarioApp(u) { return String(u || '').trim().toLowerCase().replace(/\s+/g, ' '); }
 
 function huellaClave(sal, clave) {
   var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, sal + '|' + clave, Utilities.Charset.UTF_8);
@@ -5661,7 +5718,7 @@ function exigirDueno(d) {
 }
 
 function validarNuevoUsuario(usuario, clave) {
-  if (!/^[a-z0-9._-]{2,30}$/.test(usuario)) return 'El usuario solo puede tener letras sin acentos, números, punto, guion o guion bajo (2 a 30).';
+  if (!/^[a-z0-9áéíóúüñ._ -]{2,30}$/.test(usuario)) return 'El usuario puede tener letras, números, espacios, punto o guion (2 a 30).';
   if (String(clave || '').length < 4) return 'La contraseña debe tener al menos 4 caracteres.';
   return '';
 }
